@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Gray background indicator - rounded corners, subtle shadow -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Gray color with different shades for different uses -->
+
+    <!-- OPTION 1: Light Gray (subtle indicator) -->
+<!--    <solid android:color="#E0E0E0" />-->
+
+    <!-- OPTION 2: Medium Gray (more visible) -->
+     <solid android:color="#9E9E9E" />
+
+    <!-- OPTION 3: Dark Gray (strong indicator) -->
+    <!-- <solid android:color="#616161" /> -->  <!-- Material Gray 700 -->
+
+    <!-- Rounded corners -->
+    <corners android:radius="8dp" />  <!-- Adjust for desired roundness -->
+
+    <!-- Optional: Stroke/border -->
+    <stroke
+        android:width="1dp"
+        android:color="#BDBDBD" />  <!-- Slightly darker border -->
+
+    <!-- Optional: Shadow/elevation effect -->
+    <padding
+        android:left="2dp"
+        android:top="2dp"
+        android:right="2dp"
+        android:bottom="2dp" />
+</shape>

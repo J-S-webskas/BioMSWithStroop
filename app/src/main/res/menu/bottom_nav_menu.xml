@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/home_icon"
+        android:title="Home" />
+
+    <item
+        android:id="@+id/nav_record"
+        android:icon="@drawable/record_icon"
+        android:title="Record" />
+
+    <item
+        android:id="@+id/nav_trend"
+        android:icon="@drawable/chart_data_icon"
+        android:title="Graph" />
+
+    <item
+        android:id="@+id/nav_report"
+        android:icon="@drawable/report_icon"
+        android:title="Report" />
+
+</menu>

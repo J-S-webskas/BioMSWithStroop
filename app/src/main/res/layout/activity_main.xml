@@ -1,201 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
 <androidx.constraintlayout.widget.ConstraintLayout
-xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:app="http://schemas.android.com/apk/res-auto"
-xmlns:tools="http://schemas.android.com/tools"
-android:id="@+id/main"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-tools:context=".MainActivity"
-android:background="@android:color/white">
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
 
-
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:fitsSystemWindows="true"
+    <!-- Fragment Container for swapping screens -->
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <TextView
-            android:id="@+id/Tittle"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:background="@color/darkGreen"
-            android:paddingVertical="5dp"
-            android:text="BioMS"
-            android:textAlignment="center"
-            android:textColor="@color/white"
-            android:textSize="40sp"
-            android:textStyle="bold" />
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-
-    <ScrollView
-        android:id="@+id/scrollView2"
-        android:layout_width="match_parent"
-        android:layout_height="600dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/appBarLayout">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation" />
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="600dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/textView2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="Latest Progression"
-                android:textSize="20dp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-
-            <androidx.cardview.widget.CardView
-                android:id="@+id/graphCard"
-                android:layout_width="350dp"
-                android:layout_height="165dp"
-                android:layout_marginTop="10dp"
-                android:elevation="200dp"
-                android:outlineAmbientShadowColor="@color/darkGreen"
-                app:cardCornerRadius="20dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textView2"></androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:id="@+id/todoCard"
-                android:layout_width="350dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="50dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="20dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/graphCard">
-
-                <TextView
-                    android:layout_width="100dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dp"
-                    android:layout_marginTop="10dp"
-                    android:text="To-Do List"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <Button
-                    android:id="@+id/button2"
-                    android:layout_width="100dp"
-                    android:layout_height="40dp"
-                    android:layout_marginLeft="240dp"
-                    android:layout_marginTop="5dp"
-                    android:height="40dp"
-                    android:text="Record"
-                    android:textColorLink="#FF0000"
-                    android:textSize="12sp" />
-            </androidx.cardview.widget.CardView>
-
-            <TextView
-                android:id="@+id/textView3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:text="Recent Report"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.087"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/todoCard" />
-
-            <androidx.cardview.widget.CardView
-                android:id="@+id/ReportCard"
-                android:layout_width="350dp"
-                android:layout_height="165dp"
-                android:layout_marginTop="10dp"
-                app:cardCornerRadius="20dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textView3" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </ScrollView>
-
-    <!--<com.google.android.material.navigation.NavigationView
-        android:id="@+id/navigationView"
-        android:layout_width="match_parent"
-        android:layout_height="70dp"
-        tools:layout_editor_absoluteX="1dp"
-        tools:layout_editor_absoluteY="661dp"
-        app:layout_constraintTop_toBottomOf="@+id/scrollView2"
-        android:background="@color/darkGreen"/>-->
-
-    <!--<com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/navLayout"
-        android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:fitsSystemWindows="true"
+    <!-- Bottom Navigation -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/windowBackground"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/scrollView2"
-        android:background="@color/darkGreen">-->
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/navLayout"
-        android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:fitsSystemWindows="true"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/scrollView2"
-        android:background="@color/darkGreen">
+        app:menu="@menu/bottom_nav_menu" />
 
-        <Button
-            android:id="@+id/homeButton"
-            android:layout_width="100dp"
-            android:layout_height="match_parent"
-            android:text="Home"
-            app:cornerRadius="0dp"
-            app:layout_constraintEnd_toStartOf="@+id/graphButton" />
-
-        <Button
-            android:id="@+id/graphButton"
-            android:layout_width="100dp"
-            android:layout_height="match_parent"
-            android:text="Graphs"
-            app:cornerRadius="0dp"
-            app:layout_constraintEnd_toStartOf="@+id/reportButton" />
-
-        <Button
-            android:id="@+id/reportButton"
-            android:layout_width="100dp"
-            android:layout_height="match_parent"
-            android:text="Reports"
-            app:cornerRadius="0dp"
-            app:layout_constraintEnd_toStartOf="@+id/sessionButton" />
-
-        <Button
-            android:id="@+id/sessionButton"
-            android:layout_width="106dp"
-            android:layout_height="match_parent"
-            android:text="Sessions"
-            app:cornerRadius="0dp"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    <!--</com.google.android.material.appbar.AppBarLayout>-->
-
-
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
