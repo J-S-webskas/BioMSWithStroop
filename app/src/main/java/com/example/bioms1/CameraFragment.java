@@ -231,25 +231,25 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         ImageButton btnSwitchCamera = view.findViewById(R.id.btn_switch_camera);
         btnSwitchCamera.setOnClickListener(v -> switchCamera());
 
-        Button btnCancel = view.findViewById(R.id.btn_cancel);
-        btnCancel.setOnClickListener(v -> {
-            stopCamera();
-
-            requireActivity().getSupportFragmentManager().popBackStack();  // pop back to record fragment so the topmost fragment within fragment_container is record fragment
-
-            /// Pops back to record page
-            // post delays the execution of the code below to make sure that popBackStack completes showing recordFragment/navigating bac
-            v.post(() -> {
-                // Code flow is now showing RecordFragment
-                Fragment currentFragment = requireActivity()
-                        .getSupportFragmentManager()
-                        .findFragmentById(R.id.fragment_container);
-                // calling the method of recordfragment
-                if (currentFragment instanceof RecordFragment) {
-                    ((RecordFragment) currentFragment).stopCurrentTestAndDiscardData();
-                }
-            });
-        });
+//        Button btnCancel = view.findViewById(R.id.btn_cancel);
+//        btnCancel.setOnClickListener(v -> {
+//            stopCamera();
+//
+//            requireActivity().getSupportFragmentManager().popBackStack();  // pop back to record fragment so the topmost fragment within fragment_container is record fragment
+//
+//            /// Pops back to record page
+//            // post delays the execution of the code below to make sure that popBackStack completes showing recordFragment/navigating bac
+//            v.post(() -> {
+//                // Code flow is now showing RecordFragment
+//                Fragment currentFragment = requireActivity()
+//                        .getSupportFragmentManager()
+//                        .findFragmentById(R.id.fragment_container);
+//                // calling the method of recordfragment
+//                if (currentFragment instanceof RecordFragment) {
+//                    ((RecordFragment) currentFragment).stopCurrentTestAndDiscardData();
+//                }
+//            });
+//        });
 
         // Wait for the views to be properly laid out
         getFragmentCameraBinding().viewFinder.post(new Runnable() {
