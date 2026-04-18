@@ -7,12 +7,12 @@
     android:fillViewport="true">
 
 <LinearLayout
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:paddingBottom="20dp">
 
-    <!-- Replace your current date TextView with this LinearLayout -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -40,222 +40,287 @@
             android:backgroundTint="@color/design_default_color_secondary"/>
     </LinearLayout>
 
-<!--    <TextView-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:id="@+id/trendTitle"-->
-<!--        android:text="Trends and notable changes for the last 30 days"-->
-<!--        android:textSize="18sp"-->
-<!--        android:paddingStart="20dp"-->
-<!--        android:paddingEnd="20dp"-->
-<!--        android:paddingTop="20dp"-->
-<!--        android:textStyle="bold"-->
-<!--        android:layout_marginBottom="12dp"/>-->
-
-<!--    <ImageView-->
-<!--        android:layout_width="24dp"-->
-<!--        android:layout_height="24dp"-->
-<!--        android:src="@drawable/up"-->
-<!--        app:tint="#FF0000" />-->
-
-<!--    <ImageView-->
-<!--        android:layout_width="24dp"-->
-<!--        android:layout_height="24dp"-->
-<!--        android:src="@drawable/down"-->
-<!--        app:tint="#FF0000" />-->
-
-<!--    <TextView-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_marginTop="5dp"-->
-<!--        android:text="Trend direction:"-->
-<!--        android:paddingStart="20dp"-->
-<!--        android:paddingEnd="20dp"-->
-<!--        android:layout_gravity="center"-->
-<!--        android:textSize="18sp"-->
-<!--        android:id="@+id/trendDetail"/>-->
-
-<!--    <TextView-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_marginTop="10dp"-->
-<!--        android:text="Fluctuation:"-->
-<!--        android:paddingStart="20dp"-->
-<!--        android:paddingEnd="20dp"-->
-<!--        android:layout_gravity="center"-->
-<!--        android:textSize="18sp"-->
-<!--        android:id="@+id/Fluctuation"/>-->
-
-
-
-<!--    Percent change: -50% to +50%
-
-Comparison to baseline: "-->
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/averageRectifiedJerkTitle"
-        android:layout_marginTop="14dp"
-        android:text="Average Rectified Jerk (ARJ)\nMeasures movement smoothness
-        \nLower values = smoother movement"
+        android:id="@+id/trendTitle"
+        android:text="Table of Variation: unstressed"
         android:textSize="18sp"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="20dp"
-        android:textStyle="bold|italic"
+        android:textStyle="bold"
         android:layout_marginBottom="12dp"/>
 
-
-    <TextView
+    <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="• Today's value (left knee):"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/ARJTodayLeft"/>
+        android:columnCount="3"
+        android:rowCount="6"
+        android:layout_marginStart="16dp">
 
+        <TextView
+            android:text="Metrics"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="• This month's trend (left knee): "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/ARJTrendLeft"/>
+        <TextView
+            android:text="Standard Deviation (SD)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="• Today's value (right knee): "
-        android:paddingStart="20dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/ARJTodayRight"/>
+        <TextView
+            android:text="Coefficient of Variation (CV)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="• This month's trend (right knee): "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/ARJTrendRight"/>
+        <TextView
+            android:text="ARJ (left knee)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/ARJSDLeft"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/ARJCVLeft"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="ARJ (right knee)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/ARJSDRight"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/ARJCVRight"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="Balance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/BalanceSD"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/BalanceCV"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="Walking Speed"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/WSSD"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/WSCV"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="Endurance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/EnduranceSD"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/EnduranceCV"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+    </GridLayout>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/balanceTitle"
-        android:layout_marginTop="14dp"
-        android:text="Balance \nFall risk score: 0-100 (higher = higher fall risk)"
+        android:id="@+id/trendTitle4"
+        android:text="Table of measurement: all values"
         android:textSize="18sp"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="20dp"
-        android:textStyle="bold|italic"
+        android:textStyle="bold"
         android:layout_marginBottom="12dp"/>
 
-    <TextView
+    <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Today's value: "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/balanceToday"/>
+        android:columnCount="2"
+        android:rowCount="5"
+        android:layout_marginStart="16dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="This month's trend: "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/balanceTrend"/>
+        <TextView
+            android:text="Metrics"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/speedTitle"
-        android:layout_marginTop="14dp"
-        android:text="Average walking speed"
-        android:textSize="18sp"
-        android:paddingStart="20dp"
-        android:paddingTop="20dp"
-        android:textStyle="bold|italic"
-        android:paddingEnd="20dp"
-        android:layout_marginBottom="12dp"/>
+        <TextView
+            android:text="Today's Value"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Today's value: "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/speedToday"/>
+        <TextView
+            android:text="ARJ (left knee)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="This month's trend: "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/speedTrend"/>
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/enduranceTitle"
-        android:layout_marginTop="14dp"
-        android:text="Endurance"
-        android:textSize="18sp"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:paddingTop="20dp"
-        android:textStyle="bold|italic"
-        android:layout_marginBottom="12dp"/>
+        <TextView
+            android:id="@+id/ARJValueLeftToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Today's value: "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/enduranceToday"/>
+        <TextView
+            android:text="ARJ (right knee)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="This month's trend: "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/enduranceTrend"/>
+        <TextView
+            android:id="@+id/ARJValueRightToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="Balance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/BalanceToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="Walking Speed"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/WSToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="Endurance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/EnduranceToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+    </GridLayout>
 
     <TextView
         android:layout_width="wrap_content"
@@ -267,52 +332,113 @@ Comparison to baseline: "-->
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="20dp"
-        android:textStyle="bold|italic"
+        android:textStyle="bold"
         android:layout_marginBottom="12dp"/>
 
-    <TextView
+    <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Dual task's value (ARJ of left knee): "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/dualTaskARJLeftToday"/>
+        android:columnCount="3"
+        android:rowCount="5"
+        android:layout_marginStart="16dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Dual task's value (ARJ of right knee): "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/dualTaskARJRightToday"/>
+        <TextView
+            android:text="Metrics"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Dual task's value (balance): "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/dualTaskBalanceToday"/>
+        <TextView
+            android:text="Today's Value"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="This month's trend: "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/dualTaskTrend"/>
+        <TextView
+            android:text="DTC"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="ARJ (left knee)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/dualTaskARJLeftToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/ARJDTDTCLeftToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="ARJ (right knee)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/dualTaskARJRightToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/ARJDTDTCRightToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="Balance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/dualTaskBalanceToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/BalanceDTDTCToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+    </GridLayout>
 
     <TextView
         android:layout_width="wrap_content"
@@ -324,52 +450,113 @@ Comparison to baseline: "-->
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="20dp"
-        android:textStyle="bold|italic"
+        android:textStyle="bold"
         android:layout_marginBottom="12dp"/>
 
-    <TextView
+    <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Sensory ataxia's value (ARJ of left knee): "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/sensoryAtaxiaARJLeftToday"/>
+        android:columnCount="3"
+        android:rowCount="5"
+        android:layout_marginStart="16dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Sensory ataxia's value (ARJ of right knee): "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/sensoryAtaxiaARJRightToday"/>
+        <TextView
+            android:text="Metrics"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Sensory ataxia's value (balance) :"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/sensoryAtaxiaBalanceToday"/>
+        <TextView
+            android:text="Today's Value"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="This month's trend: "
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:id="@+id/sensoryAtaxiaTrend"/>
+        <TextView
+            android:text="DTC"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="ARJ (left knee)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/sensoryAtaxiaARJLeftToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/ARJSADTCLeftToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="ARJ (right knee)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/sensoryAtaxiaARJRightToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/ARJSADTCRightToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:text="Balance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/sensoryAtaxiaBalanceToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/BalanceSADTCToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:textSize="16sp"/>
+
+    </GridLayout>
 
 </LinearLayout>
 

@@ -166,45 +166,33 @@ public abstract class BiomechanicalChart {
             return new ArrayList<>();
         }
 
-        // Get all data points sorted by date
+        // Get all data points sorted by date (oldest to newest)
         List<Map.Entry<Date, Float>> sortedEntries = new ArrayList<>(dataMap.entrySet());
         sortedEntries.sort(Map.Entry.comparingByKey());
 
-        // Determine date range
-        Calendar cal = Calendar.getInstance();
-        Date now = new Date();
+        // Get cutoff date
         Date startDate = getStartDateForRange(timeRange, sortedEntries);
+        Date now = new Date();
 
-        // For line charts with gaps, we need to add NaN entries where there are gaps > threshold
         List<Entry> entries = new ArrayList<>();
-        float prevDays = -1;
-        float prevValue = 0;
-        int gapThresholdDays = getGapThresholdForRange(timeRange);
 
+        // Loop from oldest to newest
         for (Map.Entry<Date, Float> entry : sortedEntries) {
             Date date = entry.getKey();
 
-            // Only include dates within range
             if (!date.before(startDate) && !date.after(now)) {
+                // Use daysSinceStart (not daysSinceNow)
                 float daysSinceStart = getDaysBetween(startDate, date);
                 float currentValue = entry.getValue();
 
-                // Check if there's a gap
-                if (prevDays >= 0 && (daysSinceStart - prevDays) > gapThresholdDays) {
-                    // Add a NaN entry to create a gap in the line
-                    entries.add(new Entry(prevDays + 1, Float.NaN));
-                }
-
                 entries.add(new Entry(daysSinceStart, currentValue));
-                prevDays = daysSinceStart;
-                prevValue = currentValue;
             }
         }
 
         return entries;
     }
 
-    private Date getStartDateForRange(String timeRange, List<Map.Entry<Date, Float>> sortedEntries) {
+    public Date getStartDateForRange(String timeRange, List<Map.Entry<Date, Float>> sortedEntries) {
         Calendar cal = Calendar.getInstance();
         Date now = new Date();
 

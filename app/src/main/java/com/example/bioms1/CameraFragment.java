@@ -2,12 +2,19 @@ package com.example.bioms1;
 
 import android.annotation.SuppressLint;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,6 +33,8 @@ import com.example.bioms1.databinding.FragmentCameraBinding;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mediapipe.tasks.vision.core.RunningMode;
+import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +63,89 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private int cameraFacing = CameraSelector.LENS_FACING_BACK;
 
     private ExecutorService backgroundExecutor;
+
+    private void showCountdownOverlay() {
+        // Find a suitable container - either the viewFinder's parent or the fragment's root
+        ViewGroup container;
+
+        // Try to get the viewFinder's parent (which should be the camera preview container)
+        ViewParent parent = getFragmentCameraBinding().viewFinder.getParent();
+        if (parent instanceof ViewGroup) {
+            container = (ViewGroup) parent;
+        } else {
+            // Fallback to the fragment's root view
+            container = (ViewGroup) getFragmentCameraBinding().getRoot();
+        }
+
+        // Create overlay view
+        View overlayView = new View(requireContext());
+        overlayView.setBackgroundColor(Color.parseColor("#80000000")); // Semi-transparent black
+
+        // Add overlay to container
+        container.addView(overlayView, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+
+        // Create countdown text
+        TextView countdownText = new TextView(requireContext());
+        countdownText.setTextColor(Color.WHITE);
+        countdownText.setTextSize(72);
+        countdownText.setGravity(Gravity.CENTER);
+        container.addView(countdownText, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+
+        // Start countdown animation
+        new CountDownTimer(10000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                int secondsLeft = (int) (millisUntilFinished / 1000);
+                countdownText.setText(String.valueOf(secondsLeft));
+
+                // Add scale animation
+                countdownText.animate()
+                        .scaleX(1.5f)
+                        .scaleY(1.5f)
+                        .setDuration(500)
+                        .withEndAction(() -> {
+                            countdownText.animate()
+                                    .scaleX(1f)
+                                    .scaleY(1f)
+                                    .setDuration(500)
+                                    .start();
+                        })
+                        .start();
+            }
+
+            @Override
+            public void onFinish() {
+                // Remove overlay and countdown text
+                container.removeView(overlayView);
+                container.removeView(countdownText);
+
+                // Start camera
+                setUpCamera();
+            }
+        }.start();
+    }
+
+    private void switchCamera() {
+        if (cameraProvider == null) {
+            return;
+        }
+
+        // Toggle camera facing
+        if (cameraFacing == CameraSelector.LENS_FACING_BACK) {
+            cameraFacing = CameraSelector.LENS_FACING_FRONT;
+        } else {
+            cameraFacing = CameraSelector.LENS_FACING_FRONT;
+        }
+
+        // Rebind use cases with new camera selector
+        bindCameraUseCases();
+    }
 
     @Override
     public void onResume() {
@@ -134,14 +226,18 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor();
 
+        showCountdownOverlay();
+
+        ImageButton btnSwitchCamera = view.findViewById(R.id.btn_switch_camera);
+        btnSwitchCamera.setOnClickListener(v -> switchCamera());
+
         Button btnCancel = view.findViewById(R.id.btn_cancel);
-        Button
         btnCancel.setOnClickListener(v -> {
             stopCamera();
 
             requireActivity().getSupportFragmentManager().popBackStack();  // pop back to record fragment so the topmost fragment within fragment_container is record fragment
 
-
+            /// Pops back to record page
             // post delays the execution of the code below to make sure that popBackStack completes showing recordFragment/navigating bac
             v.post(() -> {
                 // Code flow is now showing RecordFragment
@@ -337,7 +433,21 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (_fragmentCameraBinding != null) {
+                    if (_fragmentCameraBinding == null) {
+                        return;  // Fragment view is destroyed
+                    }
+
+                    // Check if this is a clear signal (empty results)
+                    if (resultBundle.results == null || resultBundle.results.isEmpty()) {
+                        // Clear the overlay - no skeleton to display
+                        Log.d(TAG, "Clearing overlay - no pose detected");
+                        getFragmentCameraBinding().overlay.clear();
+                        getFragmentCameraBinding().overlay.invalidate();
+                        return;  // Don't try to draw anything
+                    }
+                    try {
+                    PoseLandmarkerResult result = resultBundle.results.get(0);
+                    if (_fragmentCameraBinding != null && result != null && result.landmarks() != null && !result.landmarks().isEmpty()) {
 
                         // Pass necessary information to OverlayView for drawing on the canvas
                         getFragmentCameraBinding().overlay.setResults(
@@ -352,6 +462,16 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         // Without invalidate(), first pose appears, then nothing updates,
                         // screen stays frozen with old pose data, new detections happen but aren't shown
                         // Without it, the landmarks wouldn't appear or update on screen
+                        getFragmentCameraBinding().overlay.invalidate();
+                    } else {
+                        // Invalid result - clear overlay
+                        Log.w(TAG, "Invalid pose result received");
+                        getFragmentCameraBinding().overlay.clear();
+                        getFragmentCameraBinding().overlay.invalidate();
+                    }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error displaying pose: " + e.getMessage());
+                        getFragmentCameraBinding().overlay.clear();
                         getFragmentCameraBinding().overlay.invalidate();
                     }
                 }

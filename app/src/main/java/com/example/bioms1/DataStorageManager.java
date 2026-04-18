@@ -50,6 +50,7 @@ public class DataStorageManager {
         // Gson instance
         Gson gson = new GsonBuilder()
                 .setDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")  // ISO 8601 standard Ex. 2024-12-20T10:30:00Z
+                .serializeSpecialFloatingPointValues()     // Handle NaN and Infinity
                 .create();
 
         // Convert the object to a JSON string.
@@ -146,6 +147,7 @@ public class DataStorageManager {
         // Gson instance
         Gson gson = new GsonBuilder()
                 .setDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")  // ISO 8601 standard Ex. 2024-12-20T10:30:00Z
+                .serializeSpecialFloatingPointValues() // handle Nan and Infinity
                 .create();
 
         // Convert the object to a JSON string.

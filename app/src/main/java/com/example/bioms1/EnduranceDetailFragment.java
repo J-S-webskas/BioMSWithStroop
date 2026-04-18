@@ -4,7 +4,6 @@ import android.os.Bundle;
 import androidx.fragment.app.Fragment;
 import android.view.*;
 
-import com.example.bioms1.R;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.*;
 import java.util.*;
@@ -29,7 +28,7 @@ public class EnduranceDetailFragment extends Fragment {
                 ChartDataExtractor.getEnduranceData(getContext());
 
         EnduranceChart enduranceChart =
-                new EnduranceChart(3, "Endurance", data, "No Data");
+                new EnduranceChart(3, "Endurance", data);
 
         List<Entry> entries =
                 enduranceChart.getDataForTimeRangeWithGaps(

@@ -11,8 +11,10 @@ public class MonthAxisValueFormatter extends ValueFormatter {
     private final SimpleDateFormat dateFormat;
     private final Calendar calendar = Calendar.getInstance();
     private final Date currentDate = new Date();
+    private final Date startDate;  // The cutoff date from getStartDateForRange
 
-    public MonthAxisValueFormatter() {
+    public MonthAxisValueFormatter(Date startDate) {
+        this.startDate = startDate;
         this.dateFormat = new SimpleDateFormat("MMM", Locale.getDefault());
     }
 
@@ -21,15 +23,12 @@ public class MonthAxisValueFormatter extends ValueFormatter {
 
         if (Float.isNaN(value)) return "";
 
-        // value represents months offset from current date
-        int monthsAgo = (int) value;
+        int monthsSinceStart = (int) value;
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(startDate);
+        cal.add(Calendar.MONTH, monthsSinceStart);
 
-        // Calculate the date for this data point
-        calendar.setTime(currentDate);
-        calendar.add(Calendar.MONTH, -monthsAgo);
-
-        // For monthly view, show month abbreviation
-        return dateFormat.format(calendar.getTime());
+        return dateFormat.format(cal.getTime());
     }
 
     @Override

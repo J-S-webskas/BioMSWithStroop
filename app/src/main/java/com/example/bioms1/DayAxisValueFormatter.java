@@ -12,8 +12,10 @@ public class DayAxisValueFormatter extends ValueFormatter {
     private final SimpleDateFormat dateFormat;
     private final Calendar calendar = Calendar.getInstance();
     private final Date currentDate = new Date();
+    private final Date startDate;  // The cutoff date from getStartDateForRange
 
-    public DayAxisValueFormatter() {
+    public DayAxisValueFormatter(Date startDate) {
+        this.startDate = startDate;
         this.dateFormat = new SimpleDateFormat("MMM d", Locale.getDefault());
     }
 
@@ -23,12 +25,13 @@ public class DayAxisValueFormatter extends ValueFormatter {
         if (Float.isNaN(value)) return "";
 
         // value represents days offset from current date
-        int daysAgo = (int) value;
-        calendar.setTime(currentDate);  // Reset to today
-        calendar.add(Calendar.DAY_OF_YEAR, -daysAgo);  // Subtract days
+        int daysSinceStart = (int) value;
+        // Add days to startDate (go FORWARD)
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(startDate);
+        cal.add(Calendar.DAY_OF_YEAR, daysSinceStart);
 
-        // For day view, show date like "Dec 24"
-        return dateFormat.format(calendar.getTime());
+        return dateFormat.format(cal.getTime());
     }
 
     @Override

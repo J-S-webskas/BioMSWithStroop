@@ -122,7 +122,10 @@ public class Speed extends AppCompatActivity implements LocationListener {
 
     private void startLocationUpdates() {
         try {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(this,
+                            Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 1, this);
@@ -168,7 +171,6 @@ public class Speed extends AppCompatActivity implements LocationListener {
         float averageSpeed = calculateAverageSpeed();
         currentSpeed = averageSpeed;
 
-        // FIX: Handle first location properly
         if (previousLocation == null) {
             // First location - just store it and show speed
             previousLocation = location;
@@ -202,4 +204,5 @@ public class Speed extends AppCompatActivity implements LocationListener {
         handler.postDelayed(resetSpeedRunnable, 10000);
 
     }
+
 }

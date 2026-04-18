@@ -1,22 +1,14 @@
 package com.example.bioms1;
 
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.bioms1.BiomechanicalChart;
-import com.example.bioms1.DayAxisValueFormatter;
-import com.example.bioms1.MonthAxisValueFormatter;
-import com.example.bioms1.WeekAxisValueFormatter;
-import com.example.bioms1.YearAxisValueFormatter;
-import com.example.bioms1.R;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.*;
 import com.github.mikephil.charting.data.*;
@@ -66,7 +58,7 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
         chart.setHighlightPerTapEnabled(false);
     }
 
-    public void bind(BiomechanicalChart chart, String timeRange, BiomechanicalAdapter.OnCardClickListener listener) {
+    public void bind(BiomechanicalChart chart, String timeRange, BiomechanicalAdapter.OnCardClickListener listener, Date startDate) {
         // Set basic text
         chartTitle.setText(chart.getTitle());
 //        chartDate.setText(chart.getFormattedLatestDate());
@@ -95,7 +87,7 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
 
         if (!allData.isEmpty()) {
             // HAS DATA - Show chart with available test types
-            showChartState(chart, allData, timeRange);
+            showChartState(chart, allData, timeRange, startDate);
         } else {
             // NO DATA - Show empty state
             showEmptyState(chart);
@@ -107,7 +99,7 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
         }
     }
 
-    private void showChartState(BiomechanicalChart chart, Map<String, List<Entry>> allData, String timeRange) {
+    private void showChartState(BiomechanicalChart chart, Map<String, List<Entry>> allData, String timeRange, Date startDate) {
         // Hide empty state
         if (emptyStateText != null) {
             emptyStateText.setVisibility(View.GONE);
@@ -120,7 +112,7 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
         lineChart.clear();
 
         // Setup chart with available test types AND GAPS
-        setupMultiTestChartWithGaps(lineChart, allData, chart.getTitle(), chart.getUnit(), timeRange);
+        setupMultiTestChartWithGaps(lineChart, allData, chart.getTitle(), chart.getUnit(), timeRange, startDate);
 
         // Update stats
         updateChartStats(chart, allData);
@@ -156,7 +148,7 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
     }
 
     private void setupMultiTestChartWithGaps(LineChart chart, Map<String, List<Entry>> dataSeries,
-                                             String title, String unit, String timeRange) {
+                                             String title, String unit, String timeRange, Date startDate) {
         // Create datasets
         List<ILineDataSet> dataSets = new ArrayList<>();
 
@@ -192,7 +184,7 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
             chart.setData(lineData);
 
             // Configure chart appearance
-            configureChartAppearance(chart, dataSeries.size() > 1, unit, dataSeries, timeRange);
+            configureChartAppearance(chart, dataSeries.size() > 1, unit, dataSeries, timeRange, startDate);
         }
     }
 
@@ -223,7 +215,7 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
 
     private void configureChartAppearance(LineChart chart, boolean showLegend,
                                           String unit, Map<String, List<Entry>> dataSeries,
-                                          String timeRange) {
+                                          String timeRange, Date startDate) {
         chart.getDescription().setEnabled(false);
 
         // Configure legend
@@ -239,7 +231,7 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
 
         // Configure X axis
         XAxis xAxis = chart.getXAxis();
-        setupXAxis(xAxis, timeRange);
+        setupXAxis(xAxis, timeRange, startDate);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(true);
         xAxis.setGridColor(Color.parseColor("#22000000"));
@@ -265,23 +257,24 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
         chart.animateX(800);
     }
 
-    private void setupXAxis(XAxis xAxis, String timeRange) {
+    private void setupXAxis(XAxis xAxis, String timeRange, Date startDate) {
         // Count = how many data points get shown
         switch (timeRange) {
             case "1month":
-                xAxis.setValueFormatter(new DayAxisValueFormatter());
+                xAxis.setValueFormatter(new DayAxisValueFormatter(startDate));
                 xAxis.setLabelCount(6, true);
                 break;
+                // todo: add startDate to the other axis formatters
             case "6month":
-                xAxis.setValueFormatter(new WeekAxisValueFormatter());
+                xAxis.setValueFormatter(new WeekAxisValueFormatter(startDate));
                 xAxis.setLabelCount(8, true);
                 break;
             case "1year":
-                xAxis.setValueFormatter(new MonthAxisValueFormatter());
+                xAxis.setValueFormatter(new MonthAxisValueFormatter(startDate));
                 xAxis.setLabelCount(12, true);
                 break;
             case "max":
-                xAxis.setValueFormatter(new YearAxisValueFormatter());
+                xAxis.setValueFormatter(new YearAxisValueFormatter(startDate));
                 xAxis.setLabelCount(6, true);
                 break;
         }

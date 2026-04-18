@@ -11,22 +11,24 @@ public class YearAxisValueFormatter extends ValueFormatter {
     private final SimpleDateFormat dateFormat;
     private final Calendar calendar = Calendar.getInstance();
     private final Date currentDate = new Date();
+    private final Date startDate;  // The cutoff date from getStartDateForRange
 
-    public YearAxisValueFormatter() {
+    public YearAxisValueFormatter(Date startDate) {
+        this.startDate = startDate;
         this.dateFormat = new SimpleDateFormat("yyyy", Locale.getDefault());
     }
 
     @Override
     public String getFormattedValue(float value) {
         // value represents years offset from current date
-        int yearsAgo = (int) value;
+        if (Float.isNaN(value)) return "";
 
-        // Calculate the date for this data point
-        calendar.setTime(currentDate);
-        calendar.add(Calendar.YEAR, -yearsAgo);
+        int yearsSinceStart = (int) value;
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(startDate);
+        cal.add(Calendar.YEAR, yearsSinceStart);
 
-        // For yearly view, show year like "2024", "2023"
-        return dateFormat.format(calendar.getTime());
+        return dateFormat.format(cal.getTime());
     }
 
     @Override

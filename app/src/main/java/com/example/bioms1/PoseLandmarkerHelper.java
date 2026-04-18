@@ -371,38 +371,81 @@ public class PoseLandmarkerHelper {
     // result only contains the pose detection results for the current frame
     // Each call uses a new frame with new coordinate data1
     private void returnLivestreamResult(PoseLandmarkerResult result, MPImage input) {
-        long finishTimeMs = SystemClock.uptimeMillis();  // The current system time in milliseconds when processing of the frame finished
-        long inferenceTime = finishTimeMs - result.timestampMs();  // The time it took to process the frame (Measures performance)
+        try {
+            long finishTimeMs = SystemClock.uptimeMillis();  // The current system time in milliseconds when processing of the frame finished
+            long inferenceTime = finishTimeMs - result.timestampMs();  // The time it took to process the frame (Measures performance)
 
-        long currentTimestamp = result.timestampMs();  // The starting time of the current frame being processed
-        float actualFrameRate = 0;
+            long currentTimestamp = result.timestampMs();  // The starting time of the current frame being processed
+            float actualFrameRate = 0;
 
-        if (lastTimestamp != 0) {
-            long frameIntervalMs = currentTimestamp - lastTimestamp;
-            actualFrameRate = 1000f / frameIntervalMs; // Calculate actual FPS
-        }
-        lastTimestamp = currentTimestamp;
+            if (lastTimestamp != 0) {
+                long frameIntervalMs = currentTimestamp - lastTimestamp;
+                actualFrameRate = 1000f / frameIntervalMs; // Calculate actual FPS
+            }
+            lastTimestamp = currentTimestamp;
 
-        RecordFragment.setFrameRate(actualFrameRate);
+            RecordFragment.setFrameRate(actualFrameRate);
 
-        if (poseLandmarkerHelperListener != null) {
-            List<PoseLandmarkerResult> resultList = new ArrayList<>();
-            resultList.add(result);  // Coordinate data of the current frame
-            ResultBundle bundle = new ResultBundle(resultList, inferenceTime, input.getHeight(), input.getWidth());  // input.getHeight() and input.getWidth() get the pixel dimensions of the camera frame/image that was processed.
-            poseLandmarkerHelperListener.onResults(bundle); // onResults is implemented inside of CameraFragment
-            // Get the first (and only) PoseLandmarkerResult from the list
-            List<NormalizedLandmark> landmarks = bundle.results.get(0).landmarks().get(0);  // first person's 33 landmarks all in here
+            if (poseLandmarkerHelperListener != null) {
+                boolean hasValidPose = false;
+                    // Check if we have valid pose detection
+                    if (result != null && result.landmarks() != null && !result.landmarks().isEmpty()) {
+                        List<PoseLandmarkerResult> resultList = new ArrayList<>();
 
-            if (!preview && !countdown) {
-                float left_hip = calculateAngle(landmarks.get(11), landmarks.get(23), landmarks.get(25));
-                float right_knee = calculateAngle(landmarks.get(24), landmarks.get(26), landmarks.get(28));
-                float left_knee = calculateAngle(landmarks.get(23), landmarks.get(25), landmarks.get(27));
+                        resultList.add(result);  // Coordinate data of the current frame
+                        ResultBundle bundle = new ResultBundle(resultList, inferenceTime, input.getHeight(), input.getWidth());  // input.getHeight() and input.getWidth() get the pixel dimensions of the camera frame/image that was processed.
+                        poseLandmarkerHelperListener.onResults(bundle); // onResults is implemented inside of CameraFragment
+                        // Get the first (and only) PoseLandmarkerResult from the list
+                        List<NormalizedLandmark> landmarks = bundle.results.get(0).landmarks().get(0);  // first person's 33 landmarks all in here
+                        if (landmarks != null && landmarks.size() > 28) {
+                            hasValidPose = true;
+                            float left_hip = calculateAngle(landmarks.get(11), landmarks.get(23), landmarks.get(25));
+                            float right_knee = calculateAngle(landmarks.get(24), landmarks.get(26), landmarks.get(28));
+                            float left_knee = calculateAngle(landmarks.get(23), landmarks.get(25), landmarks.get(27));
 
-                RecordFragment.addAnglePerFrame("right_knee", right_knee);
-                RecordFragment.addAnglePerFrame("left_knee", left_knee);
+                            RecordFragment.addAnglePerFrame("right_knee", right_knee);
+                            RecordFragment.addAnglePerFrame("left_knee", left_knee);
 
-                RecordFragment.HipBalanceaddAnglePerFrame("left_hip", left_hip);
-                RecordFragment.KneeBalanceaddAnglePerFrame("left_knee", left_knee);
+                            RecordFragment.HipBalanceaddAnglePerFrame("left_hip", left_hip);
+                            RecordFragment.KneeBalanceaddAnglePerFrame("left_knee", left_knee);
+                    }
+                }
+                if (!hasValidPose) {
+                    Log.d(TAG, "No valid pose detected, sending clear signal");
+                    ResultBundle clearBundle = new ResultBundle(new ArrayList<>(), inferenceTime,
+                            input != null ? input.getHeight() : 0,
+                            input != null ? input.getWidth() : 0);
+                    poseLandmarkerHelperListener.onResults(clearBundle);
+                    // Note: NO data recording happens here
+                }
+            }
+        } catch (IndexOutOfBoundsException e){
+                Log.e(TAG, "IndexOutOfBoundsException in returnLivestreamResult: " + e.getMessage());
+                Log.e(TAG, "This typically occurs when no pose is detected or insufficient landmarks");
+                if (poseLandmarkerHelperListener != null) {
+                    // Notify listener with empty result to avoid breaking the stream
+                    ResultBundle emptyBundle = new ResultBundle(new ArrayList<>(), 0,
+                            input != null ? input.getHeight() : 0,
+                            input != null ? input.getWidth() : 0);
+                    poseLandmarkerHelperListener.onResults(emptyBundle);
+                }
+        } catch (NullPointerException e){
+                Log.e(TAG, "NullPointerException in returnLivestreamResult: " + e.getMessage());
+                Log.e(TAG, "This occurs when result, landmarks, or input is null");
+                if (poseLandmarkerHelperListener != null) {
+                    ResultBundle emptyBundle = new ResultBundle(new ArrayList<>(), 0,
+                            input != null ? input.getHeight() : 0,
+                            input != null ? input.getWidth() : 0);
+                    poseLandmarkerHelperListener.onResults(emptyBundle);
+                }
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected error: " + e.getMessage(), e);
+            // Send clear signal on error
+            if (poseLandmarkerHelperListener != null) {
+                ResultBundle clearBundle = new ResultBundle(new ArrayList<>(), 0,
+                        input != null ? input.getHeight() : 0,
+                        input != null ? input.getWidth() : 0);
+                poseLandmarkerHelperListener.onResults(clearBundle);
             }
         }
     }

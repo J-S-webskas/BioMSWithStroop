@@ -10,9 +10,8 @@ import java.util.Map;
 public class EnduranceChart extends BiomechanicalChart {
     private String condition;
 
-    public EnduranceChart(int id, String title, Map<Date, Float> historicalData, String condition) {
+    public EnduranceChart(int id, String title, Map<Date, Float> historicalData) {
         super(id, title, "km", historicalData);
-        this.condition = condition;
     }
 
     public String getCondition() {

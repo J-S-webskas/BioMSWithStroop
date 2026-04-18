@@ -23,7 +23,7 @@ import java.util.Locale;
 public class HomeFragment extends Fragment {
 
     Button recordButton;
-    TextView todoListARJB, todoListWSE, todoListB, todoListSA, todoListDT;
+    TextView todoListARJB, todoListWSE, reportPreview, todoListSA, todoListDT, latestProgression;
 
 
     public HomeFragment() {
@@ -48,8 +48,47 @@ public class HomeFragment extends Fragment {
         todoListWSE = view.findViewById(R.id.todoListWSE);
         todoListSA = view.findViewById(R.id.todoListSA);
         todoListDT = view.findViewById(R.id.todoListDT);
+        reportPreview = view.findViewById(R.id.reportPreview);
+        latestProgression = view.findViewById(R.id.latestProgression);
 
         setUpToDo();
+
+        List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(requireContext());
+        AssessmentData latestGraph = null;
+        if (allAssessment != null && !allAssessment.isEmpty()) {
+            latestGraph = allAssessment.get(0);
+        }
+
+        if (latestGraph != null) {
+            Float arjLeftObj = latestGraph.getBaseline().getARJ().get("left_knee");
+            Float arjRightObj = latestGraph.getBaseline().getARJ().get("right_knee");
+
+            float arjLeft = arjLeftObj != null ? arjLeftObj : 0f;
+            float arjRight = arjRightObj != null ? arjRightObj : 0f;
+            float balance = latestGraph.getBaseline().getBalanceScore();
+            float ws = latestGraph.getBaseline().getWalkingSpeed();
+            float endurance = latestGraph.getBaseline().getEnduranceScore();
+            latestProgression.setText(String.format(Locale.US,
+                    "Speed: %.1f m/s\nBalance: %.1f°\nARJ left knee: %.1f m/s³\nARJ right knee: %.1f m/s³\nEndurance: %.1f s",
+                    ws, balance, arjLeft, arjRight, endurance));
+        }
+
+        List<ReportModel> allReport = DataStorageManager.loadAllReports(requireContext());
+        ReportModel latestReport = null;
+        if (allReport != null && !allReport.isEmpty()) {
+            latestReport = allReport.get(0);
+        }
+
+        if (latestReport != null) {
+            float speedToday = latestReport.getSpeedCV();
+            float balanceToday = latestReport.getBalanceCV();
+            float arjLeftToday = latestReport.getARJLeftCV();
+            float arjRightToday = latestReport.getARJRightCV();
+            float enduranceToday = latestReport.getEnduranceCV();
+            reportPreview.setText(String.format(Locale.US,
+                    "Speed: %.1f %%\nBalance: %.1f %%\nARJ left knee: %.1f %%\nARJ right knee: %.1f %%\nEndurance: %.1f %%",
+                    speedToday, balanceToday, arjLeftToday, arjRightToday, enduranceToday));
+        }
 
         // Navigating to record fragment
         recordButton.setOnClickListener(new View.OnClickListener() {

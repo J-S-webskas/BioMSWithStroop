@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -87,25 +88,44 @@ public class ReportFragment extends Fragment {
             Intent intent = new Intent(requireContext(), ReportDetailActivity.class);
 
             // Pass the report data
+            // Today
             intent.putExtra("date", report.getDate());  // Convert Date to long
             intent.putExtra("speed", report.getSpeedToday());
-            intent.putExtra("speedTrend", report.getSpeedTrend());
+//            intent.putExtra("speedTrend", report.getSpeedTrend());
             intent.putExtra("arjRight", report.getArjRightKneeToday());
-            intent.putExtra("arjRightTrend", report.getArjTrendRight());
+//            intent.putExtra("arjRightTrend", report.getArjTrendRight());
             intent.putExtra("arjLeft", report.getArjLeftKneeToday());
-            intent.putExtra("arjLeftTrend", report.getArjTrendLeft());
+//            intent.putExtra("arjLeftTrend", report.getArjTrendLeft());
             intent.putExtra("balance", report.getBalanceToday());
-            intent.putExtra("balanceTrend", report.getBalanceTrend());
+//            intent.putExtra("balanceTrend", report.getBalanceTrend());
             intent.putExtra("endurance", report.getEnduranceToday());
-            intent.putExtra("enduranceTrend", report.getEnduranceTrend());
+//            intent.putExtra("enduranceTrend", report.getEnduranceTrend());
             intent.putExtra("sensoryAtaxiaARJLeft", report.getSensoryAtaxiaARJLeftToday());
             intent.putExtra("sensoryAtaxiaARJRight", report.getSensoryAtaxiaARJRightToday());
             intent.putExtra("sensoryAtaxiaBalance", report.getSensoryAtaxiaBalanceToday());
-            intent.putExtra("sensoryAtaxiaTrend", report.getSensoryAtaxiaTrend());
+//            intent.putExtra("sensoryAtaxiaTrend", report.getSensoryAtaxiaTrend());
             intent.putExtra("dualTaskARJLeft", report.getDualTaskARJLeftToday());
             intent.putExtra("dualTaskARJRight", report.getDualTaskARJRightToday());
             intent.putExtra("dualTaskBalance", report.getDualTaskBalanceToday());
-            intent.putExtra("dualTaskTrend", report.getDualTaskTrend());
+//            intent.putExtra("dualTaskTrend", report.getDualTaskTrend());
+            // DTC
+            intent.putExtra("dualTaskARJLeftDTC", report.getDualTaskDTCARJLeft());
+            intent.putExtra("dualTaskARJRightDTC", report.getDualTaskDTCARJRight());
+            intent.putExtra("dualTaskBalanceDTC", report.getDualTaskDTCBalance());
+            intent.putExtra("sensoryAtaxiaARJLeftDTC", report.getSensoryAtaxiaDTCARJLeft());
+            intent.putExtra("sensoryAtaxiaARJRightDTC", report.getSensoryAtaxiaDTCARJRight());
+            intent.putExtra("sensoryAtaxiaBalanceDTC", report.getSensoryAtaxiaDTCBalance());
+            // SD & CV
+            intent.putExtra("ARJLeftSD", report.getARJLeftSD());
+            intent.putExtra("ARJRightSD", report.getARJRightSD());
+            intent.putExtra("BalanceSD", report.getBalanceSD());
+            intent.putExtra("EnduranceSD", report.getEnduranceSD());
+            intent.putExtra("WalkingSD", report.getSpeedSD());
+            intent.putExtra("ARJLeftCV", report.getARJLeftCV());
+            intent.putExtra("ARJRightCV", report.getARJRightCV());
+            intent.putExtra("BalanceCV", report.getBalanceCV());
+            intent.putExtra("EnduranceCV", report.getEnduranceCV());
+            intent.putExtra("WalkingCV", report.getSpeedCV());
 
             startActivity(intent);
         });
@@ -113,8 +133,19 @@ public class ReportFragment extends Fragment {
         return view;
     }
 
-    // todo: get currentAssessment.get sensory ataxia, get dual task, get baseline and such...
     private void createNewReport() throws IOException {
+
+        float ARJLeftKneeSD = 0;
+        float ARJRightKneeSD = 0;
+        float BalanceSD = 0;
+        float WSSD = 0;
+        float EnduranceSD = 0;
+
+        float ARJLeftKneeCV = 0;
+        float ARJRightKneeCV = 0;
+        float BalanceCV = 0;
+        float WSCV = 0;
+        float EnduranceCV = 0;
 
         // 1. Get data from storage
         // today's result: data storage manager loadAllAssessment
@@ -143,6 +174,20 @@ public class ReportFragment extends Fragment {
         float DTARJRightKneeToday = 0;
         float DTbalanceToday = 0;
 
+        float DTARJLeftKneeDTC = 0;
+        float DTARJRightKneeDTC = 0;
+        float DTBalanceDTC = 0;
+        float SAARJLeftKneeDTC = 0;
+        float SAARJRightKneeDTC = 0;
+        float SABalanceDTC = 0;
+
+        int sumARJRight = 0, sumARJLeft = 0, sumBalance = 0, sumWS = 0, sumEndurance = 0;
+        HashSet<Float> setARJRight = new HashSet<>();
+        HashSet<Float> setARJLeft = new HashSet<>();
+        HashSet<Float> setBalance = new HashSet<>();
+        HashSet<Float> setWS = new HashSet<>();
+        HashSet<Float> setEndurance = new HashSet<>();
+
         for (int i = 0; i < allAssessment.size(); i++) {
             String currentDate = sdf.format(allAssessment.get(i).getTimestamp());
 
@@ -150,15 +195,31 @@ public class ReportFragment extends Fragment {
             String[] currentParts = currentDate.split("/");
             String[] todayParts = todayStr.split("/");
 
+            if (assessment == null) {
+                continue;
+            }
+
+            AssessmentData.AssessmentStatus status = assessment.getStatus();
+            if (status == null) {
+                continue;
+            }
+
             // First data from last month
-            if (Integer.parseInt(currentParts[0]) == Integer.parseInt(todayParts[0]) - 1 || Integer.parseInt(currentParts[0]) == 12 && Integer.parseInt(todayParts[0]) == 1) {
+//            if (Integer.parseInt(currentParts[0]) == Integer.parseInt(todayParts[0]) - 1 || Integer.parseInt(currentParts[0]) == 12 && Integer.parseInt(todayParts[0]) == 1) {
                 switch (assessment.getStatus()) {
+                // GETTING DATA
                     case ARJ_BALANCE_COMPLETED:
                         // This is a baseline test
                         BaselineAssessment baseline = assessment.getBaseline();
                         ARJRightKneeToday = baseline.getARJ().get("right_knee");
                         ARJLeftKneeToday = baseline.getARJ().get("left_knee");
                         balanceToday = baseline.getBalanceScore();
+                        setARJRight.add(assessment.getBaseline().getARJ().get("right_knee"));
+                        setARJLeft.add(assessment.getBaseline().getARJ().get("left_knee"));
+                        setBalance.add(assessment.getBaseline().getBalanceScore());
+                        sumARJRight += assessment.getBaseline().getARJ().get("right_knee");
+                        sumARJLeft += assessment.getBaseline().getARJ().get("left_knee");
+                        sumBalance += assessment.getBaseline().getBalanceScore();
                         break;
 
                     case WS_ENDURANCE_COMPLETED:
@@ -166,6 +227,10 @@ public class ReportFragment extends Fragment {
                         BaselineAssessment baselines = assessment.getBaseline();
                         speedToday = baselines.getWalkingSpeed();
                         enduranceToday = baselines.getEnduranceScore();
+                        setWS.add(assessment.getBaseline().getWalkingSpeed());
+                        setEndurance.add(assessment.getBaseline().getEnduranceScore());
+                        sumWS += assessment.getBaseline().getWalkingSpeed();
+                        sumEndurance += assessment.getBaseline().getEnduranceScore();
                         break;
 
                     case DUAL_TASK_COMPLETED:
@@ -174,6 +239,9 @@ public class ReportFragment extends Fragment {
                         DTARJLeftKneeToday = comparisons.getDualTaskARJLeftKneeChange();
                         DTARJRightKneeToday = comparisons.getDualTaskARJRightKneeChange();
                         DTbalanceToday = comparisons.getDualTaskBalanceChange();
+                        DTARJRightKneeDTC = assessment.getComparisons().getDualTaskARJRightKneeChange();
+                        DTARJLeftKneeDTC = assessment.getComparisons().getDualTaskARJLeftKneeChange();
+                        DTBalanceDTC = assessment.getComparisons().getDualTaskBalanceChange();
                         break;
 
                     case SENSORY_ATAXIA_COMPLETED:
@@ -182,24 +250,27 @@ public class ReportFragment extends Fragment {
                         SAARJLeftKneeToday = comparison.getSensoryAtaxiaARJLeftKneeChange();
                         SAARJRightKneeToday = comparison.getSensoryAtaxiaARJRightKneeChange();
                         SAbalanceToday = comparison.getSensoryAtaxiaBalanceChange();
+                        SAARJRightKneeDTC = assessment.getComparisons().getSensoryAtaxiaARJRightKneeChange();
+                        SAARJLeftKneeDTC = assessment.getComparisons().getSensoryAtaxiaARJLeftKneeChange();
+                        SABalanceDTC = assessment.getComparisons().getSensoryAtaxiaBalanceChange();
                         break;
                 }
-            }
+//            }
         }
+        // Calculating ARJ and balance
+        // STANDARD DEVIATION (SD)
+        ARJRightKneeSD = standardDeviation(setARJRight);
+        ARJLeftKneeSD = standardDeviation(setARJLeft);
+        BalanceSD = standardDeviation(setBalance);
+        EnduranceSD = standardDeviation(setEndurance);
+        WSSD = standardDeviation(setWS);
 
-        // todo: need to test if this is baseline or test comparisons
-        // todo: look at the update status thing in assessmentData
-        // Found an assessment today
-//        if (newestDateStr.equals(todayStr)) {
-//            ARJRightKneeToday = newest.getBaseline().getARJ().get("right_knee");
-//            ARJLeftKneeToday = newest.getBaseline().getARJ().get("left_knee");
-//            SAARJRightKneeToday = newest.getSensoryAtaxia().getARJ().get("right_knee");
-//            SAARJLeftKneeToday = newest.getSensoryAtaxia().getARJ().get("left_knee");
-//
-//            balanceToday = newest.getBaseline().getBalanceScore();
-//            speedToday = newest.getBaseline().getWalkingSpeed();
-//            enduranceToday = newest.getBaseline().getEnduranceScore();
-//        }
+        // COEFFICIENT OF VARIATION (CV)
+        ARJLeftKneeCV = ARJLeftKneeSD / setARJLeft.size();
+        ARJRightKneeCV = ARJRightKneeSD / setARJRight.size();
+        BalanceCV = BalanceSD / setBalance.size();
+        WSCV = WSSD / setWS.size();
+        EnduranceCV = EnduranceSD / setEndurance.size();
 
         // 2. Create a new Report object with the data
         ReportModel newReport = new ReportModel();
@@ -214,11 +285,28 @@ public class ReportFragment extends Fragment {
         newReport.setDualTaskARJLeftToday(DTARJLeftKneeToday);
         newReport.setDualTaskARJRightToday(DTARJRightKneeToday);
         newReport.setDualTaskBalanceToday(DTbalanceToday);
+        // DTC
+        newReport.setDualTaskDTCARJLeft(DTARJLeftKneeDTC);
+        newReport.setDualTaskDTCARJRight(DTARJRightKneeDTC);
+        newReport.setDualTaskDTCBalance(DTBalanceDTC);
+        newReport.setSensoryAtaxiaDTCARJLeft(SAARJLeftKneeDTC);
+        newReport.setSensoryAtaxiaDTCARJRight(SAARJRightKneeDTC);
+        newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
+        // SD & CV
+        newReport.setARJLeftSD(ARJLeftKneeSD);
+        newReport.setARJRightSD(ARJRightKneeSD);
+        newReport.setBalanceSD(BalanceSD);
+        newReport.setEnduranceSD(EnduranceSD);
+        newReport.setSpeedSD(WSSD);
+        newReport.setARJLeftCV(ARJLeftKneeCV);
+        newReport.setARJRightCV(ARJRightKneeCV);
+        newReport.setBalanceCV(BalanceCV);
+        newReport.setEnduranceCV(EnduranceCV);
+        newReport.setSpeedCV(WSCV);
 
-        // TODO: SAVE DATA TO DATA STORAGE MANAGER
-        // TODO: SET PREVIEW
+        // Preview
         String preview = String.format(Locale.US,
-                "Speed: %.1f m/s | Balance: %.1f | ARJ: %.1f° | Endurance: %.1f s",
+                "Speed: %.1f m/s | Balance: %.1f° | ARJ: %.1f m/s³| Endurance: %.1f s",
                 speedToday, balanceToday, ARJRightKneeToday, enduranceToday);
         newReport.setPreview(preview);
 
@@ -232,9 +320,6 @@ public class ReportFragment extends Fragment {
 
         // Reload all reports to refresh the list
         loadAllReports();
-
-        // 3. Add it to the list
-//        reportList.add(0, newReport);
 
         // Scroll to the new item
         recyclerView.scrollToPosition(0);
@@ -274,5 +359,29 @@ public class ReportFragment extends Fragment {
         if (adapter != null) {
             adapter.notifyDataSetChanged();
         }
+    }
+
+    public float standardDeviation(HashSet<Float> set) {
+        if (set == null || set.size() < 2) {
+            return 0f;
+        }
+
+        // Step 1: Calculate mean
+        float sum = 0;
+        for (float value : set) {
+            sum += value;
+        }
+        float mean = sum / set.size();
+
+        // Step 2: Calculate sum of squared differences
+        float sumSquaredDiff = 0;
+        for (float value : set) {
+            float diff = value - mean;
+            sumSquaredDiff += diff * diff;
+        }
+
+        // Step 3: Variance and standard deviation
+        float variance = sumSquaredDiff / set.size(); // Population variance
+        return (float) Math.sqrt(variance);
     }
 }

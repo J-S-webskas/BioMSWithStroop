@@ -14,7 +14,11 @@ import com.example.bioms1.ChartCardViewHolder;
 import com.example.bioms1.EnduranceDetailFragment;
 import com.example.bioms1.R;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class BiomechanicalAdapter extends RecyclerView.Adapter<ChartCardViewHolder> {
     private List<BiomechanicalChart> charts;
@@ -40,8 +44,8 @@ public class BiomechanicalAdapter extends RecyclerView.Adapter<ChartCardViewHold
     @Override
     public void onBindViewHolder(@NonNull ChartCardViewHolder holder, int position) {
         BiomechanicalChart chart = charts.get(position);
-
-        holder.bind(chart, timeRange, null);  // Pass to chartCardViewHolder bind
+        Date startDate = getStartDateForChart(chart, timeRange);
+        holder.bind(chart, timeRange, null, startDate);  // Pass to chartCardViewHolder bind
 
         String chartTitle = chart.getTitle();
 
@@ -61,6 +65,51 @@ public class BiomechanicalAdapter extends RecyclerView.Adapter<ChartCardViewHold
         }
     }
 
+    private Date getStartDateForChart(BiomechanicalChart chart, String timeRange) {
+        // Get data from chart to determine startDate
+        Map<Date, Float> dataToUse = chart.baselineData;
+        if (dataToUse.isEmpty()) {
+            dataToUse = chart.dualTaskData;
+        }
+        if (dataToUse.isEmpty()) {
+            dataToUse = chart.sensoryAtaxiaData;
+        }
+
+        if (dataToUse.isEmpty()) {
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.MONTH, -1);
+            return cal.getTime();
+        }
+
+        List<Map.Entry<Date, Float>> sortedEntries = new ArrayList<>(dataToUse.entrySet());
+        sortedEntries.sort(Map.Entry.comparingByKey());
+
+        Calendar cal = Calendar.getInstance();
+        Date now = new Date();
+
+        switch (timeRange) {
+            case "1month":
+                cal.setTime(now);
+                cal.add(Calendar.MONTH, -1);
+                return cal.getTime();
+            case "6month":
+                cal.setTime(now);
+                cal.add(Calendar.MONTH, -6);
+                return cal.getTime();
+            case "1year":
+                cal.setTime(now);
+                cal.add(Calendar.YEAR, -1);
+                return cal.getTime();
+            case "max":
+                if (!sortedEntries.isEmpty()) {
+                    return sortedEntries.get(0).getKey();
+                }
+            default:
+                cal.setTime(now);
+                cal.add(Calendar.MONTH, -1);
+                return cal.getTime();
+        }
+    }
     private void openChartDetail(BiomechanicalChart chart, int position) {
         if (!(context instanceof FragmentActivity)) return;
 

@@ -4,12 +4,18 @@ import static android.content.ContentValues.TAG;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.bioms1.R;
+import com.example.bioms1.databinding.ActivityMainBinding;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
@@ -20,6 +26,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        setStatusBarColor(com.google.android.material.R.color.design_default_color_secondary);
+
+        // Then set your content view
+        // If using DataBinding:
+         ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        // Or without DataBinding:
+//        setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
@@ -62,5 +76,36 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Error loading fragment: " + e.getMessage(), e);
             e.printStackTrace();
         }
+    }
+    private void setStatusBarColor(int colorResId) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(ContextCompat.getColor(this, colorResId));
+
+            // Adjust status bar icon colors (dark vs light)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                View decorView = window.getDecorView();
+                int color = ContextCompat.getColor(this, colorResId);
+
+                // Check if the color is light (icons should be dark)
+                if (isColorLight(color)) {
+                    decorView.setSystemUiVisibility(
+                            decorView.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                    );
+                } else {
+                    decorView.setSystemUiVisibility(
+                            decorView.getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                    );
+                }
+            }
+        }
+    }
+
+    private boolean isColorLight(int color) {
+        double darkness = 0.299 * android.graphics.Color.red(color) +
+                0.587 * android.graphics.Color.green(color) +
+                0.114 * android.graphics.Color.blue(color);
+        return darkness > 160;
     }
 }

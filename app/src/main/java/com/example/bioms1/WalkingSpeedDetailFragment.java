@@ -4,7 +4,6 @@ import android.os.Bundle;
 import androidx.fragment.app.Fragment;
 import android.view.*;
 
-import com.example.bioms1.R;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.*;
 import java.util.*;
@@ -29,7 +28,7 @@ public class WalkingSpeedDetailFragment extends Fragment {
                 ChartDataExtractor.getWalkingSpeedData(getContext());
 
         WalkingSpeedChart speedChart =
-                new WalkingSpeedChart(1, "Walking Speed", data, "No Data");
+                new WalkingSpeedChart(1, "Walking Speed", data);
 
         List<Entry> entries =
                 speedChart.getDataForTimeRangeWithGaps(

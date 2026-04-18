@@ -94,41 +94,42 @@
                     android:layout_marginLeft="10dp"
                     android:textSize="15sp"/>
 
-                <TextView
-                    android:id="@+id/BalanceTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Balance"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/walkingSpeedAndEnduranceBody"
-                    android:layout_marginLeft="10dp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="10dp"
-                    android:textSize="20dp" />
+<!--                <TextView-->
+<!--                    android:id="@+id/BalanceTitle"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Balance"-->
+<!--                    app:layout_constraintStart_toStartOf="parent"-->
+<!--                    app:layout_constraintEnd_toEndOf="parent"-->
+<!--                    app:layout_constraintTop_toBottomOf="@id/walkingSpeedAndEnduranceBody"-->
+<!--                    android:layout_marginLeft="10dp"-->
+<!--                    android:textStyle="bold"-->
+<!--                    android:layout_marginTop="10dp"-->
+<!--                    android:textSize="20dp" />-->
 
-                <TextView
-                    android:id="@+id/BalanceBody"
-                    android:layout_width="320dp"
-                    android:layout_height="wrap_content"
-                    android:text="Record a 40 - 60 second clip of yourself standing facing towards the camera. Make sure your full body is in view."
-                    android:layout_marginTop="10dp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/BalanceTitle"
-                    android:layout_marginLeft="10dp"
-                    android:textSize="15sp"/>
+<!--                <TextView-->
+<!--                    android:id="@+id/BalanceBody"-->
+<!--                    android:layout_width="320dp"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Record a 40 - 60 second clip of yourself standing facing towards the camera. Make sure your full body is in view."-->
+<!--                    android:layout_marginTop="10dp"-->
+<!--                    app:layout_constraintStart_toStartOf="parent"-->
+<!--                    app:layout_constraintEnd_toEndOf="parent"-->
+<!--                    app:layout_constraintTop_toBottomOf="@id/BalanceTitle"-->
+<!--                    android:layout_marginLeft="10dp"-->
+<!--                    android:textSize="15sp"/>-->
 
                 <TextView
                     android:id="@+id/ARJTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Average Rectified Jerk (ARJ)"
+                    android:text="Average Rectified Jerk (ARJ) and Balance"
                     android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/BalanceBody"
+                    app:layout_constraintTop_toBottomOf="@id/walkingSpeedAndEnduranceBody"
                     android:layout_marginTop="10dp"
                     android:textSize="20dp" />
 
@@ -136,7 +137,7 @@
                     android:id="@+id/ARJBody"
                     android:layout_width="320dp"
                     android:layout_height="wrap_content"
-                    android:text="Walk towards the camera making sure that your entire body is completely visible in all 20 seconds"
+                    android:text="Walk towards the camera making sure that your entire body is completely visible in all 15 seconds"
                     android:layout_marginTop="10dp"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"

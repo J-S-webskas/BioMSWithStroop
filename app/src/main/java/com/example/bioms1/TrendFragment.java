@@ -93,14 +93,196 @@ public class TrendFragment extends Fragment {
             charts.add(createEmptyEnduranceChart());
             charts.add(createEmptyWalkingSpeedChart());
         } else {
+            // Create chart from mock data
+            charts.add(createBalanceChartMockData(assessments));
+            charts.add(createARJChartMockData(assessments));
+            charts.add(createWalkingSpeedChartMockData(assessments));
+            charts.add(createEnduranceChartMockData(assessments));
             // HAS DATA - Create charts from real data
-            charts.add(createBalanceChartFromData(assessments));
-            charts.add(createARJChartFromData(assessments));
-            charts.add(createEnduranceChartFromData(assessments));
-            charts.add(createWalkingSpeedChartFromData(assessments));
+//            charts.add(createBalanceChartFromData(assessments));
+//            charts.add(createARJChartFromData(assessments));
+//            charts.add(createEnduranceChartFromData(assessments));
+//            charts.add(createWalkingSpeedChartFromData(assessments));
         }
 
         return charts;
+    }
+
+    private BiomechanicalChart createEnduranceChartMockData(List<AssessmentData> assessments) {
+        Map<Date, Float> baselineData = new TreeMap<>(); // Use TreeMap for ordering
+        Map<Date, Float> dualTaskData = new TreeMap<>();
+        Map<Date, Float> sensoryAtaxiaData = new TreeMap<>();
+
+        Calendar cal = Calendar.getInstance();
+        Random rand = new Random();
+
+        // Start from 364 days ago to have 365 days including today
+        cal.add(Calendar.DAY_OF_YEAR, -364);
+
+        float startValue = 45.0f;
+        float targetValue = 85.0f;
+
+        for (int i = 0; i < 365; i++) {
+            Date date = cal.getTime();
+
+            // Progress from 0 to 1 over the year
+            float progress = (float) i / 364;
+
+            // Base value improves over time (higher is better for endurance)
+            float baseValue = startValue + (targetValue - startValue) * progress;
+
+            // Add random variation
+            float variation = 3.0f;
+            float randomVar = (rand.nextFloat() * 2 - 1) * variation;
+            float value = baseValue + randomVar;
+
+            // Clamp to valid range (0-100)
+            value = Math.max(0, Math.min(100, value));
+
+            baselineData.put(date, value);
+
+            // Dual task data (slightly lower)
+            float dualValue = value - 5.0f + (rand.nextFloat() * 2 - 1) * variation;
+            dualValue = Math.max(0, Math.min(100, dualValue));
+            dualTaskData.put(date, dualValue);
+
+            // Sensory ataxia data (even lower)
+            float sensoryValue = value - 8.0f + (rand.nextFloat() * 2 - 1) * variation;
+            sensoryValue = Math.max(0, Math.min(100, sensoryValue));
+            sensoryAtaxiaData.put(date, sensoryValue);
+
+            // Move to next day
+            cal.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        EnduranceChart chart = new EnduranceChart(3, "Endurance", baselineData);
+        chart.setDualTaskData(dualTaskData);
+        chart.setSensoryAtaxiaData(sensoryAtaxiaData);
+
+        return chart;
+
+    }
+
+    private BiomechanicalChart createWalkingSpeedChartMockData(List<AssessmentData> assessments) {
+        float startValue = 0.8f;       // Starting walking speed (m/s) - slow
+        float targetValue = 1.4f;      // Target walking speed - normal range
+        float dailyChange = 0.00165f;  // Gradual increase (about 0.6 m/s over 365 days)
+        float variation = 0.05f;       // Random variation
+        float maxValue = 2.0f;         // Max possible speed (m/s)
+        float minValue = 0.0f;         // Min possible speed
+        boolean increasingIsBad = false; // For walking speed, higher is better
+
+        Map<Date, Float> baselineData = generateTrendData(startValue, targetValue, dailyChange,
+                variation, maxValue, minValue, increasingIsBad);
+
+        // Dual task walking speed is typically lower than baseline
+        Map<Date, Float> dualTaskData = generateTrendData(startValue - 0.15f, targetValue - 0.15f,
+                dailyChange, variation, maxValue, minValue, increasingIsBad);
+
+        // Sensory ataxia walking speed is also typically lower
+        Map<Date, Float> sensoryAtaxiaData = generateTrendData(startValue - 0.2f, targetValue - 0.2f,
+                dailyChange, variation, maxValue, minValue, increasingIsBad);
+
+        WalkingSpeedChart chart = new WalkingSpeedChart(4, "Walking Speed", baselineData);
+
+        if (!dualTaskData.isEmpty()) {
+            chart.setDualTaskData(dualTaskData);
+        }
+        if (!sensoryAtaxiaData.isEmpty()) {
+            chart.setSensoryAtaxiaData(sensoryAtaxiaData);
+        }
+
+        return chart;
+    }
+
+    private BiomechanicalChart createARJChartMockData(List<AssessmentData> assessments) {
+        float startValue = 2.5f;       // Starting ARJ value (high = poor quality)
+        float targetValue = 0.8f;      // Target ARJ value (low = good quality)
+        float dailyChange = 0.0047f;   // Gradual decrease (about 1.7 over 365 days)
+        float variation = 0.15f;       // Random variation
+        float maxValue = 5.0f;         // Max possible ARJ
+        float minValue = 0.2f;         // Min possible ARJ
+        boolean increasingIsBad = true; // For ARJ, higher is worse (decreasing trend is good)
+
+        Map<Date, Float> baselineData = generateTrendData(startValue, targetValue, dailyChange,
+                variation, maxValue, minValue, increasingIsBad);
+
+        // Dual task ARJ is typically higher (worse) than baseline
+        Map<Date, Float> dualTaskData = generateTrendData(startValue + 0.4f, targetValue + 0.3f,
+                dailyChange, variation, maxValue, minValue, increasingIsBad);
+
+        // Sensory ataxia ARJ is typically higher (worse) than baseline
+        Map<Date, Float> sensoryAtaxiaData = generateTrendData(startValue + 0.6f, targetValue + 0.4f,
+                dailyChange, variation, maxValue, minValue, increasingIsBad);
+
+        ARJChart chart = new ARJChart(2, "Average Rectified Jerk (ARJ)", baselineData);
+
+        if (!dualTaskData.isEmpty()) {
+            chart.setDualTaskData(dualTaskData);
+        }
+        if (!sensoryAtaxiaData.isEmpty()) {
+            chart.setSensoryAtaxiaData(sensoryAtaxiaData);
+        }
+
+        return chart;
+    }
+
+    private BiomechanicalChart createBalanceChartMockData(List<AssessmentData> assessments) {
+        Map<Date, Float> baselineData = new TreeMap<>();
+        Map<Date, Float> dualTaskData = new TreeMap<>();
+        Map<Date, Float> sensoryAtaxiaData = new TreeMap<>();
+
+        Calendar cal = Calendar.getInstance();
+        Random rand = new Random();
+
+        // Clear time components
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        cal.add(Calendar.DAY_OF_YEAR, -364);
+
+        // For balance in degrees: LOWER is better
+        float startValue = 8.5f;   // Starting balance: 8.5 degrees sway (poor)
+        float targetValue = 2.0f;  // Target balance: 2.0 degrees sway (good)
+
+        for (int i = 0; i < 365; i++) {
+            Date currentDate = cal.getTime();
+
+            // Progress from 0 to 1 over the year
+            float progress = (float) i / 364;
+
+            // Balance IMPROVES (decreases) over time
+            float baseValue = startValue - (startValue - targetValue) * progress;
+
+            // Add random variation
+            float variation = 0.5f;  // ±0.5 degrees variation
+            float randomVar = (rand.nextFloat() * 2 - 1) * variation;
+            float value = baseValue + randomVar;
+
+            // Clamp to realistic range (0-15 degrees)
+            value = Math.max(0.5f, Math.min(15.0f, value));
+
+            baselineData.put(currentDate, value);
+
+            // Dual task balance is worse (higher degrees)
+            float dualValue = value + 1.5f + (rand.nextFloat() * 2 - 1) * variation;
+            dualValue = Math.max(0.5f, Math.min(15.0f, dualValue));
+            dualTaskData.put(currentDate, dualValue);
+
+            // Sensory ataxia balance is even worse
+            float sensoryValue = value + 2.5f + (rand.nextFloat() * 2 - 1) * variation;
+            sensoryValue = Math.max(0.5f, Math.min(15.0f, sensoryValue));
+            sensoryAtaxiaData.put(currentDate, sensoryValue);
+
+            cal.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        BalanceChart chart = new BalanceChart(1, "Balance", baselineData);
+        chart.setDualTaskData(dualTaskData);
+        chart.setSensoryAtaxiaData(sensoryAtaxiaData);
+
+        return chart;
     }
 
     // EMPTY CHARTS (when no data exists)
@@ -118,13 +300,13 @@ public class TrendFragment extends Fragment {
 
     private EnduranceChart createEmptyEnduranceChart() {
         Map<Date, Float> emptyData = new HashMap<>();
-        EnduranceChart chart = new EnduranceChart(3, "Endurance", emptyData, "No Data");
+        EnduranceChart chart = new EnduranceChart(3, "Endurance", emptyData);
         return chart;
     }
 
     private WalkingSpeedChart createEmptyWalkingSpeedChart() {
         Map<Date, Float> emptyData = new HashMap<>();
-        WalkingSpeedChart chart = new WalkingSpeedChart(4, "Walking Speed", emptyData, "No Data");
+        WalkingSpeedChart chart = new WalkingSpeedChart(4, "Walking Speed", emptyData);
         return chart;
     }
 
@@ -278,7 +460,7 @@ public class TrendFragment extends Fragment {
             condition = determineEnduranceCondition(latestValue);
         }
 
-        EnduranceChart chart = new EnduranceChart(3, "Endurance", baselineData, condition);
+        EnduranceChart chart = new EnduranceChart(3, "Endurance", baselineData);
 
         if (!dualTaskData.isEmpty()) {
             chart.setDualTaskData(dualTaskData);
@@ -327,7 +509,7 @@ public class TrendFragment extends Fragment {
             condition = determineWalkingSpeedCondition(latestValue);
         }
 
-        WalkingSpeedChart chart = new WalkingSpeedChart(4, "Walking Speed", baselineData, condition);
+        WalkingSpeedChart chart = new WalkingSpeedChart(4, "Walking Speed", baselineData);
 
         if (!dualTaskData.isEmpty()) {
             chart.setDualTaskData(dualTaskData);
@@ -362,13 +544,14 @@ public class TrendFragment extends Fragment {
                                                       float dailyChange, float variation,
                                                       float maxValue, float minValue,
                                                       boolean increasingIsBad) {
-        Map<Date, Float> data = new HashMap<>();
-        Calendar cal = Calendar.getInstance();
+        Map<Date, Float> data = new TreeMap<>();
         Random rand = new Random();
 
+        // Start from 365 days ago
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_YEAR, -364); // Go back 364 days to have 365 days including today
+
         for (int i = 0; i < 365; i++) {
-            cal.setTime(new Date());
-            cal.add(Calendar.DAY_OF_YEAR, -i);
             Date date = cal.getTime();
 
             float base = startValue + (dailyChange * i);
@@ -376,13 +559,16 @@ public class TrendFragment extends Fragment {
                 base = startValue - (dailyChange * i); // Decrease over time if lower is better
             }
 
-            float randomVar = (rand.nextFloat() * 2 - 1) * variation; // -variation to +variation
+            float randomVar = (rand.nextFloat() * 2 - 1) * variation;
             float value = base + randomVar;
 
             // Clamp to min/max
             value = Math.max(minValue, Math.min(maxValue, value));
 
             data.put(date, value);
+
+            // Move to next day
+            cal.add(Calendar.DAY_OF_YEAR, 1);
         }
 
         return data;

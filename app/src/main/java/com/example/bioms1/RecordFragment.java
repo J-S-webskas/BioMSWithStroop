@@ -10,6 +10,7 @@ import android.os.Looper;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,9 +34,9 @@ public class RecordFragment extends Fragment {
     private Handler autoStopHandler;
     private Runnable autoStopRunnable;
 
-    private static final int BASELINE_DURATION_MS = 15000;
-    private static final int DUAL_TASK_DURATION_MS = 15000;
-    private static final int SENSORY_DURATION_MS = 15000;
+    private static final int BASELINE_DURATION_MS = 20000;
+    private static final int DUAL_TASK_DURATION_MS = 20000;
+    private static final int SENSORY_DURATION_MS = 20000;
 
     private Date latestTimeStamp;
     private String todaySessionId = "";
@@ -57,30 +58,6 @@ public class RecordFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_record, container, false);
         setupTestControls(view);
-
-//        // todo: if no recorded yet, create assessment object, store session id (start)
-//        if (DataStorageManager.loadAllAssessments(requireContext()).isEmpty()) {
-//            currentAssessment = new AssessmentData(username);
-//            latestTimeStamp = currentAssessment.getTimestamp();
-//            todaySessionId = currentAssessment.getSessionId();
-//        } else {
-//            Date todayTimeStamp = new Date();
-//
-//            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-//            String latestDateStr = sdf.format(latestTimeStamp);
-//            String todayDateStr = sdf.format(todayTimeStamp);
-//
-//            // GET TODAY'S DATE AND SEE IF IT IS BIGGER/ AFTER THE DATE FROM THE OBJECT getTimestamp() (the time that the object was created)
-//            // LOAD ASSESSMENT FROM TODAY OR LATEST ASSESSMENT AND CHECK IF THE DATA IS THE SAME AS TODAY. IF YES, ASSIGN IT TO CURRENT ASSESSMENT. IF NO, CREATE NEW ASSESSMENT DATA
-//            if (latestDateStr.equals(todayDateStr)) {
-//                currentAssessment = DataStorageManager.loadAssessment(requireContext(), todaySessionId);
-//            } else {
-//                currentAssessment = new AssessmentData(username);
-//                latestTimeStamp = currentAssessment.getTimestamp();
-//                todaySessionId = currentAssessment.getSessionId();
-//            }
-//        }
-
         return view;
     }
 
@@ -94,7 +71,8 @@ public class RecordFragment extends Fragment {
         Button howTo = view.findViewById(R.id.howTo);
 
         btnBaseline.setOnClickListener(v -> startARJAndBalanceTest());
-        btnDualTask.setOnClickListener(v -> startDualTaskTest());
+        btnDualTask.setOnClickListener(v -> {Log.d("DualTaskDebug", "*** DUAL TASK BUTTON CLICKED ***");
+            startDualTaskTest();});
         btnSensory.setOnClickListener(v -> startSensoryAtaxiaTest());
         btnSpeed.setOnClickListener(v -> startWSAndEnduranceTest());
 
@@ -179,7 +157,7 @@ public class RecordFragment extends Fragment {
 
         String testName = getTestName(cancelledTest);
         requireActivity().getSupportFragmentManager().popBackStack();
-        Toast.makeText(requireContext(), testName + " test cancelled - results not saved", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), testName + " test cancelled - results not saved", Toast.LENGTH_LONG).show();
     }
 
     private static String getTestName(TestType testType) {
@@ -277,7 +255,6 @@ public class RecordFragment extends Fragment {
     }
 
 
-    // todo: fix baseline test not saving for the day after recording
     private void startARJAndBalanceTest() {
         if (currentTestType != TestType.NONE) { // If the user clicks another test while this test is running, discard this test data
             stopCurrentTestAndDiscardData();
@@ -322,7 +299,7 @@ public class RecordFragment extends Fragment {
         }
 
         if (arjDoneToday) {
-            Toast.makeText(requireContext(), "ARJ & balance was already completed for today. Record again tomorrow!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "ARJ & balance was already completed for today. Record again tomorrow!", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -337,7 +314,7 @@ public class RecordFragment extends Fragment {
         currentTestType = TestType.BASELINE;
         baselineTestDate = Calendar.getInstance();
 
-        Toast.makeText(requireContext(), "ARJ and balance test started - Walk normally for 15 seconds", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), "ARJ and balance test starts after countdown - Walk normally for 10 seconds", Toast.LENGTH_LONG).show();
 
         var auto_test_handler = new Handler(Looper.getMainLooper());
         var auto_test_runner = new Runnable() {
@@ -366,102 +343,8 @@ public class RecordFragment extends Fragment {
         auto_test_handler.postDelayed(auto_test_runner, BASELINE_DURATION_MS ); // 15 seconds = 15000ms
     }
 
-    // todo: find out why this and sensory ataxia crashes when run (plug in and look at log cat)
-    private void startDualTaskTest() {
-        if (currentTestType != TestType.NONE) {
-            stopCurrentTestAndDiscardData();
-            return;
-        }
-
-        List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(requireContext());
-        if (allAssessment.isEmpty()) {
-            return;
-        }
-
-        AssessmentData newest = allAssessment.get(0);
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-        String todayStr = sdf.format(new Date());
-
-        boolean arjDoneToday = false;
-        boolean wsDoneToday = false;
-        boolean dualTaskDoneToday = false;
-        boolean sensoryDoneToday = false;
-
-        for (AssessmentData assessment : allAssessment) {
-            String assessmentDate = sdf.format(assessment.getTimestamp());
-
-            // Only check today's assessments
-            if (assessmentDate.equals(todayStr)) {
-                if (assessment.getStatus() != null) {
-                    switch (assessment.getStatus()) {
-                        case ARJ_BALANCE_COMPLETED:
-                            arjDoneToday = true;
-                            break;
-                        case WS_ENDURANCE_COMPLETED:
-                            wsDoneToday = true;
-                            break;
-                        case DUAL_TASK_COMPLETED:
-                            dualTaskDoneToday = true;
-                            break;
-                        case SENSORY_ATAXIA_COMPLETED:
-                            sensoryDoneToday = true;
-                            break;
-                    }
-                }
-            }
-        }
-
-        if (!arjDoneToday) {
-            Toast.makeText(requireContext(), "Record ARJ & balance first!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (dualTaskDoneToday) {
-            Toast.makeText(requireContext(), "Dual task test was already completed for today. Record again tomorrow!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        /// CALL CAMERA
-        requireActivity().getSupportFragmentManager()
-                .beginTransaction()
-                .add(R.id.fragment_container, new CameraFragment())
-                .addToBackStack("camera")
-                .commit();
-
-        // Create dual task test
-        currentTestType = TestType.DUAL_TASK;
-
-        Toast.makeText(requireContext(), "Dual task test started - Count backwards from 30", Toast.LENGTH_SHORT).show();
-
-        autoStopHandler = new Handler(Looper.getMainLooper());
-        autoStopRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (currentTestType == TestType.DUAL_TASK) {
-                    try {
-                        saveDualTaskResults();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    CameraFragment cameraFragment = (CameraFragment) requireActivity()
-                            .getSupportFragmentManager()
-                            .findFragmentById(R.id.fragment_container);
-                    cameraFragment.stopCamera();
-
-                    requireActivity().getSupportFragmentManager().popBackStack();
-
-                    Toast.makeText(requireContext(), "Dual task test completed!",
-                            Toast.LENGTH_SHORT).show();
-
-                    currentTestType = TestType.NONE;
-                }
-            }
-        };
-        autoStopHandler.postDelayed(autoStopRunnable, DUAL_TASK_DURATION_MS );
-    }
-
     private void startSensoryAtaxiaTest() {
-        if (currentTestType != TestType.NONE) {
+        if (currentTestType != TestType.NONE) { // If the user clicks another test while this test is running, discard this test data
             stopCurrentTestAndDiscardData();
             return;
         }
@@ -521,7 +404,7 @@ public class RecordFragment extends Fragment {
         // Create sensory ataxia test
         currentTestType = TestType.SENSORY_ATAXIA;
 
-        Toast.makeText(requireContext(), "Sensory ataxia test started - Close your eyes and walk", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), "Sensory ataxia test starts after countdown - Close your eyes and walk in view for 10 seconds", Toast.LENGTH_LONG).show();
 
         autoStopHandler = new Handler(Looper.getMainLooper());
         autoStopRunnable = new Runnable() {
@@ -529,7 +412,7 @@ public class RecordFragment extends Fragment {
             public void run() {
                 if (currentTestType == TestType.SENSORY_ATAXIA) {
                     try {
-                       saveSensoryAtaxiaResults();
+                        saveSensoryAtaxiaResults();
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -550,6 +433,98 @@ public class RecordFragment extends Fragment {
         };
 
         autoStopHandler.postDelayed(autoStopRunnable, SENSORY_DURATION_MS ); // 15 seconds = 15000ms
+    }
+
+    private void startDualTaskTest() {
+        if (currentTestType != TestType.NONE) { // If the user clicks another test while this test is running, discard this test data
+            stopCurrentTestAndDiscardData();
+            return;
+        }
+        List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(requireContext());
+        if (allAssessment.isEmpty()) {
+            return;
+        }
+
+        AssessmentData newest = allAssessment.get(0);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
+        String todayStr = sdf.format(new Date());
+
+        boolean arjDoneToday = false;
+        boolean wsDoneToday = false;
+        boolean dualTaskDoneToday = false;
+        boolean sensoryDoneToday = false;
+
+        for (AssessmentData assessment : allAssessment) {
+            String assessmentDate = sdf.format(assessment.getTimestamp());
+
+            // Only check today's assessments
+            if (assessmentDate.equals(todayStr)) {
+                if (assessment.getStatus() != null) {
+                    switch (assessment.getStatus()) {
+                        case ARJ_BALANCE_COMPLETED:
+                            arjDoneToday = true;
+                            break;
+                        case WS_ENDURANCE_COMPLETED:
+                            wsDoneToday = true;
+                            break;
+                        case DUAL_TASK_COMPLETED:
+                            dualTaskDoneToday = true;
+                            break;
+                        case SENSORY_ATAXIA_COMPLETED:
+                            sensoryDoneToday = true;
+                            break;
+                    }
+                }
+            }
+        }
+
+        if (!arjDoneToday) {
+            Toast.makeText(requireContext(), "Record ARJ & balance first!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (dualTaskDoneToday) {
+            Toast.makeText(requireContext(), "Dual task test was already completed for today. Record again tomorrow!", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        /// CALL CAMERA
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .add(R.id.fragment_container, new CameraFragment())
+                .addToBackStack("camera")
+                .commit();
+
+        // Create dual task test
+        currentTestType = TestType.DUAL_TASK;
+
+        Toast.makeText(requireContext(), "Dual task test starts after count down - Walk while counting backwards from 30", Toast.LENGTH_LONG).show();
+
+        autoStopHandler = new Handler(Looper.getMainLooper());
+        autoStopRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (currentTestType == TestType.DUAL_TASK) {
+                    try {
+                        saveDualTaskResults();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    CameraFragment cameraFragment = (CameraFragment) requireActivity()
+                            .getSupportFragmentManager()
+                            .findFragmentById(R.id.fragment_container);
+                    cameraFragment.stopCamera();
+
+                    requireActivity().getSupportFragmentManager().popBackStack();
+
+                    Toast.makeText(requireContext(), "Dual task test completed!",
+                            Toast.LENGTH_SHORT).show();
+
+                    currentTestType = TestType.NONE;
+                }
+            }
+        };
+        autoStopHandler.postDelayed(autoStopRunnable, DUAL_TASK_DURATION_MS );
     }
 
     public static void setFrameRate(float fps) {
@@ -574,6 +549,27 @@ public class RecordFragment extends Fragment {
 
 //        currentAssessment.getSensoryAtaxia().setWalkingSpeed(speed);
 //        currentAssessment.getSensoryAtaxia().setEnduranceScore(endurance);
+
+        // Dual Task Cost (DTC): (Sensory Task Performance - Baseline Performance) / Baseline Performance × 100
+        float baselineBalance = currentAssessment.getBaseline().getBalanceScore();
+        if (baselineBalance > 0) {
+            float balanceChange = ((balance - baselineBalance) / baselineBalance) * 100f;
+            if (currentTestType == TestType.SENSORY_ATAXIA) {
+                currentAssessment.getComparisons().setSensoryAtaxiaBalanceChange(balanceChange);
+            }
+        }
+        Float baselineARJLeftObj = currentAssessment.getBaseline().getARJ().get("left_knee");
+        Float baselineARJRightObj = currentAssessment.getBaseline().getARJ().get("right_knee");
+        float baselineARJLeft = baselineARJLeftObj != null ? baselineARJLeftObj : 0f;
+        float baselineARJRight = baselineARJRightObj != null ? baselineARJRightObj : 0f;
+        if (baselineARJLeft > 0 && baselineARJRight > 0) {
+            float ARJLeftChange = ((ARJScores.get("left_knee") - baselineARJLeft) / baselineARJLeft) * 100f;
+            float ARJRightChange = ((ARJScores.get("right_knee") - baselineARJRight) / baselineARJRight) * 100f;
+            if (currentTestType == TestType.SENSORY_ATAXIA) {
+                currentAssessment.getComparisons().setSensoryAtaxiaARJLeftKneeChange(ARJLeftChange);
+                currentAssessment.getComparisons().setSensoryAtaxiaARJRightKneeChange(ARJRightChange);
+            }
+        }
         currentAssessment.getSensoryAtaxia().setBalanceScore(balance);
         currentAssessment.getSensoryAtaxia().setARJ(ARJScores);
 
@@ -606,6 +602,27 @@ public class RecordFragment extends Fragment {
             ARJScores.put(joint, arj);
         }
 
+        // Dual Task Cost (DC)
+        Float baselineARJLeftObj = currentAssessment.getBaseline().getARJ().get("left_knee");
+        Float baselineARJRightObj = currentAssessment.getBaseline().getARJ().get("right_knee");
+        float baselineARJLeft = baselineARJLeftObj != null ? baselineARJLeftObj : 0f;
+        float baselineARJRight = baselineARJRightObj != null ? baselineARJRightObj : 0f;
+        if (baselineARJLeft > 0 && baselineARJRight > 0) {
+            float ARJLeftChange = ((ARJScores.get("left_knee") - baselineARJLeft) / baselineARJLeft) * 100f;
+            float ARJRightChange = ((ARJScores.get("right_knee") - baselineARJRight) / baselineARJRight) * 100f;
+            if (currentTestType == TestType.DUAL_TASK) {
+                currentAssessment.getComparisons().setDualTaskARJLeftKneeChange(ARJLeftChange);
+                currentAssessment.getComparisons().setDualTaskARJRightKneeChange(ARJRightChange);
+            }
+        }
+
+        float baselineBalance = currentAssessment.getBaseline().getBalanceScore();
+        if (baselineBalance > 0) {
+            float balanceChange = ((balance - baselineBalance) / baselineBalance) * 100f;
+            if (currentTestType == TestType.DUAL_TASK) {
+                currentAssessment.getComparisons().setDualTaskBalanceChange(balanceChange);
+            }
+        }
 //        currentAssessment.getDualTask().setWalkingSpeed(speed);
 //        currentAssessment.getDualTask().setEnduranceScore(endurance);
         currentAssessment.getDualTask().setBalanceScore(balance);
@@ -703,6 +720,9 @@ public class RecordFragment extends Fragment {
         Map<String, Float> ARJScores = new HashMap<>();
 
         for (String joint : Arrays.asList("left_knee", "right_knee")) {
+            if (joint == null || joint.isEmpty()) {
+                continue;
+            }
             float arj = AverageRectifiedJerk.calculateAverageRectifiedJerk(
                     angleHistories.get(joint), frameRate);
 

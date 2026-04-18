@@ -17,22 +17,32 @@ public class ReportModel implements Serializable {
     private String rectifiedJerkTitle;
     private float arjLeftKneeToday;
     private float arjRightKneeToday;
+    private float ARJRightSD;
+    private float ARJRightCV;
+    private float ARJLeftSD;
+    private float ARJLeftCV;
     private String arjTrendRight, arjTrendLeft;  // "improved", "declined", "stable"
 
     // Balance section
     private String balanceTitle;
     private float balanceToday;
     private String balanceTrend;
+    private float balanceSD;
+    private float balanceCV;
 
     // Speed section
     private String speedTitle;
     private float speedToday;
     private String speedTrend;
+    private float speedSD;
+    private float speedCV;
 
     // Endurance section
     private String enduranceTitle;
     private float enduranceToday;
     private String enduranceTrend;
+    private float enduranceSD;
+    private float enduranceCV;
 
     // Sensory Ataxia section
     private String sensoryAtaxiaTitle;
@@ -56,7 +66,34 @@ public class ReportModel implements Serializable {
     private float sensoryAtaxiaARJLeftToday;
     private float sensoryAtaxiaARJRightToday;
     private float sensoryAtaxiaBalanceToday;
+    private float sensoryAtaxiaDTCARJLeft;
+    private float sensoryAtaxiaDTCARJRight;
+    private float sensoryAtaxiaDTCBalance;
     private String sensoryAtaxiaTrend;
+
+    public float getSensoryAtaxiaDTCARJLeft() {
+        return sensoryAtaxiaDTCARJLeft;
+    }
+
+    public void setSensoryAtaxiaDTCARJLeft(float sensoryAtaxiaDTCARJLeft) {
+        this.sensoryAtaxiaDTCARJLeft = sensoryAtaxiaDTCARJLeft;
+    }
+
+    public float getSensoryAtaxiaDTCARJRight() {
+        return sensoryAtaxiaDTCARJRight;
+    }
+
+    public void setSensoryAtaxiaDTCARJRight(float sensoryAtaxiaDTCARJRight) {
+        this.sensoryAtaxiaDTCARJRight = sensoryAtaxiaDTCARJRight;
+    }
+
+    public float getSensoryAtaxiaDTCBalance() {
+        return sensoryAtaxiaDTCBalance;
+    }
+
+    public void setSensoryAtaxiaDTCBalance(float sensoryAtaxiaDTCBalance) {
+        this.sensoryAtaxiaDTCBalance = sensoryAtaxiaDTCBalance;
+    }
 
     // Dual Task section
     private String dualTaskTitle;
@@ -80,13 +117,120 @@ public class ReportModel implements Serializable {
     private float dualTaskARJLeftToday;
     private float dualTaskARJRightToday;
     private float dualTaskBalanceToday;
+    private float dualTaskDTCARJLeft;
+    private float dualTaskDTCARJRight;
+    private float dualTaskDTCBalance;
     private String dualTaskTrend;
-
     private String currentValueBaseline;
     private String reportId;
+
+    public float getDualTaskDTCARJLeft() {
+        return dualTaskDTCARJLeft;
+    }
+
+    public void setDualTaskDTCARJLeft(float dualTaskDTCARJLeft) {
+        this.dualTaskDTCARJLeft = dualTaskDTCARJLeft;
+    }
+
+    public float getDualTaskDTCARJRight() {
+        return dualTaskDTCARJRight;
+    }
+
+    public void setDualTaskDTCARJRight(float dualTaskDTCARJRight) {
+        this.dualTaskDTCARJRight = dualTaskDTCARJRight;
+    }
+
+    public float getDualTaskDTCBalance() {
+        return dualTaskDTCBalance;
+    }
+
+    public void setDualTaskDTCBalance(float dualTaskDTCBalance) {
+        this.dualTaskDTCBalance = dualTaskDTCBalance;
+    }
+
     public ReportModel() {
         this.reportId = UUID.randomUUID().toString();
         this.timestamp = new Date();
+    }
+
+    public float getARJRightSD() {
+        return ARJRightSD;
+    }
+
+    public void setARJRightSD(float ARJRightSD) {
+        this.ARJRightSD = ARJRightSD;
+    }
+
+    public float getARJRightCV() {
+        return ARJRightCV;
+    }
+
+    public void setARJRightCV(float ARJRightCV) {
+        this.ARJRightCV = ARJRightCV;
+    }
+
+    public float getARJLeftSD() {
+        return ARJLeftSD;
+    }
+
+    public void setARJLeftSD(float ARJLeftSD) {
+        this.ARJLeftSD = ARJLeftSD;
+    }
+
+    public float getARJLeftCV() {
+        return ARJLeftCV;
+    }
+
+    public void setARJLeftCV(float ARJLeftCV) {
+        this.ARJLeftCV = ARJLeftCV;
+    }
+
+    public float getBalanceSD() {
+        return balanceSD;
+    }
+
+    public void setBalanceSD(float balanceSD) {
+        this.balanceSD = balanceSD;
+    }
+
+    public float getBalanceCV() {
+        return balanceCV;
+    }
+
+    public void setBalanceCV(float balanceCV) {
+        this.balanceCV = balanceCV;
+    }
+
+    public float getSpeedSD() {
+        return speedSD;
+    }
+
+    public void setSpeedSD(float speedSD) {
+        this.speedSD = speedSD;
+    }
+
+    public float getSpeedCV() {
+        return speedCV;
+    }
+
+    public void setSpeedCV(float speedCV) {
+        this.speedCV = speedCV;
+    }
+
+    public float getEnduranceSD() {
+        return enduranceSD;
+    }
+
+    public void setEnduranceSD(float enduranceSD) {
+        this.enduranceSD = enduranceSD;
+    }
+
+    public float getEnduranceCV() {
+        return enduranceCV;
+    }
+
+    public void setEnduranceCV(float enduranceCV) {
+        this.enduranceCV = enduranceCV;
     }
 
     public Date getTimeStamp() { return timestamp; }

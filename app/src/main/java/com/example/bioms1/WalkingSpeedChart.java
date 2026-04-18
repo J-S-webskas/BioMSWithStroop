@@ -10,9 +10,8 @@ import java.util.Map;
 public class WalkingSpeedChart extends BiomechanicalChart {
     private String condition;
 
-    public WalkingSpeedChart(int id, String title, Map<Date, Float> historicalData, String condition) {
+    public WalkingSpeedChart(int id, String title, Map<Date, Float> historicalData) {
         super(id, title, "m/s", historicalData);
-        this.condition = condition;
     }
 
     public String getCondition() {
