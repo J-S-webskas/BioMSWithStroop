@@ -4,6 +4,7 @@ import static android.view.View.GONE;
 import static com.example.bioms1.AssessmentData.AssessmentStatus.ALL_COMPLETED;
 import static com.example.bioms1.AssessmentData.AssessmentStatus.DUAL_TASK_COMPLETED;
 import static com.example.bioms1.AssessmentData.AssessmentStatus.SENSORY_ATAXIA_COMPLETED;
+import static com.example.bioms1.DataStorageManager.loadAllReports;
 
 import android.net.Uri;
 import androidx.core.content.FileProvider;
@@ -63,7 +64,7 @@ public class ReportFragment extends Fragment {
         noData = view.findViewById(R.id.noData);
 
         // Load REAL data reports from storage
-        List<ReportModel> reports = loadAllReports();
+        List<ReportModel> reports = DataStorageManager.loadAllReports(requireContext());
 
         // Create sample reports
         Button btnNew = view.findViewById(R.id.createNewReport);
@@ -205,7 +206,7 @@ public class ReportFragment extends Fragment {
             }
 
             // First data from last month
-//            if (Integer.parseInt(currentParts[0]) == Integer.parseInt(todayParts[0]) - 1 || Integer.parseInt(currentParts[0]) == 12 && Integer.parseInt(todayParts[0]) == 1) {
+            if (Integer.parseInt(currentParts[0]) == Integer.parseInt(todayParts[0]) - 1 || Integer.parseInt(currentParts[0]) == 12 && Integer.parseInt(todayParts[0]) == 1) {
                 switch (assessment.getStatus()) {
                 // GETTING DATA
                     case ARJ_BALANCE_COMPLETED:
@@ -255,7 +256,7 @@ public class ReportFragment extends Fragment {
                         SABalanceDTC = assessment.getComparisons().getSensoryAtaxiaBalanceChange();
                         break;
                 }
-//            }
+            }
         }
         // Calculating ARJ and balance
         // STANDARD DEVIATION (SD)

@@ -2,6 +2,7 @@ package com.example.bioms1;
 
 import static android.content.ContentValues.TAG;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -25,7 +26,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        if (!DataStorageManager.isUserLoggedIn(this)) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
 
         setStatusBarColor(com.google.android.material.R.color.design_default_color_secondary);
 
@@ -33,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         // If using DataBinding:
          ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         // Or without DataBinding:
-//        setContentView(R.layout.activity_main);
+        // setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 

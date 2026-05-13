@@ -94,15 +94,15 @@ public class TrendFragment extends Fragment {
             charts.add(createEmptyWalkingSpeedChart());
         } else {
             // Create chart from mock data
-            charts.add(createBalanceChartMockData(assessments));
-            charts.add(createARJChartMockData(assessments));
-            charts.add(createWalkingSpeedChartMockData(assessments));
-            charts.add(createEnduranceChartMockData(assessments));
+//            charts.add(createBalanceChartMockData(assessments));
+//            charts.add(createARJChartMockData(assessments));
+//            charts.add(createWalkingSpeedChartMockData(assessments));
+//            charts.add(createEnduranceChartMockData(assessments));
             // HAS DATA - Create charts from real data
-//            charts.add(createBalanceChartFromData(assessments));
-//            charts.add(createARJChartFromData(assessments));
-//            charts.add(createEnduranceChartFromData(assessments));
-//            charts.add(createWalkingSpeedChartFromData(assessments));
+            charts.add(createBalanceChartFromData(assessments));
+            charts.add(createARJChartFromData(assessments));
+            charts.add(createEnduranceChartFromData(assessments));
+            charts.add(createWalkingSpeedChartFromData(assessments));
         }
 
         return charts;

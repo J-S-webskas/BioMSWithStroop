@@ -40,10 +40,9 @@ public class RecordFragment extends Fragment {
 
     private Date latestTimeStamp;
     private String todaySessionId = "";
-    private String username = "123";
     private static float frameRate = 0;
 
-    private AssessmentData currentAssessment = new AssessmentData(username);
+    private AssessmentData currentAssessment;
     private Calendar baselineTestDate;
 
     private static Map<String, ArrayDeque<Float>> angleHistories = new HashMap<>();
@@ -57,6 +56,13 @@ public class RecordFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_record, container, false);
+
+        UserModel currentUser = DataStorageManager.getCurrentUser();
+        String username = currentUser != null ? currentUser.getUsername() : "unknown";
+
+        // Use this username for assessments
+        currentAssessment = new AssessmentData(username);
+
         setupTestControls(view);
         return view;
     }
@@ -71,8 +77,7 @@ public class RecordFragment extends Fragment {
         Button howTo = view.findViewById(R.id.howTo);
 
         btnBaseline.setOnClickListener(v -> startARJAndBalanceTest());
-        btnDualTask.setOnClickListener(v -> {Log.d("DualTaskDebug", "*** DUAL TASK BUTTON CLICKED ***");
-            startDualTaskTest();});
+        btnDualTask.setOnClickListener(v -> startDualTaskTest());
         btnSensory.setOnClickListener(v -> startSensoryAtaxiaTest());
         btnSpeed.setOnClickListener(v -> startWSAndEnduranceTest());
 
@@ -261,46 +266,49 @@ public class RecordFragment extends Fragment {
             return;
         }
         List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(requireContext());
-        if (allAssessment.isEmpty()) {
-            return;
+
+        if (allAssessment != null && !allAssessment.isEmpty()) {
+            currentAssessment = allAssessment.get(0);
         }
 
-        AssessmentData newest = allAssessment.get(0);
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-        String todayStr = sdf.format(new Date());
+        if (!allAssessment.isEmpty()) {
+            AssessmentData newest = allAssessment.get(0);
+            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
+            String todayStr = sdf.format(new Date());
 
-        boolean arjDoneToday = false;
-        boolean wsDoneToday = false;
-        boolean dualTaskDoneToday = false;
-        boolean sensoryDoneToday = false;
+            boolean arjDoneToday = false;
+            boolean wsDoneToday = false;
+            boolean dualTaskDoneToday = false;
+            boolean sensoryDoneToday = false;
 
-        for (AssessmentData assessment : allAssessment) {
-            String assessmentDate = sdf.format(assessment.getTimestamp());
+            for (AssessmentData assessment : allAssessment) {
+                String assessmentDate = sdf.format(assessment.getTimestamp());
 
-            // Only check today's assessments
-            if (assessmentDate.equals(todayStr)) {
-                if (assessment.getStatus() != null) {
-                    switch (assessment.getStatus()) {
-                        case ARJ_BALANCE_COMPLETED:
-                            arjDoneToday = true;
-                            break;
-                        case WS_ENDURANCE_COMPLETED:
-                            wsDoneToday = true;
-                            break;
-                        case DUAL_TASK_COMPLETED:
-                            dualTaskDoneToday = true;
-                            break;
-                        case SENSORY_ATAXIA_COMPLETED:
-                            sensoryDoneToday = true;
-                            break;
+                // Only check today's assessments
+                if (assessmentDate.equals(todayStr)) {
+                    if (assessment.getStatus() != null) {
+                        switch (assessment.getStatus()) {
+                            case ARJ_BALANCE_COMPLETED:
+                                arjDoneToday = true;
+                                break;
+                            case WS_ENDURANCE_COMPLETED:
+                                wsDoneToday = true;
+                                break;
+                            case DUAL_TASK_COMPLETED:
+                                dualTaskDoneToday = true;
+                                break;
+                            case SENSORY_ATAXIA_COMPLETED:
+                                sensoryDoneToday = true;
+                                break;
+                        }
                     }
                 }
             }
-        }
 
-        if (arjDoneToday) {
-            Toast.makeText(requireContext(), "ARJ & balance was already completed for today. Record again tomorrow!", Toast.LENGTH_LONG).show();
-            return;
+            if (arjDoneToday) {
+                Toast.makeText(requireContext(), "ARJ & balance was already completed for today. Record again tomorrow!", Toast.LENGTH_LONG).show();
+                return;
+            }
         }
 
         /// CALL CAMERA

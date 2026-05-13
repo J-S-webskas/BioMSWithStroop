@@ -7,7 +7,7 @@ camerax = "1.5.2"  # For CameraX
 
 # Use older, stable versions compatible with SDK 34
 appcompat = "1.6.1"
-material = "1.9.0"
+material = "1.12.0"
 #activity = "1.7.2"
 constraintlayout = "2.1.4"
 core = "1.10.1"

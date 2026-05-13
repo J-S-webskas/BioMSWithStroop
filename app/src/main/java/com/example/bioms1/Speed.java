@@ -49,7 +49,7 @@ import java.util.Locale;
 
 public class Speed extends AppCompatActivity implements LocationListener {
 
-    private TextView localityTV, speedTV, averageSpeedTV, maxSpeedTV, distanceTV;
+    private TextView localityTV, speedTV, averageSpeedTV, maxSpeedTV, distanceTV, timerTV;
     private Button btn_finish;
     private static final int SPEED_TEST_REQUEST = 100;
     private LocationManager locationManager;
@@ -60,6 +60,8 @@ public class Speed extends AppCompatActivity implements LocationListener {
     static float totalDistance = 0.0f;
     static float currentSpeed = 0.0f;
     private Location previousLocation;
+    private static final long TIMER_DURATION = 3 * 60 * 1000; // 3 minutes in milliseconds
+    private long timeRemaining = TIMER_DURATION;
     private final ArrayList<Float> speedList = new ArrayList<>();
     private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), new ActivityResultCallback<Boolean>() {
         @Override
@@ -87,6 +89,7 @@ public class Speed extends AppCompatActivity implements LocationListener {
         maxSpeedTV = findViewById(R.id.maxSpeedTV);
         distanceTV = findViewById(R.id.distanceTV);
         btn_finish = findViewById(R.id.btn_finish);
+        timerTV = findViewById(R.id.timerTV);
 
 //        pointerSpeedometer = findViewById(R.id.speedometer);
 //        pointerSpeedometer.setMaxSpeed(0);
@@ -118,6 +121,31 @@ public class Speed extends AppCompatActivity implements LocationListener {
 
             finish();
         });
+        startCountdownTimer();
+    }
+    private void startCountdownTimer() {
+        Runnable timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (timeRemaining > 0) {
+                    timeRemaining -= 1000; // Decrease by 1 second
+                    updateTimerDisplay();
+                    handler.postDelayed(this, 1000);
+                } else {
+                    timerTV.setText("00:00");
+                }
+            }
+        };
+
+        handler.post(timerRunnable);
+    }
+    
+    private void updateTimerDisplay() {
+        int minutes = (int) (timeRemaining / 1000 / 60);
+        int seconds = (int) (timeRemaining / 1000 % 60);
+
+        String timeText = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
+        timerTV.setText(timeText);
     }
 
     private void startLocationUpdates() {

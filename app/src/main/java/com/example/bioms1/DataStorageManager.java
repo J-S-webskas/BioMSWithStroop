@@ -8,6 +8,7 @@ import com.google.gson.GsonBuilder;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,9 +45,105 @@ public class DataStorageManager {
      Load directly into memory
      Display chart
      */
+
+    // Add these methods to your existing DataStorageManager class
+
+    private static final String USER_FILE = "users.json";
+    private static UserModel currentUser = null;
+
+    public static void saveUser(Context context, UserModel user) throws IOException {
+        List<UserModel> users = loadAllUsers(context);
+
+        // Check if user already exists
+        for (UserModel existing : users) {
+            if (existing.getUsername().equals(user.getUsername())) {
+                throw new IOException("Username already exists");
+            }
+        }
+
+        users.add(user);
+        saveAllUsers(context, users);
+    }
+
+    public static UserModel loginUser(Context context, String username, String password) throws IOException {
+        List<UserModel> users = loadAllUsers(context);
+
+        for (UserModel user : users) {
+            if (user.getUsername().equals(username) && user.checkPassword(password)) {
+                currentUser = user;
+                user.setLoggedIn(true);
+                saveAllUsers(context, users); // Update login status
+                return user;
+            }
+        }
+        return null;
+    }
+
+    public static void logoutUser(Context context) throws IOException {
+        if (currentUser != null) {
+            List<UserModel> users = loadAllUsers(context);
+            for (UserModel user : users) {
+                if (user.getUserId().equals(currentUser.getUserId())) {
+                    user.setLoggedIn(false);
+                    break;
+                }
+            }
+            saveAllUsers(context, users);
+            currentUser = null;
+        }
+    }
+
+    public static UserModel getCurrentUser() {
+        return currentUser;
+    }
+
+    public static boolean isUserLoggedIn(Context context) {
+        if (currentUser != null && currentUser.isLoggedIn()) {
+            return true;
+        }
+
+        // Check if any user is logged in from saved data
+        List<UserModel> users = loadAllUsers(context);
+        for (UserModel user : users) {
+            if (user.isLoggedIn()) {
+                currentUser = user;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<UserModel> loadAllUsers(Context context) {
+        File userFile = new File(context.getFilesDir(), USER_FILE);
+        if (!userFile.exists()) {
+            return new ArrayList<>();
+        }
+
+        try (FileReader reader = new FileReader(userFile)) {
+            Gson gson = new GsonBuilder().create();
+            UserModel[] users = gson.fromJson(reader, UserModel[].class);
+            return users != null ? new ArrayList<>(Arrays.asList(users)) : new ArrayList<>();
+        } catch (IOException e) {
+            Log.e(TAG, "Error loading users: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    private static void saveAllUsers(Context context, List<UserModel> users) throws IOException {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        String json = gson.toJson(users);
+
+        try (FileWriter writer = new FileWriter(new File(context.getFilesDir(), USER_FILE))) {
+            writer.write(json);
+        }
+    }
     public static void saveAssessment(Context context, AssessmentData assessment) throws IOException {
+        UserModel currentUser = getCurrentUser();
+        String username = currentUser != null ? currentUser.getUsername() : "unknown";
+
         // Creating file name
-        String filename = "assessment_" + assessment.getSessionId() + FILE_EXTENSION;
+        String filename = username + "_assessment_" + assessment.getSessionId() + FILE_EXTENSION;
+
         // Gson instance
         Gson gson = new GsonBuilder()
                 .setDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")  // ISO 8601 standard Ex. 2024-12-20T10:30:00Z
@@ -89,7 +186,9 @@ public class DataStorageManager {
      * Load assessment from internal storage
      */
     public static AssessmentData loadAssessment(Context context, String sessionId) {
-        String filename = "assessment_" + sessionId + FILE_EXTENSION;
+        UserModel currentUser = getCurrentUser();
+        String username = currentUser != null ? currentUser.getUsername() : "unknown";
+        String filename = username + "_assessment_" + sessionId + FILE_EXTENSION;
 
         try (FileReader reader = new FileReader(new File(context.getFilesDir(), filename))) {
             Gson gson = new GsonBuilder()
@@ -111,11 +210,16 @@ public class DataStorageManager {
         List<String> assessments = new ArrayList<>();
         File[] files = context.getFilesDir().listFiles();
 
+        // Get current username
+        UserModel currentUser = getCurrentUser();
+        String username = currentUser != null ? currentUser.getUsername() : "unknown";
+        String prefix = username + "_assessment_";
+
         if (files != null) {
             for (File file : files) {
-                if (file.getName().startsWith("assessment_") && file.getName().endsWith(FILE_EXTENSION)) {
+                if (file.getName().startsWith(prefix) && file.getName().endsWith(FILE_EXTENSION)) {
                     String sessionId = file.getName()
-                            .replace("assessment_", "")
+                            .replace(prefix, "")
                             .replace(FILE_EXTENSION, "");
                     assessments.add(sessionId);
                 }

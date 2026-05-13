@@ -85,6 +85,8 @@ dependencies {
 //    implementation("com.google.mediapipe:tasks-core:0.10.13")
     implementation("com.google.ai.edge.litert:litert-api:1.4.1")
 
+    implementation(libs.core)
+
     // MPAndroidChart from TOML
     implementation(libs.mpandroidchart)
 

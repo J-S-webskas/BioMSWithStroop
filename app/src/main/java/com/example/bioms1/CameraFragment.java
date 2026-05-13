@@ -226,7 +226,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor();
 
-        showCountdownOverlay();
+//        showCountdownOverlay();
 
         ImageButton btnSwitchCamera = view.findViewById(R.id.btn_switch_camera);
         btnSwitchCamera.setOnClickListener(v -> switchCamera());
