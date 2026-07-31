@@ -1,8 +1,8 @@
 [versions]
-agp = "8.9.0"
+agp = "9.2.1"
 
-mediapipe-tasks-vision = "0.10.11"
-mediapipe-tasks-core = "0.10.13"
+mediapipe-tasks-vision = "0.10.29"
+mediapipe-tasks-core = "0.10.29"
 camerax = "1.5.2"  # For CameraX
 
 # Use older, stable versions compatible with SDK 34

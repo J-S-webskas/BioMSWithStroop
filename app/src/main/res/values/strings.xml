@@ -1,6 +1,11 @@
 <resources>
-    <string name="app_name">myAppication</string>
+    <string name="app_name">BioMS</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-
+    <string-array name="assessment_types">
+        <item>ARJ &amp;Balance (ARJ &amp; Balance)</item>
+        <item>Dual Task</item>
+        <item>Sensory Ataxia</item>
+        <item>Speed &amp; Endurance</item>
+    </string-array>
 </resources>

@@ -17,7 +17,7 @@
         android:layout_width="match_parent"
         android:layout_height="180dp"
         android:gravity="center"
-        android:text="Start a recording test to see graph!"
+        android:text="Start a recording test to see graph! Need 2 recording sessions to show a line"
         android:textColor="@android:color/darker_gray"
         android:textSize="16sp"
         android:visibility="gone"
@@ -37,12 +37,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Title"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#333333"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginEnd="8dp"/>
+            android:layout_marginEnd="8dp"
+            android:fontFamily="@font/profile_pro_medi" />
 
 <!--        <TextView-->
 <!--            android:id="@+id/chartDate"-->
@@ -59,6 +60,8 @@
             android:id="@+id/lineChart"
             android:layout_width="match_parent"
             android:layout_height="180dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="15sp"
             app:layout_constraintTop_toBottomOf="@id/chartTitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"/>
@@ -80,7 +83,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Avg: 12.5 mm"
-                android:textSize="13sp"
+                android:fontFamily="@font/profile_pro"
+                android:textSize="15sp"
                 android:textColor="#666666"/>
 
             <View
@@ -95,7 +99,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Max: 25.3 mm"
-                android:textSize="13sp"
+                android:fontFamily="@font/profile_pro"
+                android:textSize="15sp"
                 android:textColor="#666666"/>
 
         </LinearLayout>

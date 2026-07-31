@@ -2,7 +2,8 @@
     <!-- Base application theme -->
     <style name="Base.Theme.MyAppication" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Set status bar to match your background color -->
-        <item name="android:statusBarColor">@color/design_default_color_secondary</item>
+        <item name="android:windowBackground">#f3f4f6</item>
+        <item name="android:statusBarColor">#f3f4f6</item>
 
         <!-- Make status bar icons dark (if your secondary color is light)
              or light (if your secondary color is dark) -->

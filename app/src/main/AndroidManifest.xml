@@ -11,6 +11,7 @@
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -18,37 +19,76 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.Light.NoActionBar"
         tools:targetApi="31">
-        <activity android:name=".DemoSession" />
-        <activity android:name=".Speed" />
+        <activity android:name=".DemoSession"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".Speed"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".TestMeaning"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".CancellingTest"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".ChooseTestActivity"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".HowWillYouTime"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".WSAndEndurance"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".ReportDetailActivity"
-            android:exported="false" />
-        <!--        <activity-->
-        <!--            android:name=".sessionData"-->
-        <!--            android:exported="false"-->
-        <!--            android:theme="@style/Theme.BioMS1" />-->
-        <!--        <activity-->
-        <!--            android:name=".camera"-->
-        <!--            android:exported="false"-->
-        <!--            android:theme="@style/Theme.BioMS1" />-->
-        <!--        <activity-->
-        <!--            android:name=".sessionsMain"-->
-        <!--            android:exported="false"-->
-        <!--            android:theme="@style/Theme.BioMS1" />-->
-        <!--        <activity-->
-        <!--            android:name=".demoSession"-->
-        <!--            android:exported="false"-->
-        <!--            android:theme="@style/Theme.BioMS1" />-->
+            android:exported="false"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
+        <activity
+            android:name=".Profile"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".ChooseYourSex"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".ChooseYourWeight"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity android:name=".MarkDistanceAndCamera"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".HowWillYouRecord"
+            android:screenOrientation="portrait"/>
+        <activity
+            android:name=".ResetPassword"
+            android:exported="true"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Custom scheme for deep linking -->
+                <data
+                    android:scheme="biomsapp"
+                    android:host="reset-password" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".AskForEmail"
+            android:exported="false"
+            android:screenOrientation="portrait" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -58,13 +98,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        <activity android:name=".LoginActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
 
     </application>
 

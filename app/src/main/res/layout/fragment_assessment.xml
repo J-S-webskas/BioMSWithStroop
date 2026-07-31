@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:overScrollMode="always"
+    android:background="@color/white">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topBar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:title="Record"
+            app:titleTextColor="@color/black"
+            app:titleTextAppearance="@style/ToolbarTitleText" />
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardStartTest"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/topBar"
+            android:minHeight="100dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:padding="16dp">
+
+                <ImageButton
+                    android:id="@+id/startTestIcon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_directions_walk"
+                    android:background="@android:color/transparent"
+                    android:padding="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Start Test"
+                        android:textSize="22sp"
+                        android:textColor="@color/black"
+                        android:fontFamily="@font/profile_pro_black"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="16sp"
+                        app:autoSizeMaxTextSize="22sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Get data for analysis on selected symptoms"
+                        android:gravity="center"
+                        android:textSize="15sp"
+                        android:textColor="#808080"
+                        android:fontFamily="@font/profile_pro"
+                        android:layout_marginTop="4dp"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="13sp"
+                        app:autoSizeMaxTextSize="20sp"/>
+
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/goOnStartTest"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_chevron_right"
+                    android:background="@android:color/transparent"
+                    android:padding="8dp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Horizontal Cards Container - Using Percentage -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/horizontalCards"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="16dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            app:layout_constraintTop_toBottomOf="@id/cardStartTest"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHeight_percent="0.30">
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/instructions"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="4dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintHorizontal_weight="1"
+                android:minHeight="140dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="See instructions"
+                        android:textSize="18sp"
+                        android:textColor="@color/black"
+                        android:fontFamily="@font/profile_pro_bold"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="16sp"
+                        app:autoSizeMaxTextSize="28sp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="How to record"
+                        android:textSize="15sp"
+                        android:textColor="#808080"
+                        android:fontFamily="@font/profile_pro"
+                        android:layout_marginTop="4dp"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="13sp"
+                        app:autoSizeMaxTextSize="20sp"/>
+
+                    <Button
+                        android:id="@+id/openSeeInstructions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:text="Open"
+                        android:backgroundTint="@color/black"
+                        android:fontFamily="@font/profile_pro_bold"
+                        android:layout_marginTop="8dp"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+<!--            <androidx.cardview.widget.CardView-->
+<!--                android:id="@+id/PreviewTestMode"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="0dp"-->
+<!--                android:layout_marginStart="8dp"-->
+<!--                android:layout_marginBottom="4dp"-->
+<!--                app:cardCornerRadius="8dp"-->
+<!--                app:cardElevation="4dp"-->
+<!--                app:layout_constraintStart_toEndOf="@id/instructions"-->
+<!--                app:layout_constraintEnd_toEndOf="parent"-->
+<!--                app:layout_constraintTop_toTopOf="parent"-->
+<!--                app:layout_constraintBottom_toBottomOf="parent"-->
+<!--                app:layout_constraintHorizontal_weight="1"-->
+<!--                android:minHeight="140dp">-->
+
+<!--                <LinearLayout-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="match_parent"-->
+<!--                    android:orientation="vertical"-->
+<!--                    android:gravity="center"-->
+<!--                    android:padding="16dp">-->
+
+<!--                    <TextView-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:text="Preview Test Mode"-->
+<!--                        android:textSize="18sp"-->
+<!--                        android:textColor="@color/black"-->
+<!--                        android:fontFamily="@font/profile_pro_bold"-->
+<!--                        app:autoSizeTextType="uniform"-->
+<!--                        app:autoSizeMinTextSize="16sp"-->
+<!--                        app:autoSizeMaxTextSize="28sp"/>-->
+
+<!--                    <TextView-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:text="Measure distance"-->
+<!--                        android:textSize="15sp"-->
+<!--                        android:textColor="#808080"-->
+<!--                        android:fontFamily="@font/profile_pro"-->
+<!--                        android:layout_marginTop="4dp"-->
+<!--                        app:autoSizeTextType="uniform"-->
+<!--                        app:autoSizeMinTextSize="13sp"-->
+<!--                        app:autoSizeMaxTextSize="20sp"/>-->
+
+<!--                    <Button-->
+<!--                        android:id="@+id/previewTestButton"-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:textSize="16sp"-->
+<!--                        android:text="Preview"-->
+<!--                        android:backgroundTint="@color/black"-->
+<!--                        android:fontFamily="@font/profile_pro_bold"-->
+<!--                        android:layout_marginTop="8dp"/>-->
+
+<!--                </LinearLayout>-->
+<!--            </androidx.cardview.widget.CardView>-->
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Explain Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/explain"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            app:layout_constraintTop_toBottomOf="@id/horizontalCards"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/delete"
+            app:layout_constraintHeight_percent="0.18"
+            android:minHeight="150dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:padding="16dp">
+
+                <ImageButton
+                    android:id="@+id/explainIcon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_help_orange"
+                    android:background="@android:color/transparent"
+                    android:padding="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="What do each test mean?"
+                        android:textSize="19sp"
+                        android:textColor="@color/black"
+                        android:fontFamily="@font/profile_pro_black"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="16sp"
+                        app:autoSizeMaxTextSize="28sp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Find out the purpose of each test and what the metrics indicate"
+                        android:gravity="center"
+                        android:textSize="15sp"
+                        android:textColor="#808080"
+                        android:fontFamily="@font/profile_pro"
+                        android:layout_marginTop="4dp"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="13sp"
+                        app:autoSizeMaxTextSize="20sp"/>
+
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/goOnExplain"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_chevron_right"
+                    android:background="@android:color/transparent"
+                    android:padding="8dp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Delete Card - Pushed to Bottom -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/delete"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp"
+            app:layout_constraintTop_toBottomOf="@id/explain"
+            android:minHeight="80dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <ImageButton
+                    android:id="@+id/deleteButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_minus_red"
+                    android:background="@android:color/transparent"
+                    android:padding="8dp"
+                    android:contentDescription="Delete" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Delete Assessment"
+                    android:gravity="center"
+                    android:textSize="19sp"
+                    android:textColor="@color/black"
+                    android:fontFamily="@font/profile_pro_black"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="12dp"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="16sp"
+                    app:autoSizeMaxTextSize="28sp"/>
+
+                <ImageButton
+                    android:id="@+id/deleteOpen"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_chevron_right"
+                    android:background="@android:color/transparent"
+                    android:padding="8dp"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="13sp"
+                    app:autoSizeMaxTextSize="20sp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

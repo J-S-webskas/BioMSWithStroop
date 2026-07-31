@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/white">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/Twenty"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="30dp"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp"
+                android:gravity="center"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/selectDistance"
+                app:layout_constraintHeight_default="percent"
+                app:layout_constraintHeight_percent="0.12"
+                android:backgroundTint="@color/white">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="20 meters"
+                    android:padding="10dp"
+                    android:textSize="20sp"
+                    android:layout_gravity="center"
+                    android:textColor="@color/black"
+                    android:fontFamily="@font/profile_pro_bold"/>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/Ten"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp"
+                android:gravity="center"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/Twenty"
+                app:layout_constraintHeight_default="percent"
+                app:layout_constraintHeight_percent="0.12"
+                android:backgroundTint="@color/white">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10 meters"
+                    android:padding="10dp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="20dp"
+                    android:textSize="20sp"
+                    android:layout_gravity="center"
+                    android:textColor="@color/black"
+                    android:fontFamily="@font/profile_pro_bold"/>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <ImageButton
+                android:id="@+id/back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:src="@drawable/ic_chevron_left"
+                android:paddingStart="26dp"
+                android:paddingTop="15dp"
+                android:background="@android:color/transparent"/>
+
+            <TextView
+                android:id="@+id/selectDistance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Select A Distance"
+                android:fontFamily="@font/profile_pro_black"
+                android:textSize="20dp"
+                app:layout_constraintTop_toBottomOf="@id/back"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginTop="50dp"
+                android:layout_marginStart="30dp"/>
+
+            <CheckBox
+                android:id="@+id/markDistance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mark Distance"
+                android:fontFamily="@font/profile_pro_black"
+                android:textSize="20dp"
+                app:layout_constraintTop_toBottomOf="@id/Ten"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginTop="50dp"
+                android:layout_marginStart="30dp"/>
+
+            <TextView
+                android:id="@+id/distanceBody"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Measure a place where you can walk for the distance you chose (lapped if needed)"
+                app:layout_constraintTop_toBottomOf="@id/markDistance"
+                android:paddingStart="30dp"
+                android:paddingEnd="30dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginEnd="30dp"
+                android:fontFamily="@font/profile_pro"
+                android:textSize="18sp"
+                android:layout_marginStart="30dp" />
+
+            <TextView
+                android:id="@+id/previewModeNext"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="28dp"
+                android:paddingEnd="28dp"
+                android:fontFamily="@font/profile_pro_medi"
+                android:text="Click next to start timing your walk \nOnly check off the boxes after you've completed them."
+                android:textSize="18dp"
+                android:layout_marginTop="40dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/distanceBody"
+                app:layout_constraintBaseline_toBottomOf="parent"/>
+
+            <Button
+                android:id="@+id/next"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Next"
+                android:layout_marginBottom="20dp"
+                android:layout_marginEnd="20dp"
+                android:fontFamily="@font/profile_pro_medi"
+                android:backgroundTint="@color/black"
+                android:textColor="@color/white"
+                app:layout_constraintTop_toBottomOf="@id/previewModeNext"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+            <FrameLayout
+                android:id="@+id/fragment_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

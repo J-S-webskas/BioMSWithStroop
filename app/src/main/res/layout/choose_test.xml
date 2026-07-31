@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/white">
+
+    <TextView
+        android:id="@+id/chooseATest"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Choose a test"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:fontFamily="@font/profile_pro_black"
+        android:textSize="30dp"
+        android:layout_marginTop="60dp"/>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/ARJAndBalance"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="36dp"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
+        android:gravity="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/chooseATest"
+        app:layout_constraintBottom_toTopOf="@id/dualTask"
+        app:layout_constraintHeight_default="percent"
+        app:layout_constraintHeight_percent="0.12">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/ARJText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Average Rectified Jerk and Balance"
+                android:padding="10dp"
+                android:textSize="20sp"
+                android:layout_gravity="center"
+                android:textColor="@color/black"
+                android:fontFamily="@font/profile_pro_bold"/>
+
+            <TextView
+                android:id="@+id/ARJCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed. Next test is tomorrow"
+                android:textSize="15sp"
+                android:textColor="#808080"
+                android:fontFamily="@font/profile_pro"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"/>
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/dualTask"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
+        android:gravity="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ARJAndBalance"
+        app:layout_constraintBottom_toTopOf="@id/sensoryAtaxia"
+        app:layout_constraintHeight_default="percent"
+        app:layout_constraintHeight_percent="0.12">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/dualTaskText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Impact of Divided Attention (Dual Task)"
+                android:textSize="20sp"
+                android:padding="10dp"
+                android:layout_gravity="center"
+                android:textColor="@color/black"
+                android:fontFamily="@font/profile_pro_bold"/>
+
+            <TextView
+                android:id="@+id/dualTaskRecordARJ"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Record ARJ first"
+                android:textSize="15sp"
+                android:textColor="#808080"
+                android:fontFamily="@font/profile_pro"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"/>
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/sensoryAtaxia"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
+        android:gravity="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/dualTask"
+        app:layout_constraintBottom_toTopOf="@id/speedAndEndurance"
+        app:layout_constraintHeight_default="percent"
+        app:layout_constraintHeight_percent="0.12">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/sensoryAtaxiaText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sensory loss (Ataxia)"
+                android:textSize="20sp"
+                android:layout_gravity="center"
+                android:textColor="@color/black"
+                android:fontFamily="@font/profile_pro_bold"/>
+
+            <TextView
+                android:id="@+id/sensoryAtaxiaRecordARJ"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Record ARJ first"
+                android:textSize="15sp"
+                android:textColor="#808080"
+                android:fontFamily="@font/profile_pro"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"/>
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/speedAndEndurance"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.12"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/sensoryAtaxia">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/WSText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="@font/profile_pro_bold"
+                android:padding="10dp"
+                android:text="Walking Speed and Endurance"
+                android:textColor="@color/black"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/WSCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed. Next test is tomorrow"
+                android:textSize="15sp"
+                android:textColor="#808080"
+                android:fontFamily="@font/profile_pro"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"/>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+    <ImageButton
+        android:id="@+id/back"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/chooseATest"
+        app:layout_constraintBottom_toBottomOf="@id/chooseATest"
+        android:src="@drawable/ic_chevron_left"
+        android:paddingStart="26dp"
+        android:background="@android:color/transparent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

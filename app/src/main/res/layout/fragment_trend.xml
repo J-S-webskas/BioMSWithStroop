@@ -7,83 +7,19 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@color/design_default_color_secondary"
+        android:layout_height="?attr/actionBarSize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:title="BioMS"
-        app:titleTextColor="@color/white"
-        app:titleTextAppearance="@style/BoldToolbarTitle"
-        app:titleCentered="true" />
-
-<!--    <androidx.constraintlayout.widget.ConstraintLayout-->
-<!--        android:id="@+id/topBar"-->
-<!--        android:layout_width="0dp"-->
-<!--        android:layout_height="48dp"-->
-<!--        android:background="@color/design_default_color_secondary"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintTop_toTopOf="parent"-->
-<!--        app:title="BioMS"-->
-<!--        app:titleTextColor="@color/white"-->
-<!--        app:titleTextAppearance="@style/BoldToolbarTitle"-->
-<!--        app:titleCentered="true">-->
-
-<!--        <TextView-->
-<!--            android:id="@+id/tabTrend"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="TREND"-->
-<!--            android:textSize="16sp"-->
-<!--            android:textStyle="bold"-->
-<!--            android:padding="10dp"-->
-<!--            android:clickable="true"-->
-<!--            android:focusable="true"-->
-<!--            android:foreground="?attr/selectableItemBackgroundBorderless"-->
-<!--            android:textColor="@color/white"-->
-<!--            app:layout_constraintStart_toStartOf="parent"-->
-<!--            app:layout_constraintTop_toTopOf="parent"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent"/>-->
-
-<!--        <TextView-->
-<!--            android:id="@+id/title"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="BioMS"-->
-<!--            android:textSize="20sp"-->
-<!--            android:textStyle="bold"-->
-<!--            android:textColor="@color/white"-->
-<!--            app:layout_constraintStart_toEndOf="@id/tabTrend"-->
-<!--            app:layout_constraintEnd_toStartOf="@id/tabBodyMap"-->
-<!--            app:layout_constraintTop_toTopOf="parent"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent"-->
-<!--            android:layout_marginStart="8dp"-->
-<!--            android:layout_marginEnd="8dp"/>-->
-
-<!--        <TextView-->
-<!--            android:id="@+id/tabBodyMap"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="BODY MAP"-->
-<!--            android:textSize="16sp"-->
-<!--            android:textStyle="bold"-->
-<!--            android:padding="10dp"-->
-<!--            android:clickable="true"-->
-<!--            android:focusable="true"-->
-<!--            android:foreground="?attr/selectableItemBackgroundBorderless"-->
-<!--            android:textColor="@color/white"-->
-<!--            app:layout_constraintEnd_toEndOf="parent"-->
-<!--            app:layout_constraintTop_toTopOf="parent"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent"-->
-<!--            android:layout_marginStart="117dp"/>-->
-
-<!--    </androidx.constraintlayout.widget.ConstraintLayout>-->
+        app:title="Graph"
+        app:titleTextAppearance="@style/ToolbarTitleText" />
 
     <com.google.android.material.button.MaterialButtonToggleGroup
         android:id="@+id/toggleGroup"
@@ -92,6 +28,7 @@
         app:singleSelection="true"
         app:selectionRequired="true"
         android:layout_margin="16dp"
+        app:checkedButton="@id/oneMonth"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/topBar">

@@ -18,18 +18,19 @@
             android:id="@+id/date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="25sp"
-            android:text="Oct 24 2025"
-            android:layout_marginStart="10dp"
-            style="@style/BoldToolbarTitle"/>
+            android:textSize="20sp"
+            android:text="October 24 2025"
+            android:fontFamily="@font/profile_pro_black"
+            android:layout_marginStart="10dp" />
 
         <TextView
             android:id="@+id/preview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/profile_pro"
             android:text="▲ Arm Swing Asymmetry Left-Right Diff: 15° (-12% from last month)\nMost Active: Evening"
             android:layout_marginStart="10dp"
-            android:textSize="15sp" />
+            android:textSize="16sp" />
 
     </LinearLayout>
 

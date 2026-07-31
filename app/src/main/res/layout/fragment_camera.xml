@@ -17,87 +17,119 @@
                 android:layout_height="match_parent"
                 app:scaleType="fillStart" />
 
-            <com.example.bioms1.OverlayView
+            <com.example.biomsAfterWirelessConnectedVersion.OverlayView
                 android:id="@+id/overlay"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
-            <ImageButton
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:id="@+id/btn_switch_camera"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                android:src="@drawable/switch_camera"
-                android:backgroundTint="@color/white"/>
-
-<!--            <Button-->
-<!--                android:id="@+id/btn_cancel"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="Cancel"-->
+<!--            <ImageButton-->
+<!--                android:layout_width="48dp"-->
+<!--                android:layout_height="48dp"-->
+<!--                android:id="@+id/btn_switch_camera"-->
+<!--                app:layout_constraintStart_toStartOf="parent"-->
 <!--                app:layout_constraintBottom_toBottomOf="parent"-->
-<!--                app:layout_constraintEnd_toEndOf="parent"-->
-<!--                android:backgroundTint="@color/design_default_color_secondary"/>-->
+<!--                android:layout_marginStart="20dp"-->
+<!--                android:layout_marginBottom="20dp"-->
+<!--                android:src="@drawable/switch_camera"-->
+<!--                android:backgroundTint="@color/white"/>-->
+
+            <Button
+                android:id="@+id/btn_cancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cancel Test"
+                android:layout_marginBottom="20dp"
+                android:layout_marginEnd="20dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:backgroundTint="@color/black"/>
+
+            <ImageButton
+                android:id="@+id/back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:src="@drawable/ic_chevron_left"
+                android:paddingStart="26dp"
+                android:paddingTop="100dp"
+                android:background="@android:color/transparent"/>
+
+            <TextView
+                android:id="@+id/tv_preview_instruction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="This is preview mode. Hit next to start the test. Make sure the user can walk for at least 10 seconds in view from a stationary camera"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:background="#80000000"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:padding="8dp"
+                android:gravity="center"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="20dp"
+                android:visibility="gone" />
 
             <!-- Countdown overlay (appears during countdown) -->
-<!--            <TextView-->
-<!--                app:layout_constraintEnd_toEndOf="parent"-->
-<!--                app:layout_constraintTop_toTopOf="parent"-->
-<!--                android:id="@+id/countdownTextView"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_gravity="center"-->
-<!--                android:textSize="120sp"-->
-<!--                android:textColor="@android:color/white"-->
-<!--                android:textStyle="bold"-->
-<!--                android:shadowColor="@android:color/black"-->
-<!--                android:shadowDx="4"-->
-<!--                android:shadowDy="4"-->
-<!--                android:shadowRadius="6"-->
-<!--                android:visibility="gone" />-->
+            <!--            <TextView-->
+            <!--                app:layout_constraintEnd_toEndOf="parent"-->
+            <!--                app:layout_constraintTop_toTopOf="parent"-->
+            <!--                android:id="@+id/countdownTextView"-->
+            <!--                android:layout_width="wrap_content"-->
+            <!--                android:layout_height="wrap_content"-->
+            <!--                android:layout_gravity="center"-->
+            <!--                android:textSize="120sp"-->
+            <!--                android:textColor="@android:color/white"-->
+            <!--                android:textStyle="bold"-->
+            <!--                android:shadowColor="@android:color/black"-->
+            <!--                android:shadowDx="4"-->
+            <!--                android:shadowDy="4"-->
+            <!--                android:shadowRadius="6"-->
+            <!--                android:visibility="gone" />-->
 
             <!-- Recording indicator (appears during recording) -->
-<!--            <LinearLayout-->
-<!--                app:layout_constraintTop_toTopOf="parent"-->
-<!--                app:layout_constraintEnd_toEndOf="parent"-->
-<!--                android:id="@+id/recordingIndicator"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_gravity="top|center_horizontal"-->
-<!--                android:layout_marginTop="16dp"-->
-<!--                android:orientation="horizontal"-->
-<!--                android:visibility="gone"-->
-<!--                android:background="#80000000"-->
-<!--                android:padding="8dp"-->
-<!--                android:gravity="center_vertical">-->
+            <!--            <LinearLayout-->
+            <!--                app:layout_constraintTop_toTopOf="parent"-->
+            <!--                app:layout_constraintEnd_toEndOf="parent"-->
+            <!--                android:id="@+id/recordingIndicator"-->
+            <!--                android:layout_width="wrap_content"-->
+            <!--                android:layout_height="wrap_content"-->
+            <!--                android:layout_gravity="top|center_horizontal"-->
+            <!--                android:layout_marginTop="16dp"-->
+            <!--                android:orientation="horizontal"-->
+            <!--                android:visibility="gone"-->
+            <!--                android:background="#80000000"-->
+            <!--                android:padding="8dp"-->
+            <!--                android:gravity="center_vertical">-->
 
-<!--                <View-->
-<!--                    android:layout_width="16dp"-->
-<!--                    android:layout_height="16dp"-->
-<!--                    android:background="@drawable/red_circle" />-->
+            <!--                <View-->
+            <!--                    android:layout_width="16dp"-->
+            <!--                    android:layout_height="16dp"-->
+            <!--                    android:background="@drawable/red_circle" />-->
 
-<!--                <TextView-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="RECORDING"-->
-<!--                    android:textColor="@android:color/white"-->
-<!--                    android:textStyle="bold"-->
-<!--                    android:layout_marginStart="8dp" />-->
+            <!--                <TextView-->
+            <!--                    android:layout_width="wrap_content"-->
+            <!--                    android:layout_height="wrap_content"-->
+            <!--                    android:text="RECORDING"-->
+            <!--                    android:textColor="@android:color/white"-->
+            <!--                    android:textStyle="bold"-->
+            <!--                    android:layout_marginStart="8dp" />-->
 
-<!--            </LinearLayout>-->
+            <!--            </LinearLayout>-->
 
-<!--            &lt;!&ndash; Start button (visible in preview mode) &ndash;&gt;-->
-<!--            <Button-->
-<!--                android:id="@+id/startCountdownButton"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="Start Recording"-->
-<!--                android:visibility="visible"-->
-<!--                android:backgroundTint="#FF0000"-->
-<!--                app:layout_constraintBottom_toBottomOf="parent"-->
-<!--                app:layout_constraintEnd_toEndOf="parent"-->
-<!--                app:layout_constraintStart_toStartOf="parent"/>-->
+            <!--            &lt;!&ndash; Start button (visible in preview mode) &ndash;&gt;-->
+            <!--            <Button-->
+            <!--                android:id="@+id/startCountdownButton"-->
+            <!--                android:layout_width="wrap_content"-->
+            <!--                android:layout_height="wrap_content"-->
+            <!--                android:text="Start Recording"-->
+            <!--                android:visibility="visible"-->
+            <!--                android:backgroundTint="#FF0000"-->
+            <!--                app:layout_constraintBottom_toBottomOf="parent"-->
+            <!--                app:layout_constraintEnd_toEndOf="parent"-->
+            <!--                app:layout_constraintStart_toStartOf="parent"/>-->
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -1,0 +1,16 @@
+<!-- ic_trend_line.xml -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="#2196F3"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M3,17 L7,13 L11,15 L17,9 L21,11" />
+    <path
+        android:strokeColor="#2196F3"
+        android:strokeWidth="1"
+        android:pathData="M3,20 L21,20" />
+</vector>

@@ -3,26 +3,27 @@ plugins {
 }
 
 android {
-    namespace = "com.example.bioms1"
+    namespace = "com.example.biomsAfterWirelessConnectedVersion"
     compileSdk = 35
 
     buildFeatures {
         dataBinding {
+            viewBinding = true
             enable = true  // Correct syntax for Kotlin DSL
         }
     }
 
     defaultConfig {
-        applicationId = "com.example.bioms1"
+        applicationId = "com.example.biomsAfterWirelessConnectedVersion"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+            abiFilters.addAll(listOf("arm64-v8a"))
         }
     }
 
@@ -53,17 +54,18 @@ android {
             )
         }
 
-        // This is the most important fix - pickFirst for MediaPipe libraries
-        pickFirsts += listOf(
-            "lib/**/libc++_shared.so",
-            "lib/**/libmediapipe_tasks_vision_jni.so",
-            "lib/**/libmediapipe_tasks_jni.so",
-            "lib/**/libmediapipe_jni.so",
-            "lib/**/libtensorflowlite_jni.so",
-            "lib/**/liblitert_jni.so"
-        )
         jniLibs {
-            useLegacyPackaging = true
+//            useLegacyPackaging = true
+            pickFirsts += setOf(
+                "lib/arm64-v8a/libc++_shared.so",
+                "lib/armeabi-v7a/libc++_shared.so",
+                "lib/x86/libc++_shared.so",
+                "lib/x86_64/libc++_shared.so",
+                "lib/arm64-v8a/libmediapipe_tasks_vision_jni.so",
+                "lib/armeabi-v7a/libmediapipe_tasks_vision_jni.so",
+                "lib/x86/libmediapipe_tasks_vision_jni.so",
+                "lib/x86_64/libmediapipe_tasks_vision_jni.so"
+            )
         }
     }
 }
@@ -81,8 +83,6 @@ dependencies {
     // MediaPipe from TOML
     implementation(libs.mediapipe.tasks.vision)
     implementation(libs.mediapipe.tasks.core)
-//    implementation("com.google.mediapipe:tasks-vision:0.10.11")
-//    implementation("com.google.mediapipe:tasks-core:0.10.13")
     implementation("com.google.ai.edge.litert:litert-api:1.4.1")
 
     implementation(libs.core)
@@ -98,11 +98,10 @@ dependencies {
     // Room Database for storing results
     implementation("androidx.room:room-runtime:2.5.2")
     annotationProcessor("androidx.room:room-compiler:2.5.2")
-
     implementation("com.github.anastr:speedviewlib:1.6.1")
-
     implementation("androidx.navigation:navigation-fragment-ktx:2.6.0")
     implementation("androidx.navigation:navigation-ui-ktx:2.6.0")
-
     implementation("com.google.code.gson:gson:2.10.1")
+
+    implementation("com.airbnb.android:lottie:6.0.0")
 }

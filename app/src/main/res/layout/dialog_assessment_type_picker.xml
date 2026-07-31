@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/assessmentType"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Assessment Type:"
+        android:textSize="18sp"
+        android:fontFamily="@font/profile_pro_bold"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/warning_chip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:fontFamily="@font/profile_pro_bold"
+        android:text="⚠️ Warning: This action cannot be undone"
+        app:chipBackgroundColor="#D32F2F"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone" />
+
+    <Spinner
+        android:id="@+id/spinner_assessment_type"
+        android:layout_width="match_parent"
+        android:textSize="14sp"
+        android:fontFamily="@font/profile_pro"
+        android:layout_height="wrap_content"
+        android:entries="@array/assessment_types" />
+
+</LinearLayout>

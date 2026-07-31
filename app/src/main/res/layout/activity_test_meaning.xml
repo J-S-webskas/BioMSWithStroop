@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:overScrollMode="always"
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageButton
+            android:id="@+id/back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:src="@drawable/ic_chevron_left"
+            android:paddingStart="26dp"
+            android:paddingTop="15dp"
+            android:background="@android:color/transparent"/>
+
+        <ImageButton
+            android:id="@+id/trend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/back"
+            app:layout_constraintBottom_toTopOf="@id/disclaimer"
+            android:src="@drawable/ic_trend_line"/>
+
+        <TextView
+            android:id="@+id/disclaimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Disclaimer"
+            app:layout_constraintTop_toBottomOf="@id/trend"
+            app:layout_constraintStart_toStartOf="parent"
+            android:fontFamily="@font/profile_pro_black"
+            android:textSize="18sp"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="20dp"/>
+
+        <TextView
+            android:id="@+id/disclaimerBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Like many health tests, the movement analysis provided by this app only captures a snippet of your state each day. For instance, your energy level in the morning might be different from your energy level at night. But why still take the test? These data will provide long term reference information for doctors than the short visit."
+            app:layout_constraintTop_toBottomOf="@id/disclaimer"
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp"
+            android:paddingTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="30dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="16sp"
+            android:layout_marginStart="30dp" />
+
+        <TextView
+            android:id="@+id/howToViewValues"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="How To View Values?"
+            app:layout_constraintTop_toBottomOf="@id/disclaimerBody"
+            app:layout_constraintStart_toStartOf="parent"
+            android:fontFamily="@font/profile_pro_black"
+            android:textSize="18sp"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="30dp"/>
+
+        <TextView
+            android:id="@+id/HowToViewValuesBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Notice the range of values instead of the individual measurement: a cluster of values around the same point may indicate stability. But these tests do not replace clinical assessments."
+            app:layout_constraintTop_toBottomOf="@id/howToViewValues"
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp"
+            android:paddingTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="30dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="16sp"
+            android:layout_marginStart="30dp" />
+
+        <TextView
+            android:id="@+id/ARJTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Average Rectified Jerk"
+            app:layout_constraintTop_toBottomOf="@id/HowToViewValuesBody"
+            app:layout_constraintStart_toStartOf="parent"
+            android:fontFamily="@font/profile_pro_black"
+            android:textSize="18sp"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="30dp"/>
+
+        <TextView
+            android:id="@+id/arjBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Average rectified jerk (ARJ) measures movement smoothness. Lower ARJ means more fluidity."
+            app:layout_constraintTop_toBottomOf="@id/ARJTest"
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp"
+            android:paddingTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="30dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="16sp"
+            android:layout_marginStart="30dp" />
+
+        <TextView
+            android:id="@+id/balanceTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Balance"
+            app:layout_constraintTop_toBottomOf="@id/arjBody"
+            app:layout_constraintStart_toStartOf="parent"
+            android:fontFamily="@font/profile_pro_black"
+            android:textSize="18sp"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="30dp"/>
+
+        <TextView
+            android:id="@+id/balanceBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Balance measures the sway area from the center of mass (COM). Sway area is the area in which your COM falls in while walking. For instance, standing still would mean a COM of almost 0. In walking, most people tends to sway slightly. A more consistent sway area value is very well itself, as everyone have a different response."
+            app:layout_constraintTop_toBottomOf="@id/balanceTest"
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp"
+            android:paddingTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="30dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="16sp"
+            android:layout_marginStart="30dp" />
+
+        <TextView
+            android:id="@+id/dualTaskTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dual Task"
+            app:layout_constraintTop_toBottomOf="@id/balanceBody"
+            app:layout_constraintStart_toStartOf="parent"
+            android:fontFamily="@font/profile_pro_black"
+            android:textSize="18sp"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="30dp"/>
+
+        <TextView
+            android:id="@+id/dualTaskBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dual Task measures the impact of performing a cognitive activity on movement smoothness (ARJ) and balance. It tests the body's response to a cognitive distraction, mimicking busy real world scenarios."
+            app:layout_constraintTop_toBottomOf="@id/dualTaskTest"
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp"
+            android:paddingTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="30dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="16sp"
+            android:layout_marginStart="30dp" />
+
+        <TextView
+            android:id="@+id/sensoryAtaxiaTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sensory Ataxia"
+            app:layout_constraintTop_toBottomOf="@id/dualTaskBody"
+            app:layout_constraintStart_toStartOf="parent"
+            android:fontFamily="@font/profile_pro_black"
+            android:textSize="18sp"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="30dp"/>
+
+        <TextView
+            android:id="@+id/sensoryAtaxiaBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sensory Ataxia measures the reliance on vision. When walking with eyes closed in the test, your body relies on sensory feeling to navigate. Like Dual Task, it measures the impact on movement smoothness (ARJ) and balance. The smaller difference between two tests measurements, the more signal that the body has greater sensory feelings."
+            app:layout_constraintTop_toBottomOf="@id/sensoryAtaxiaTest"
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp"
+            android:paddingTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="30dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="16sp"
+            android:layout_marginStart="30dp" />
+
+        <TextView
+            android:id="@+id/walkingSpeedTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Walking Speed"
+            app:layout_constraintTop_toBottomOf="@id/sensoryAtaxiaBody"
+            app:layout_constraintStart_toStartOf="parent"
+            android:fontFamily="@font/profile_pro_black"
+            android:textSize="18sp"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="30dp"/>
+
+        <TextView
+            android:id="@+id/walkingSpeedBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="The range of walking speed may help you find a balance between rest and movement"
+            app:layout_constraintTop_toBottomOf="@id/walkingSpeedTest"
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp"
+            android:paddingTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="30dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="16sp"
+            android:layout_marginStart="30dp" />
+
+        <TextView
+            android:id="@+id/enduranceTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Endurance"
+            app:layout_constraintTop_toBottomOf="@id/walkingSpeedBody"
+            app:layout_constraintStart_toStartOf="parent"
+            android:fontFamily="@font/profile_pro_black"
+            android:textSize="18sp"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="30dp"/>
+
+        <TextView
+            android:id="@+id/enduranceBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Endurance measures the distance that you walk in a timed test."
+            app:layout_constraintTop_toBottomOf="@id/enduranceTest"
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="30dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="30dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="16sp"
+            android:layout_marginStart="30dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

@@ -4,7 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:background="@color/white">
 
 <LinearLayout
     android:id="@+id/rootLayout"
@@ -29,14 +31,16 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Date"
-            android:textStyle="bold"
-            android:textSize="20sp" />
+            android:fontFamily="@font/profile_pro_black"
+            android:textSize="28sp" />
 
         <Button
             android:id="@+id/shareReportButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Share"
+            android:textSize="18sp"
+            android:fontFamily="@font/profile_pro_medi"
             android:backgroundTint="@color/design_default_color_secondary"/>
     </LinearLayout>
 
@@ -45,7 +49,8 @@
         android:layout_height="wrap_content"
         android:id="@+id/trendTitle"
         android:text="Table of Variation: unstressed"
-        android:textSize="18sp"
+        android:textSize="20sp"
+        android:fontFamily="@font/profile_pro_bold"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="20dp"
@@ -65,7 +70,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="Standard Deviation (SD)"
@@ -73,7 +79,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="Coefficient of Variation (CV)"
@@ -81,7 +88,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="ARJ (left knee)"
@@ -89,7 +97,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/ARJSDLeft"
@@ -97,7 +106,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/ARJCVLeft"
@@ -105,7 +115,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:text="ARJ (right knee)"
@@ -113,7 +124,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/ARJSDRight"
@@ -121,7 +133,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/ARJCVRight"
@@ -129,15 +142,17 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
-            android:text="Balance"
+            android:text="Sway Area"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/BalanceSD"
@@ -145,7 +160,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/BalanceCV"
@@ -153,7 +169,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:text="Walking Speed"
@@ -161,7 +178,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/WSSD"
@@ -169,7 +187,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/WSCV"
@@ -177,7 +196,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:text="Endurance"
@@ -185,7 +205,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/EnduranceSD"
@@ -193,7 +214,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/EnduranceCV"
@@ -201,7 +223,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
     </GridLayout>
 
@@ -210,7 +233,8 @@
         android:layout_height="wrap_content"
         android:id="@+id/trendTitle4"
         android:text="Table of measurement: all values"
-        android:textSize="18sp"
+        android:textSize="20sp"
+        android:fontFamily="@font/profile_pro_bold"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="20dp"
@@ -230,7 +254,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="Today's Value"
@@ -238,7 +263,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="ARJ (left knee)"
@@ -246,7 +272,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/ARJValueLeftToday"
@@ -254,7 +281,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:text="ARJ (right knee)"
@@ -262,7 +290,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/ARJValueRightToday"
@@ -270,15 +299,17 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
-            android:text="Balance"
+            android:text="Sway Area"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/BalanceToday"
@@ -286,7 +317,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:text="Walking Speed"
@@ -294,7 +326,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/WSToday"
@@ -302,7 +335,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:text="Endurance"
@@ -310,7 +344,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/EnduranceToday"
@@ -318,7 +353,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
     </GridLayout>
 
@@ -328,7 +364,8 @@
         android:id="@+id/dualTaskTitle"
         android:layout_marginTop="14dp"
         android:text="Dual Task \nHigher value = more likely to get distracted in busy environments"
-        android:textSize="18sp"
+        android:textSize="20sp"
+        android:fontFamily="@font/profile_pro_bold"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="20dp"
@@ -348,7 +385,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="Today's Value"
@@ -356,7 +394,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="DTC"
@@ -364,7 +403,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="ARJ (left knee)"
@@ -372,7 +412,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/dualTaskARJLeftToday"
@@ -380,7 +421,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/ARJDTDTCLeftToday"
@@ -388,7 +430,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:text="ARJ (right knee)"
@@ -396,7 +439,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/dualTaskARJRightToday"
@@ -404,7 +448,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/ARJDTDTCRightToday"
@@ -412,15 +457,17 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
-            android:text="Balance"
+            android:text="Sway Area"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/dualTaskBalanceToday"
@@ -428,7 +475,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/BalanceDTDTCToday"
@@ -436,7 +484,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
     </GridLayout>
 
@@ -446,7 +495,8 @@
         android:id="@+id/sensoryAtaxiaTitle"
         android:layout_marginTop="14dp"
         android:text="Sensory Ataxia \nHigher value = higher loss of sensory"
-        android:textSize="18sp"
+        android:textSize="20sp"
+        android:fontFamily="@font/profile_pro_bold"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="20dp"
@@ -466,7 +516,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="Today's Value"
@@ -474,7 +525,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="DTC"
@@ -482,7 +534,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:text="ARJ (left knee)"
@@ -490,7 +543,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/sensoryAtaxiaARJLeftToday"
@@ -498,7 +552,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/ARJSADTCLeftToday"
@@ -506,7 +561,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:text="ARJ (right knee)"
@@ -514,7 +570,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/sensoryAtaxiaARJRightToday"
@@ -522,7 +579,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/ARJSADTCRightToday"
@@ -530,15 +588,17 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
-            android:text="Balance"
+            android:text="Sway Area"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
 
         <TextView
             android:id="@+id/sensoryAtaxiaBalanceToday"
@@ -546,7 +606,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
         <TextView
             android:id="@+id/BalanceSADTCToday"
@@ -554,7 +615,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:padding="8dp"
-            android:textSize="16sp"/>
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
 
     </GridLayout>
 
