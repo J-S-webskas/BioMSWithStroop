@@ -50,8 +50,10 @@ public class ChooseYourWeight extends AppCompatActivity {
 
         next.setOnClickListener(v -> {
             if (saveWeight()) {
-                Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(this, LoginActivity.class);
+                Toast.makeText(this, "Welcome to BioMS!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.putExtra("navigate_to_home", true);
+                DataStorageManager.setFirsttime(this,false);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();

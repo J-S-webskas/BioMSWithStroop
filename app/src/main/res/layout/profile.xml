@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/topBar"
@@ -107,7 +108,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Gender"
+                android:text="Sex"
                 android:textSize="19sp"
                 android:textColor="@color/black"
                 android:fontFamily="@font/profile_pro_bold"
@@ -128,7 +129,7 @@
                     android:id="@+id/currentGender"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Gender"
+                    android:text="Sex"
                     android:textSize="19sp"
                     android:textColor="@color/black"
                     android:fontFamily="@font/profile_pro_black"
@@ -150,16 +151,28 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <Button
-        android:id="@+id/logOut"
-        android:layout_width="wrap_content"
+    <TextView
+        android:id="@+id/thishelpsus"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Log out"
-        android:fontFamily="@font/profile_pro"
-        android:backgroundTint="@color/black"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/gender"
+        app:layout_constraintStart_toStartOf="@id/gender"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="30dp"
-        android:layout_marginBottom="30dp"/>
+        android:fontFamily="@font/profile_pro"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="On you phone, the app should only contain your data. Other users must download the app separately on their phones to ensure accurate tracking." />
+
+    <!--    <Button-->
+<!--        android:id="@+id/logOut"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Log out"-->
+<!--        android:fontFamily="@font/profile_pro"-->
+<!--        android:backgroundTint="@color/black"-->
+<!--        app:layout_constraintBottom_toBottomOf="parent"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        android:layout_marginEnd="30dp"-->
+<!--        android:layout_marginBottom="30dp"/>-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

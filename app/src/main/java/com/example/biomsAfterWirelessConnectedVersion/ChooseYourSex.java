@@ -1,17 +1,19 @@
 package com.example.biomsAfterWirelessConnectedVersion;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageButton;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
+
+import com.google.android.material.card.MaterialCardView;
 
 import java.io.IOException;
 
@@ -34,14 +36,32 @@ public class ChooseYourSex extends AppCompatActivity {
             }
         }
 
-        CardView femaleCard = findViewById(R.id.femaleCard);
-        CardView maleCard = findViewById(R.id.maleCard);
-        CardView otherCard = findViewById(R.id.otherCard);
+        MaterialCardView femaleCard = findViewById(R.id.femaleCard);
+        MaterialCardView maleCard = findViewById(R.id.maleCard);
+        MaterialCardView otherCard = findViewById(R.id.otherCard);
         ImageButton back = findViewById(R.id.back);
 
-        femaleCard.setOnClickListener(v -> {
-            try {
+        MaterialCardView Card2 = (MaterialCardView) femaleCard;
+        Card2.setStrokeColor(Color.WHITE);
+        Card2.setStrokeWidth(1);
+        MaterialCardView Card1 = (MaterialCardView) maleCard;
+        Card1.setStrokeColor(Color.WHITE);
+        Card1.setStrokeWidth(1);
+        MaterialCardView Card = (MaterialCardView) otherCard;
+        Card.setStrokeColor(Color.WHITE);
+        Card.setStrokeWidth(1);
 
+        femaleCard.setOnClickListener(v -> {
+            MaterialCardView currentCard = (MaterialCardView) femaleCard;
+            currentCard.setStrokeColor(Color.RED);
+            currentCard.setStrokeWidth(1);
+            MaterialCardView othCard = (MaterialCardView) otherCard;
+            othCard.setStrokeColor(Color.WHITE);
+            othCard.setStrokeWidth(1);
+            MaterialCardView malCard = (MaterialCardView) maleCard;
+            malCard.setStrokeColor(Color.WHITE);
+            malCard.setStrokeWidth(1);
+            try {
                 DataStorageManager.setSex(ChooseYourSex.this, "female");
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -51,6 +71,15 @@ public class ChooseYourSex extends AppCompatActivity {
         });
 
         maleCard.setOnClickListener(v -> {
+            MaterialCardView currentCard = (MaterialCardView) maleCard;
+            currentCard.setStrokeColor(Color.RED);
+            currentCard.setStrokeWidth(1);
+            MaterialCardView femCard = (MaterialCardView) femaleCard;
+            femCard.setStrokeColor(Color.WHITE);
+            femCard.setStrokeWidth(1);
+            MaterialCardView othCard = (MaterialCardView) otherCard;
+            othCard.setStrokeColor(Color.WHITE);
+            othCard.setStrokeWidth(1);
             try {
                 DataStorageManager.setSex(this, "male");
             } catch (IOException e) {
@@ -61,6 +90,15 @@ public class ChooseYourSex extends AppCompatActivity {
         });
 
         otherCard.setOnClickListener(v -> {
+            MaterialCardView currentCard = (MaterialCardView) otherCard;
+            currentCard.setStrokeColor(Color.RED);
+            currentCard.setStrokeWidth(1);
+            MaterialCardView femCard = (MaterialCardView) femaleCard;
+            femCard.setStrokeColor(Color.WHITE);
+            femCard.setStrokeWidth(1);
+            MaterialCardView malCard = (MaterialCardView) maleCard;
+            malCard.setStrokeColor(Color.WHITE);
+            malCard.setStrokeWidth(1);
             try {
                 DataStorageManager.setSex(this, "other");
             } catch (IOException e) {

@@ -64,30 +64,6 @@ public class AssessmentFragment extends Fragment {
             showDeleteAssessmentDialog();
         });
 
-//        previewTestMode.setOnClickListener(v -> {
-//            // Check if permission is granted
-//            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
-//                    != PackageManager.PERMISSION_GRANTED) {
-//                // Directly request permission
-//                ActivityCompat.requestPermissions(requireActivity(),
-//                        new String[]{Manifest.permission.CAMERA},
-//                        CAMERA_PERMISSION_REQUEST_CODE);
-//                return;
-//            }
-//            // open camera fragment and let it see preview test mode
-//            Bundle bundle = new Bundle();
-//            bundle.putString("SOURCE_ACTIVITY", "AssessmentFragment");
-//            bundle.putBoolean("preview", true);
-//
-//            CameraFragment fragment = new CameraFragment();
-//            fragment.setArguments(bundle);
-//
-//            requireActivity().getSupportFragmentManager()
-//                    .beginTransaction()
-//                    .add(R.id.fragment_container, fragment)
-//                    .commit();
-//        });
-
         openSeeInstructions.setOnClickListener(v -> {
             // call  hw will you record, which navigates to MarkDistance, but need to stop it once it discovers that this is just instructions
             Intent intent = new Intent(requireContext(), HowWillYouRecord.class);

@@ -35,28 +35,19 @@ public class MainActivity extends AppCompatActivity {
 
         setStatusBarColor(com.google.android.material.R.color.design_default_color_background);
 
-        // Check if user is logged in
-        if (!DataStorageManager.isUserLoggedIn(this)) {
-            Intent intent = new Intent(this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
+
+        if (DataStorageManager.getFirsttime(this)) {
+            bottomNavigationView.setVisibility(View.GONE);
+            Intent intent1 = new Intent(this, WelcomeToBioMS.class);
+            startActivity(intent1);
             finish();
             return;
         }
-
-        List<AssessmentData> assessments = DataStorageManager.loadAllAssessments(this);
-        double mass = DataStorageManager.getMass(this);
-        String sex = DataStorageManager.getSex(this);
-
-        // Then set your content view
-        // If using DataBinding:
-//         ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
-        // Or without DataBinding:
-//        setContentView(R.layout.activity_main);
-
-        bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView.setVisibility(View.VISIBLE);
 
         Intent intent = getIntent();
+        Boolean navigate_to_home = intent.getBooleanExtra("avigate_to_home", false);
         Boolean cancelled = intent.getBooleanExtra("cancelled", false);
         Boolean finished = intent.getBooleanExtra("finished", false);
         Boolean saving = intent.getBooleanExtra("Saving", false);
@@ -65,11 +56,17 @@ public class MainActivity extends AppCompatActivity {
             AssessmentFragment fragment = new AssessmentFragment();
             this.getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, fragment)
-//                    .addToBackStack("Assessment fragment")
                     .commit();
-//            this.finish();
-//            getSupportFragmentManager().popBackStack();
             selectBottomNavItem(R.id.nav_record);
+            return;
+        }
+        if (navigate_to_home) {
+            clearBackStack();
+            HomeFragment fragment = new HomeFragment();
+            this.getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .commit();
+            selectBottomNavItem(R.id.nav_home);
             return;
         }
 
@@ -195,7 +192,6 @@ public class MainActivity extends AppCompatActivity {
             AssessmentFragment fragment = new AssessmentFragment();
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, fragment)
-//                    .addToBackStack("Assessment fragment")
                     .commit();
 
             // Clear the flag so it doesn't trigger again
@@ -203,27 +199,6 @@ public class MainActivity extends AppCompatActivity {
             selectBottomNavItem(R.id.nav_record);
         }
     }
-//    @Override
-//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        super.onActivityResult(requestCode, resultCode, data);
-//
-//        // Check if this is the response from our request
-//        if (requestCode == REQUEST_CODE_CANCEL_TEST) {
-//            // Check if the result was successful
-//            if (resultCode == RESULT_OK) {
-//                // Get the data from the intent
-//                boolean cancelled = data.getBooleanExtra("cancelled", false);
-//                boolean Saving = data.getBooleanExtra("Saving", false);
-//                // If test was cancelled, navigate to Assessment
-//                if (cancelled || Saving) {
-//                    // First pop back, or else camera fragment shows, then navigate to assessment fragment
-//                    getSupportFragmentManager().popBackStack();
-//                    selectBottomNavItem(R.id.nav_record);
-//                }
-//            }
-//        }
-//    }
-
     private void clearBackStack() {
         FragmentManager fm = getSupportFragmentManager();
         int count = fm.getBackStackEntryCount();

@@ -49,15 +49,6 @@ public class Profile extends AppCompatActivity {
         CardView gender = findViewById(R.id.gender);
         currentGender = findViewById(R.id.currentGender);
         currentWeight = findViewById(R.id.currentWeight);
-        TextView logOut = findViewById(R.id.logOut);
-
-        logOut.setOnClickListener(v -> {
-            UserManager.logout(this);
-            Intent intent = new Intent(Profile.this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
-        });
 
         weight.setOnClickListener(v -> {
             showWeightDialog();

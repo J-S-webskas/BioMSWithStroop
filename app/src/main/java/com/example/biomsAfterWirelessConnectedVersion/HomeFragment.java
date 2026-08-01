@@ -68,14 +68,11 @@ public class HomeFragment extends Fragment {
         String sex = DataStorageManager.getSex(requireContext());
         if (mass == 0) {
             showWeightDialog();
-            // todo: freeze the screen: user must put in a weight
         }
 
         if (sex == null || sex.isEmpty() || sex.equals("Not Found")) {
             showSexDialog();
         }
-
-        List<String> list = DataStorageManager.getAllUsers(requireContext());
 
         profile.setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), Profile.class);
@@ -203,10 +200,7 @@ public class HomeFragment extends Fragment {
         todoListSA.setVisibility(View.VISIBLE);
 
         List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(requireContext());
-        if (allAssessment.isEmpty()) {
-            Toast.makeText(requireContext(),
-                    "Assessment from home is empty",
-                    Toast.LENGTH_LONG).show();
+        if (allAssessment.isEmpty()) {;
             return;
         }
 

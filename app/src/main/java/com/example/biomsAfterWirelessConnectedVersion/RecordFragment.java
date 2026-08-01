@@ -95,9 +95,6 @@ public class RecordFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // todo: cannot inflate cancelling test, although you will have to call its class when cancel really is pressed, bt that's in camera fragment, so the method either gets called from camera fragment to here or gets moved into camera fragment (likely the first)
-        // todo: test must get called as a controller class and happen simultaneously as camera is recording the start test.
-        // todo: remove this activity_cancelling_test, recordFragment is just a controller class
         // Get ViewModel
         viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
         String assessmentType = viewModel.getAssessmentType();
@@ -281,22 +278,6 @@ public class RecordFragment extends Fragment {
     }
 
     private void startWSAndEnduranceTest() {
-        // For approximate location (coarse)
-//        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
-//                != PackageManager.PERMISSION_GRANTED) {
-//            Log.d("Location", "Location permission not granted");
-//            Toast.makeText(requireContext(), "Location permission required", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//
-//        // For precise location (fine) - most common
-//        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-//                != PackageManager.PERMISSION_GRANTED) {
-//            Log.d("Location", "Fine location permission not granted");
-//            Toast.makeText(requireContext(), "Precise location permission required", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-
         if (currentTestType != TestType.NONE) { // If the user clicks another test while this test is running, discard this test data
             stopCurrentTestAndDiscardData();
             return;
@@ -728,7 +709,7 @@ public class RecordFragment extends Fragment {
 
     private void saveSensoryAtaxiaResults() throws IOException {
 
-        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext());
+        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
         currentAssessment = todayAssessment;
 
         float balance = BalanceCalculator.calculateOffBalance(
@@ -784,7 +765,7 @@ public class RecordFragment extends Fragment {
 
     private void saveDualTaskResults() throws IOException {
 
-        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext());
+        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
         currentAssessment = todayAssessment;
 
         float balance = BalanceCalculator.calculateOffBalance(
@@ -837,7 +818,7 @@ public class RecordFragment extends Fragment {
     }
 
     private void saveARJAndBalanceResults() throws IOException {
-        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext());
+        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
         currentAssessment = todayAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
@@ -875,7 +856,7 @@ public class RecordFragment extends Fragment {
     }
 
     private void saveWSAndEnduranceResults(float speed, float endurance) throws IOException {
-        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext());
+        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
         currentAssessment = todayAssessment;
         currentAssessment.getBaseline().setWalkingSpeed(speed);
         currentAssessment.getBaseline().setEnduranceScore(endurance);

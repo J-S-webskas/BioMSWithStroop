@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -114,7 +115,7 @@
                 android:id="@+id/distanceBody"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Measure a place where you can walk for the distance you chose (lapped if needed)"
+                android:text="Measure a place where you can walk for the distance you chose (walk back and forth if needed). After you've walked the chosen distance, press save."
                 app:layout_constraintTop_toBottomOf="@id/markDistance"
                 android:paddingStart="30dp"
                 android:paddingEnd="30dp"
@@ -122,7 +123,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 android:layout_marginEnd="30dp"
                 android:fontFamily="@font/profile_pro"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:layout_marginStart="30dp" />
 
             <TextView
@@ -133,7 +134,7 @@
                 android:paddingEnd="28dp"
                 android:fontFamily="@font/profile_pro_medi"
                 android:text="Click next to start timing your walk \nOnly check off the boxes after you've completed them."
-                android:textSize="18dp"
+                android:textSize="16sp"
                 android:layout_marginTop="40dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/distanceBody"
@@ -144,6 +145,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Next"
+                android:textSize="16sp"
                 android:layout_marginBottom="20dp"
                 android:layout_marginEnd="20dp"
                 android:fontFamily="@font/profile_pro_medi"
@@ -163,8 +165,5 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"/>
         </androidx.constraintlayout.widget.ConstraintLayout>
-
-
     </ScrollView>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

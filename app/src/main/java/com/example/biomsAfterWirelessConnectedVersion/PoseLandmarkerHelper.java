@@ -509,14 +509,112 @@ public class PoseLandmarkerHelper {
         double comZ = 0;  // Using Z for depth (forward/backward in normalized space)
         double totalMassUsed = 0;
 
-        // todo: to be implemented
+        // 1. TRUNK (43.46% for male)
+        Landmark leftShoulder = worldLandmarks.get(11);
+        Landmark rightShoulder = worldLandmarks.get(12);
+        Landmark leftHip = worldLandmarks.get(23);
+        Landmark rightHip = worldLandmarks.get(24);
 
-        double comX_final = comX / totalMass;
-        double comZ_final = comZ / totalMass;
+        // Shoulder midpoint (proximal end of trunk)
+        double shoulderX = (leftShoulder.x() + rightShoulder.x()) / 2;
+        double shoulderZ = (leftShoulder.z() + rightShoulder.z()) / 2;
+
+        // Hip midpoint (distal end of trunk)
+        double hipX = (leftHip.x() + rightHip.x()) / 2;
+        double hipZ = (leftHip.z() + rightHip.z()) / 2;
+
+        // Trunk COM = proximal + (distal - proximal) * COM_location_ratio
+        // COM location ratio for male trunk: 0.4458 (from proximal)
+        double trunkCOM_X = shoulderX + (hipX - shoulderX) * 0.4458;
+        double trunkCOM_Z = shoulderZ + (hipZ - shoulderZ) * 0.4458;
+        double trunkMass = 0.4346 * totalMass;  // 43.46% for male
+        comX += trunkCOM_X * trunkMass;
+        comZ += trunkCOM_Z * trunkMass;
+        totalMassUsed += trunkMass;
+
+        // 2. LEFT THIGH (14.16% for male)
+        Landmark leftHipJoint = worldLandmarks.get(23);    // Proximal end
+        Landmark leftKnee = worldLandmarks.get(25);         // Distal end
+        // COM location for male thigh: 0.3775 from proximal
+        double leftThighCOM_X = leftHipJoint.x() + (leftKnee.x() - leftHipJoint.x()) * 0.3775;
+        double leftThighCOM_Z = leftHipJoint.z() + (leftKnee.z() - leftHipJoint.z()) * 0.3775;
+        double leftThighMass = 0.1416 * totalMass;  // 14.16% for male
+        comX += leftThighCOM_X * leftThighMass;
+        comZ += leftThighCOM_Z * leftThighMass;
+        totalMassUsed += leftThighMass;
+
+        // 3. RIGHT THIGH (14.16% for male)
+        Landmark rightHipJoint = worldLandmarks.get(24);    // Proximal end
+        Landmark rightKnee = worldLandmarks.get(26);        // Distal end
+        double rightThighCOM_X = rightHipJoint.x() + (rightKnee.x() - rightHipJoint.x()) * 0.3775;
+        double rightThighCOM_Z = rightHipJoint.z() + (rightKnee.z() - rightHipJoint.z()) * 0.3775;
+        double rightThighMass = 0.1416 * totalMass;  // 14.16% for male
+        comX += rightThighCOM_X * rightThighMass;
+        comZ += rightThighCOM_Z * rightThighMass;
+        totalMassUsed += rightThighMass;
+
+        // 4. LEFT SHANK (4.33% for male)
+        Landmark leftKnee2 = worldLandmarks.get(25);        // Proximal end
+        Landmark leftAnkle = worldLandmarks.get(27);        // Distal end
+        // COM location for male shank: 0.4225 from proximal
+        double leftShankCOM_X = leftKnee2.x() + (leftAnkle.x() - leftKnee2.x()) * 0.4225;
+        double leftShankCOM_Z = leftKnee2.z() + (leftAnkle.z() - leftKnee2.z()) * 0.4225;
+        double leftShankMass = 0.0433 * totalMass;  // 4.33% for male
+        comX += leftShankCOM_X * leftShankMass;
+        comZ += leftShankCOM_Z * leftShankMass;
+        totalMassUsed += leftShankMass;
+
+        // 5. RIGHT SHANK (4.33% for male)
+        Landmark rightKnee2 = worldLandmarks.get(26);       // Proximal end
+        Landmark rightAnkle = worldLandmarks.get(28);       // Distal end
+        double rightShankCOM_X = rightKnee2.x() + (rightAnkle.x() - rightKnee2.x()) * 0.4225;
+        double rightShankCOM_Z = rightKnee2.z() + (rightAnkle.z() - rightKnee2.z()) * 0.4225;
+        double rightShankMass = 0.0433 * totalMass;  // 4.33% for male
+        comX += rightShankCOM_X * rightShankMass;
+        comZ += rightShankCOM_Z * rightShankMass;
+        totalMassUsed += rightShankMass;
+
+        // 6. LEFT FOOT (1.37% for male)
+        Landmark leftAnkle2 = worldLandmarks.get(27);       // Proximal end
+        Landmark leftHeel = worldLandmarks.get(29);         // Heel
+        Landmark leftToe = worldLandmarks.get(31);          // Toe
+        // Using heel as distal for simplicity
+        double leftFootDistalX = leftHeel.x();
+        double leftFootDistalZ = leftHeel.z();
+        // Alternative: use midpoint of heel and toe
+        // double leftFootDistalX = (leftHeel.x() + leftToe.x()) / 2;
+        // double leftFootDistalZ = (leftHeel.z() + leftToe.z()) / 2;
+
+        // COM location for male foot: 0.4069 from proximal
+        double leftFootCOM_X = leftAnkle2.x() + (leftFootDistalX - leftAnkle2.x()) * 0.4069;
+        double leftFootCOM_Z = leftAnkle2.z() + (leftFootDistalZ - leftAnkle2.z()) * 0.4069;
+        double leftFootMass = 0.0137 * totalMass;  // 1.37% for male
+        comX += leftFootCOM_X * leftFootMass;
+        comZ += leftFootCOM_Z * leftFootMass;
+        totalMassUsed += leftFootMass;
+
+        // 7. RIGHT FOOT (1.37% for male)
+        Landmark rightAnkle2 = worldLandmarks.get(28);      // Proximal end
+        Landmark rightHeel = worldLandmarks.get(30);        // Heel
+        Landmark rightToe = worldLandmarks.get(32);         // Toe
+        double rightFootDistalX = rightHeel.x();
+        double rightFootDistalZ = rightHeel.z();
+
+        double rightFootCOM_X = rightAnkle2.x() + (rightFootDistalX - rightAnkle2.x()) * 0.4069;
+        double rightFootCOM_Z = rightAnkle2.z() + (rightFootDistalZ - rightAnkle2.z()) * 0.4069;
+        double rightFootMass = 0.0137 * totalMass;  // 1.37% for male
+        comX += rightFootCOM_X * rightFootMass;
+        comZ += rightFootCOM_Z * rightFootMass;
+        totalMassUsed += rightFootMass;
+
+        // Normalize by totalMassUsed, so we are not being biased
+        double comX_final = comX / totalMassUsed;
+        double comZ_final = comZ / totalMassUsed;
         com.add(comX_final);
         com.add(comZ_final);
         return com;
     }
+
     private List<Double> calculateCOMForFemale(double totalMass, List<Landmark> worldLandmarks) {
         List<Double> com = new ArrayList<>();
         double comX = 0;

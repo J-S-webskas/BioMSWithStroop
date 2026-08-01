@@ -51,44 +51,16 @@
             android:name=".Profile"
             android:exported="false"
             android:screenOrientation="portrait" />
-        <activity
-            android:name=".ChooseYourSex"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".ChooseYourWeight"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".LoginActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
         <activity android:name=".MarkDistanceAndCamera"
             android:screenOrientation="portrait"/>
         <activity android:name=".HowWillYouRecord"
             android:screenOrientation="portrait"/>
-        <activity
-            android:name=".ResetPassword"
-            android:exported="true"
-            android:screenOrientation="portrait">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Custom scheme for deep linking -->
-                <data
-                    android:scheme="biomsapp"
-                    android:host="reset-password" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".AskForEmail"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+        <activity android:name=".ChooseYourSex"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".ChooseYourWeight"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".WelcomeToBioMS"
+            android:screenOrientation="portrait"/>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
