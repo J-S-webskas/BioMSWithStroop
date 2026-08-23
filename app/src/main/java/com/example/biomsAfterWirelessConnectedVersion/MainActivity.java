@@ -76,7 +76,6 @@ public class MainActivity extends AppCompatActivity {
             AssessmentFragment fragment = new AssessmentFragment();
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, fragment)
-//                    .addToBackStack("Assessment fragment")
                     .commit();
 
             // Clear the flag so it doesn't trigger again

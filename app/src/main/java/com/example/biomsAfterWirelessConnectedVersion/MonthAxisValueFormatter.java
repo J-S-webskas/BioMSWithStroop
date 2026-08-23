@@ -9,10 +9,7 @@ import java.util.Locale;
 
 public class MonthAxisValueFormatter extends ValueFormatter {
     private final SimpleDateFormat dateFormat;
-    private final Calendar calendar = Calendar.getInstance();
-    private final Date currentDate = new Date();
-    private final Date startDate;  // The cutoff date from getStartDateForRange
-
+    private final Date startDate;
 
     public MonthAxisValueFormatter(Date startDate) {
         this.startDate = startDate;
@@ -21,13 +18,12 @@ public class MonthAxisValueFormatter extends ValueFormatter {
 
     @Override
     public String getFormattedValue(float value) {
-
         if (Float.isNaN(value)) return "";
 
-        int monthsSinceStart = (int) value;
+        int daysSinceStart = (int) value;
         Calendar cal = Calendar.getInstance();
         cal.setTime(startDate);
-        cal.add(Calendar.MONTH, monthsSinceStart);
+        cal.add(Calendar.DAY_OF_YEAR, daysSinceStart);
 
         return dateFormat.format(cal.getTime());
     }

@@ -258,26 +258,23 @@ public class ChartCardViewHolder extends RecyclerView.ViewHolder {
     }
 
     private void setupXAxis(XAxis xAxis, String timeRange, Date startDate) {
-        // Count = how many data points get shown
         switch (timeRange) {
             case "1month":
                 xAxis.setValueFormatter(new DayAxisValueFormatter(startDate));
                 xAxis.setLabelCount(6, true);
                 break;
-                // todo: add startDate to the other axis formatters
+
             case "6month":
-                xAxis.setValueFormatter(new WeekAxisValueFormatter(startDate));
-                xAxis.setLabelCount(8, true);
+                // Use MonthAxisValueFormatter with 6 labels for the 6 months
+                xAxis.setValueFormatter(new MonthAxisValueFormatter(startDate));
+                xAxis.setLabelCount(6, true);
                 break;
-                /*
-                For MonthAxisValueFormatter:
-                If today's date to the user's first registration day has been 6 months or more → use separate months
-                Otherwise → use less month (but keep it within the 6 months range)
-                 */
+
             case "1year":
                 xAxis.setValueFormatter(new MonthAxisValueFormatter(startDate));
                 xAxis.setLabelCount(12, true);
                 break;
+
             case "max":
                 xAxis.setValueFormatter(new YearAxisValueFormatter(startDate));
                 xAxis.setLabelCount(6, true);
