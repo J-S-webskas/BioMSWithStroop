@@ -280,7 +280,6 @@ public class AutoReportGenerationService extends Service {
             SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
             SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
             SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
-
         }
 
         // Calculate SD & CV

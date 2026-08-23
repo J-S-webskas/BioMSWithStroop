@@ -823,10 +823,6 @@ public class RecordFragment extends Fragment {
 
         BalanceCalculator bc = new BalanceCalculator();
         float swayArea = bc.getSwayArea(COMHistories, requireContext());
-//        float balance = BalanceCalculator.calculateOffBalance(
-//                BalanceHistories.get("left_hip"),
-//                BalanceHistories.get("left_knee"));
-
         Map<String, Float> ARJScores = new HashMap<>();
         for (String joint : Arrays.asList("left_knee", "right_knee")) {
             float arj = AverageRectifiedJerk.calculateAverageRectifiedJerk(
@@ -841,6 +837,8 @@ public class RecordFragment extends Fragment {
         currentAssessment.getBaseline().setARJ(ARJScores);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.ARJ_BALANCE_COMPLETED);
         currentAssessment.setARJAndBalanceTestDate(new Date());
+
+        recalculateComparisons(currentAssessment);
 
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
@@ -923,6 +921,56 @@ public class RecordFragment extends Fragment {
         }
         if (!getHasValidPose()) {
             doesNotHaveValidPose();
+        }
+    }
+
+    private void recalculateComparisons(AssessmentData assessment) {
+        if (assessment == null || assessment.getBaseline() == null) return;
+
+        float newBaselineBalance = assessment.getBaseline().getBalanceScore();
+        Float newBaselineARJLeft = assessment.getBaseline().getARJ().get("left_knee");
+        Float newBaselineARJRight = assessment.getBaseline().getARJ().get("right_knee");
+
+        // RECALCULATE DUAL TASK DTC
+        DualTaskAssessment dt = assessment.getDualTask();
+        if (dt != null) {
+            if (newBaselineBalance > 0 && dt.getBalanceScore() > 0) {
+                float dtBalanceChange = ((dt.getBalanceScore() - newBaselineBalance) / newBaselineBalance) * 100f;
+                assessment.getComparisons().setDualTaskBalanceChange(dtBalanceChange);
+            }
+
+            if (newBaselineARJLeft != null && newBaselineARJLeft > 0 && dt.getARJ().get("left_knee") != null) {
+                float dtARJLeft = dt.getARJ().get("left_knee");
+                float dtLeftChange = ((dtARJLeft - newBaselineARJLeft) / newBaselineARJLeft) * 100f;
+                assessment.getComparisons().setDualTaskARJLeftKneeChange(dtLeftChange);
+            }
+
+            if (newBaselineARJRight != null && newBaselineARJRight > 0 && dt.getARJ().get("right_knee") != null) {
+                float dtARJRight = dt.getARJ().get("right_knee");
+                float dtRightChange = ((dtARJRight - newBaselineARJRight) / newBaselineARJRight) * 100f;
+                assessment.getComparisons().setDualTaskARJRightKneeChange(dtRightChange);
+            }
+        }
+
+        // RECALCULATE SENSORY ATAXIA DTC
+        SensoryAtaxiaAssessment sa = assessment.getSensoryAtaxia();
+        if (sa != null) {
+            if (newBaselineBalance > 0 && sa.getBalanceScore() > 0) {
+                float saBalanceChange = ((sa.getBalanceScore() - newBaselineBalance) / newBaselineBalance) * 100f;
+                assessment.getComparisons().setSensoryAtaxiaBalanceChange(saBalanceChange);
+            }
+
+            if (newBaselineARJLeft != null && newBaselineARJLeft > 0 && sa.getARJ().get("left_knee") != null) {
+                float saARJLeft = sa.getARJ().get("left_knee");
+                float saLeftChange = ((saARJLeft - newBaselineARJLeft) / newBaselineARJLeft) * 100f;
+                assessment.getComparisons().setSensoryAtaxiaARJLeftKneeChange(saLeftChange);
+            }
+
+            if (newBaselineARJRight != null && newBaselineARJRight > 0 && sa.getARJ().get("right_knee") != null) {
+                float saARJRight = sa.getARJ().get("right_knee");
+                float saRightChange = ((saARJRight - newBaselineARJRight) / newBaselineARJRight) * 100f;
+                assessment.getComparisons().setSensoryAtaxiaARJRightKneeChange(saRightChange);
+            }
         }
     }
 }

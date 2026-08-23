@@ -316,16 +316,13 @@ public class ReportFragment extends Fragment {
                 }
             }
 
-            // DTC DATA FROM COMPARISONS
             TestComparisons comparisons = assessment.getComparisons();
-            if (comparisons != null) {
-                DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
-                DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
-                DTBalanceDTC = comparisons.getDualTaskBalanceChange();
-                SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
-                SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
-                SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
-            }
+            DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
+            DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
+            DTBalanceDTC = comparisons.getDualTaskBalanceChange();
+            SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
+            SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
+            SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
         }
 
         if (!hasDataForDate) {
