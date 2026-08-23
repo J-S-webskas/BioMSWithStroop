@@ -2,9 +2,14 @@ package com.example.biomsAfterWirelessConnectedVersion;
 
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -69,12 +74,8 @@ public class ReportFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 // Generate new report...
-                try {
-                    v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-                    createNewReport();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                showDatePickerForReport();
             }
         });
 
@@ -122,6 +123,322 @@ public class ReportFragment extends Fragment {
         });
 
         return view;
+    }
+
+    private void createReportForDate(Date targetDate) throws IOException {
+        String targetDateStr = new SimpleDateFormat("MMMM dd, yyyy", Locale.US).format(targetDate);
+
+        // Get data from storage
+        List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(requireContext());
+
+        if (allAssessment.isEmpty()) {
+            Toast.makeText(requireContext(), "No assessment data available to create report!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Filter assessments for the selected date
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
+        String targetDateString = sdf.format(targetDate);
+
+        // Track most recent values per metric for the selected date
+        Float bestARJLeft = null;
+        Float bestARJRight = null;
+        Float bestBalance = null;
+        Float bestWalkingSpeed = null;
+        Float bestEndurance = null;
+        Float bestDTARJLeft = null;
+        Float bestDTARJRight = null;
+        Float bestDTBalance = null;
+        Float bestSAARJLeft = null;
+        Float bestSAARJRight = null;
+        Float bestSABalance = null;
+
+        long latestTimestamp = 0;
+        long latestDTTimestamp = 0;
+        long latestSATimestamp = 0;
+
+        // Collections for SD/CV calculations - ALL data (not just selected date)
+        ArrayList<Float> allARJLeftValues = new ArrayList<>();
+        ArrayList<Float> allARJRightValues = new ArrayList<>();
+        ArrayList<Float> allBalanceValues = new ArrayList<>();
+        ArrayList<Float> allSpeedValues = new ArrayList<>();
+        ArrayList<Float> allEnduranceValues = new ArrayList<>();
+
+        // Variables for selected date data
+        float ARJRightKneeToday = 0;
+        float ARJLeftKneeToday = 0;
+        float balanceToday = 0;
+        float speedToday = 0;
+        float enduranceToday = 0;
+        float SAARJLeftKneeToday = 0;
+        float SAARJRightKneeToday = 0;
+        float SAbalanceToday = 0;
+        float DTARJLeftKneeToday = 0;
+        float DTARJRightKneeToday = 0;
+        float DTbalanceToday = 0;
+        float DTARJLeftKneeDTC = 0;
+        float DTARJRightKneeDTC = 0;
+        float DTBalanceDTC = 0;
+        float SAARJLeftKneeDTC = 0;
+        float SAARJRightKneeDTC = 0;
+        float SABalanceDTC = 0;
+
+        boolean hasDataForDate = false;
+
+        for (AssessmentData assessment : allAssessment) {
+            String currentDate = sdf.format(assessment.getTimestamp());
+            long currentTimestamp = assessment.getTimestamp().getTime();
+
+            // Collect all data for SD/CV
+            Float arjLeftSDCV = assessment.getBaseline().getARJ().get("left_knee");
+            if (arjLeftSDCV != null && arjLeftSDCV != 0) {
+                allARJLeftValues.add(arjLeftSDCV);
+            }
+
+            Float arjRightSDCV = assessment.getBaseline().getARJ().get("right_knee");
+            if (arjRightSDCV != null && arjRightSDCV != 0) {
+                allARJRightValues.add(arjRightSDCV);
+            }
+
+            float balanceSDCV = assessment.getBaseline().getBalanceScore();
+            if (balanceSDCV != 0) {
+                allBalanceValues.add(balanceSDCV);
+            }
+
+            float walkingSpeedSDCV = assessment.getBaseline().getWalkingSpeed();
+            if (walkingSpeedSDCV != 0) {
+                allSpeedValues.add(walkingSpeedSDCV);
+            }
+
+            float enduranceSDCV = assessment.getBaseline().getEnduranceScore();
+            if (enduranceSDCV != 0) {
+                allEnduranceValues.add(enduranceSDCV);
+            }
+
+            // Process only data from the selected date
+            if (!currentDate.equals(targetDateString)) continue;
+
+            hasDataForDate = true;
+
+            // Baseline data
+            Float arjLeft = assessment.getBaseline().getARJ().get("left_knee");
+            if (arjLeft != null && arjLeft != 0) {
+                if (bestARJLeft == null || currentTimestamp > latestTimestamp) {
+                    bestARJLeft = arjLeft;
+                }
+            }
+
+            Float arjRight = assessment.getBaseline().getARJ().get("right_knee");
+            if (arjRight != null && arjRight != 0) {
+                if (bestARJRight == null || currentTimestamp > latestTimestamp) {
+                    bestARJRight = arjRight;
+                }
+            }
+
+            float balance = assessment.getBaseline().getBalanceScore();
+            if (balance != 0) {
+                if (bestBalance == null || currentTimestamp > latestTimestamp) {
+                    bestBalance = balance;
+                }
+            }
+
+            float walkingSpeed = assessment.getBaseline().getWalkingSpeed();
+            if (walkingSpeed != 0) {
+                if (bestWalkingSpeed == null || currentTimestamp > latestTimestamp) {
+                    bestWalkingSpeed = walkingSpeed;
+                }
+            }
+
+            float endurance = assessment.getBaseline().getEnduranceScore();
+            if (endurance != 0) {
+                if (bestEndurance == null || currentTimestamp > latestTimestamp) {
+                    bestEndurance = endurance;
+                }
+            }
+
+            if (currentTimestamp > latestTimestamp) {
+                latestTimestamp = currentTimestamp;
+            }
+
+            // Dual Task data
+            DualTaskAssessment dualTask = assessment.getDualTask();
+            if (dualTask != null) {
+                Float dtArjLeft = dualTask.getARJ().get("left_knee");
+                if (dtArjLeft != null && dtArjLeft != 0) {
+                    if (bestDTARJLeft == null || currentTimestamp > latestDTTimestamp) {
+                        bestDTARJLeft = dtArjLeft;
+                    }
+                }
+
+                Float dtArjRight = dualTask.getARJ().get("right_knee");
+                if (dtArjRight != null && dtArjRight != 0) {
+                    if (bestDTARJRight == null || currentTimestamp > latestDTTimestamp) {
+                        bestDTARJRight = dtArjRight;
+                    }
+                }
+
+                float dtBalance = dualTask.getBalanceScore();
+                if (dtBalance != 0) {
+                    if (bestDTBalance == null || currentTimestamp > latestDTTimestamp) {
+                        bestDTBalance = dtBalance;
+                    }
+                }
+                if (currentTimestamp > latestDTTimestamp) {
+                    latestDTTimestamp = currentTimestamp;
+                }
+            }
+
+            // Sensory Ataxia data
+            SensoryAtaxiaAssessment sensory = assessment.getSensoryAtaxia();
+            if (sensory != null) {
+                Float saArjLeft = sensory.getARJ().get("left_knee");
+                if (saArjLeft != null && saArjLeft != 0) {
+                    if (bestSAARJLeft == null || currentTimestamp > latestSATimestamp) {
+                        bestSAARJLeft = saArjLeft;
+                    }
+                }
+
+                Float saArjRight = sensory.getARJ().get("right_knee");
+                if (saArjRight != null && saArjRight != 0) {
+                    if (bestSAARJRight == null || currentTimestamp > latestSATimestamp) {
+                        bestSAARJRight = saArjRight;
+                    }
+                }
+
+                float saBalance = sensory.getBalanceScore();
+                if (saBalance != 0) {
+                    if (bestSABalance == null || currentTimestamp > latestSATimestamp) {
+                        bestSABalance = saBalance;
+                    }
+                }
+                if (currentTimestamp > latestSATimestamp) {
+                    latestSATimestamp = currentTimestamp;
+                }
+            }
+
+            // DTC DATA FROM COMPARISONS
+            TestComparisons comparisons = assessment.getComparisons();
+            if (comparisons != null) {
+                DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
+                DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
+                DTBalanceDTC = comparisons.getDualTaskBalanceChange();
+                SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
+                SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
+                SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
+            }
+        }
+
+        if (!hasDataForDate) {
+            Toast.makeText(requireContext(), "No assessment data found for " + targetDateStr, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Use best values for the selected date
+        ARJLeftKneeToday = bestARJLeft != null ? bestARJLeft : 0f;
+        ARJRightKneeToday = bestARJRight != null ? bestARJRight : 0f;
+        balanceToday = bestBalance != null ? bestBalance : 0f;
+        speedToday = bestWalkingSpeed != null ? bestWalkingSpeed : 0f;
+        enduranceToday = bestEndurance != null ? bestEndurance : 0f;
+        DTARJLeftKneeToday = bestDTARJLeft != null ? bestDTARJLeft : 0f;
+        DTARJRightKneeToday = bestDTARJRight != null ? bestDTARJRight : 0f;
+        DTbalanceToday = bestDTBalance != null ? bestDTBalance : 0f;
+        SAARJLeftKneeToday = bestSAARJLeft != null ? bestSAARJLeft : 0f;
+        SAARJRightKneeToday = bestSAARJRight != null ? bestSAARJRight : 0f;
+        SAbalanceToday = bestSABalance != null ? bestSABalance : 0f;
+
+        // Calculate SD and CV
+        float ARJRightKneeSD = standardDeviation(allARJRightValues);
+        float ARJLeftKneeSD = standardDeviation(allARJLeftValues);
+        float BalanceSD = standardDeviation(allBalanceValues);
+        float EnduranceSD = standardDeviation(allEnduranceValues);
+        float WSSD = standardDeviation(allSpeedValues);
+
+        float ARJLeftKneeCV = (ARJLeftKneeSD / getMean(allARJLeftValues)) * 100;
+        float ARJRightKneeCV = (ARJRightKneeSD / getMean(allARJRightValues)) * 100;
+        float BalanceCV = (BalanceSD / getMean(allBalanceValues)) * 100;
+        float WSCV = (WSSD / getMean(allSpeedValues)) * 100;
+        float EnduranceCV = (EnduranceSD / getMean(allEnduranceValues)) * 100;
+
+        // Create new Report
+        ReportModel newReport = new ReportModel();
+        newReport.setArjLeftKneeToday(ARJLeftKneeToday);
+        newReport.setArjRightKneeToday(ARJRightKneeToday);
+        newReport.setBalanceToday(balanceToday);
+        newReport.setSpeedToday(speedToday);
+        newReport.setEnduranceToday(enduranceToday);
+        newReport.setSensoryAtaxiaARJLeftToday(SAARJLeftKneeToday);
+        newReport.setSensoryAtaxiaARJRightToday(SAARJRightKneeToday);
+        newReport.setSensoryAtaxiaBalanceToday(SAbalanceToday);
+        newReport.setDualTaskARJLeftToday(DTARJLeftKneeToday);
+        newReport.setDualTaskARJRightToday(DTARJRightKneeToday);
+        newReport.setDualTaskBalanceToday(DTbalanceToday);
+        // DTC
+        newReport.setDualTaskDTCARJLeft(DTARJLeftKneeDTC);
+        newReport.setDualTaskDTCARJRight(DTARJRightKneeDTC);
+        newReport.setDualTaskDTCBalance(DTBalanceDTC);
+        newReport.setSensoryAtaxiaDTCARJLeft(SAARJLeftKneeDTC);
+        newReport.setSensoryAtaxiaDTCARJRight(SAARJRightKneeDTC);
+        newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
+        // SD & CV
+        newReport.setARJLeftSD(ARJLeftKneeSD);
+        newReport.setARJRightSD(ARJRightKneeSD);
+        newReport.setBalanceSD(BalanceSD);
+        newReport.setEnduranceSD(EnduranceSD);
+        newReport.setSpeedSD(WSSD);
+        newReport.setARJLeftCV(ARJLeftKneeCV);
+        newReport.setARJRightCV(ARJRightKneeCV);
+        newReport.setBalanceCV(BalanceCV);
+        newReport.setEnduranceCV(EnduranceCV);
+        newReport.setSpeedCV(WSCV);
+
+        newReport.setTimeStamp(targetDate);
+
+        // Preview
+        String preview = String.format(Locale.US,
+                "Speed: %f m/s | Sway Area: %f mm² | ARJ: %f m/s³| Endurance: %f s",
+                speedToday, balanceToday, ARJRightKneeToday, enduranceToday);
+        newReport.setPreview(preview);
+
+        // Set date in display format
+        SimpleDateFormat displayFormat = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
+        String formattedDate = displayFormat.format(targetDate);
+        newReport.setDate(formattedDate);
+
+        // Save report
+        DataStorageManager.saveReport(requireContext(), newReport);
+
+        // Reload all reports to refresh the list
+        loadAllReports();
+
+        // Scroll to the new item
+        recyclerView.scrollToPosition(0);
+
+        Toast.makeText(requireContext(), "Report created for " + formattedDate, Toast.LENGTH_SHORT).show();
+    }
+
+    private void showDatePickerForReport() {
+        Calendar calendar = Calendar.getInstance();
+        DatePickerDialog datePicker = new DatePickerDialog(
+                requireContext(),
+                (view, year, month, dayOfMonth) -> {
+                    Calendar selectedCal = Calendar.getInstance();
+                    selectedCal.set(year, month, dayOfMonth);
+                    Date selectedDate = selectedCal.getTime();
+
+                    try {
+                        createReportForDate(selectedDate);
+                    } catch (IOException e) {
+                        Toast.makeText(requireContext(), "Error creating report: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+
+        datePicker.getDatePicker().setMaxDate(System.currentTimeMillis());
+
+        datePicker.show();
     }
 
     private void createNewReport() throws IOException {
@@ -470,16 +787,6 @@ public class ReportFragment extends Fragment {
         return reports;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        // Refresh list when returning to this fragment
-        loadAllReports();
-        if (adapter != null) {
-            adapter.notifyDataSetChanged();
-        }
-    }
-
     public float standardDeviation(ArrayList<Float> set) {
         if (set == null || set.size() < 2) {
             return 0f;
@@ -600,5 +907,44 @@ public class ReportFragment extends Fragment {
             sum += value;
         }
         return sum / set.size();
+    }
+    private final BroadcastReceiver reportUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if ("REPORT_UPDATED".equals(intent.getAction())) {
+                // Refresh reports and reload RecyclerView
+                loadAllReports();
+                if (adapter != null) {
+                    adapter.notifyDataSetChanged();
+                }
+            }
+        }
+    };
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadAllReports();
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+
+        // Register receiver using ContextCompat with RECEIVER_NOT_EXPORTED flag
+        IntentFilter filter = new IntentFilter("REPORT_UPDATED");
+        ContextCompat.registerReceiver(
+                requireContext(),
+                reportUpdateReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+        );
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        try {
+            requireContext().unregisterReceiver(reportUpdateReceiver);
+        } catch (IllegalArgumentException e) {
+        }
     }
 }

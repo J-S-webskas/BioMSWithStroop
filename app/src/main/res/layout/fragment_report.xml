@@ -39,10 +39,26 @@
             android:layout_marginTop="10dp"
             android:text="Finish a recording to create data!"
             android:textSize="16sp"
+            android:paddingStart="20dp"
             android:fontFamily="@font/profile_pro"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/createNewReport" />
+            app:layout_constraintTop_toBottomOf="@id/endIsMostAccurate" />
+
+        <TextView
+            android:id="@+id/endIsMostAccurate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="16sp"
+            android:paddingStart="20dp"
+            android:textAlignment="center"
+            android:paddingEnd="20dp"
+            android:paddingTop="10dp"
+            android:text="The topmost report at the end of each day will always reflects your actual tracked symptoms"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/createNewReport"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
