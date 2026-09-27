@@ -1,13 +1,9 @@
 package com.example.biomsAfterWirelessConnectedVersion;
 
-import android.content.Context;
-
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -52,12 +48,12 @@ public class AssessmentData implements Serializable {
     // Status tracking
     private AssessmentStatus status;
 
-    public Date getARJAndBalanceTestDate() {
-        return ARJAndBalanceTestDate;
+    public Date getSwayAreaAndBalanceTestDate() {
+        return SwayAreaAndBalanceTestDate;
     }
 
-    public void setARJAndBalanceTestDate(Date ARJAndBalanceTestDate) {
-        this.ARJAndBalanceTestDate = ARJAndBalanceTestDate;
+    public void setSwayAreaAndBalanceTestDate(Date SwayAreaAndBalanceTestDate) {
+        this.SwayAreaAndBalanceTestDate = SwayAreaAndBalanceTestDate;
         updateStatus();
     }
 
@@ -71,7 +67,7 @@ public class AssessmentData implements Serializable {
     }
 
     // Storage dates
-    private Date ARJAndBalanceTestDate;
+    private Date SwayAreaAndBalanceTestDate;
     private Date WSAndEnduranceTestDate;
     private Date dualTaskTestDate;
     private Date sensoryAtaxiaTestDate;
@@ -82,7 +78,7 @@ public class AssessmentData implements Serializable {
 
     public enum AssessmentStatus {
         NOT_STARTED,
-        ARJ_BALANCE_COMPLETED,
+        SWAY_AREA_BALANCE_COMPLETED,
         WS_ENDURANCE_COMPLETED,
         DUAL_TASK_COMPLETED,
         SENSORY_ATAXIA_COMPLETED,
@@ -114,12 +110,12 @@ public class AssessmentData implements Serializable {
         this.sensoryAtaxiaTestDate = date;
         updateStatus();
     }
-    public boolean canTakeARJAndBalanceTest() {
-        if (ARJAndBalanceTestDate == null) return true; // Never taken
+    public boolean canTakeSwayAreaAndBalanceTest() {
+        if (SwayAreaAndBalanceTestDate == null) return true; // Never taken
 
         Calendar now = Calendar.getInstance();
         Calendar lastTest = Calendar.getInstance();
-        lastTest.setTime(ARJAndBalanceTestDate);
+        lastTest.setTime(SwayAreaAndBalanceTestDate);
 
         // Check if 24 hours have passed
         lastTest.add(Calendar.DAY_OF_YEAR, 1);
@@ -160,19 +156,19 @@ public class AssessmentData implements Serializable {
         return now.after(lastTest);
     }
     private void updateStatus() {
-        boolean hasARJAndBalance = ARJAndBalanceTestDate != null;
+        boolean hasSwayAreaAndBalance = SwayAreaAndBalanceTestDate != null;
         boolean hasWSAndEndurance = WSAndEnduranceTestDate != null;
         boolean hasDualTask = dualTaskTestDate != null;
         boolean hasSensory = sensoryAtaxiaTestDate != null;
 
-        if (hasARJAndBalance && hasWSAndEndurance && hasDualTask && hasSensory) {
+        if (hasSwayAreaAndBalance && hasWSAndEndurance && hasDualTask && hasSensory) {
             status = AssessmentStatus.ALL_COMPLETED;
         } else if (hasDualTask) {
             status = AssessmentStatus.DUAL_TASK_COMPLETED;
         } else if (hasSensory) {
             status = AssessmentStatus.SENSORY_ATAXIA_COMPLETED;
-        } else if (hasARJAndBalance) {
-            status = AssessmentStatus.ARJ_BALANCE_COMPLETED;
+        } else if (hasSwayAreaAndBalance) {
+            status = AssessmentStatus.SWAY_AREA_BALANCE_COMPLETED;
         } else if (hasWSAndEndurance) {
             status = AssessmentStatus.WS_ENDURANCE_COMPLETED;
         } else {

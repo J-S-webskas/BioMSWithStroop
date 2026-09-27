@@ -3,9 +3,11 @@ package com.example.biomsAfterWirelessConnectedVersion;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -21,6 +23,7 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -81,6 +84,64 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private boolean isPreviewMode = true;
     private String SOURCE_ACTIVITY = "";
     Button btnCancel;
+
+    private StroopVoiceManager stroopVoiceManager;
+    private LinearLayout stroopVoiceContainer;
+    private TextView tvStroopWord;
+    private TextView tvVoiceStatus;
+
+    private void setupStroopVoiceOverlay() {
+        if (getFragmentCameraBinding() != null && getFragmentCameraBinding().stroopOverlay != null) {
+            // Get the root view of the included layout using DataBinding
+            stroopVoiceContainer = (LinearLayout) getFragmentCameraBinding().stroopOverlay.getRoot();
+
+            // Get child views directly from the included binding
+            tvStroopWord = getFragmentCameraBinding().stroopOverlay.tvStroopWord;
+            tvVoiceStatus = getFragmentCameraBinding().stroopOverlay.tvVoiceStatus;
+
+            stroopVoiceContainer.setVisibility(View.GONE);
+        }
+    }
+
+    public void onDualTaskStarted() {
+        if (stroopVoiceContainer != null) {
+            stroopVoiceContainer.setVisibility(View.VISIBLE);
+        }
+
+        stroopVoiceManager = new StroopVoiceManager(requireContext(), new StroopVoiceManager.StroopVoiceListener() {
+            @Override
+            public void onNewTrial(String wordText, int colorInt) {
+                if (tvStroopWord != null) {
+                    tvStroopWord.setText(wordText);
+                    tvStroopWord.setTextColor(colorInt);
+                }
+            }
+
+            @Override
+            public void onSpokenResult(String spokenWord, boolean isCorrect) {
+                if (tvVoiceStatus != null) {
+                    tvVoiceStatus.setText("Heard: " + spokenWord + (isCorrect ? " ✓" : " ✗"));
+                }
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Log.e("StroopVoice", errorMessage);
+            }
+        });
+
+        stroopVoiceManager.startTest();
+    }
+
+    public StroopVoiceManager.VoiceStroopResult stopVoiceStroop() {
+        if (stroopVoiceContainer != null) {
+            stroopVoiceContainer.setVisibility(View.GONE);
+        }
+        if (stroopVoiceManager != null) {
+            return stroopVoiceManager.stopTest();
+        }
+        return null;
+    }
 
     private void setViewsEnabled(boolean enabled) {
         if (rootView != null) {
@@ -162,17 +223,16 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                                 Log.e(TAG, "Error removing countdown views: " + e.getMessage());
                             }
                         }
-//                        if (countdownOverlay != null && countdownTextView != null) {
-//                            ViewGroup container = (ViewGroup) getFragmentCameraBinding().getRoot();
-//                            container.removeView(countdownOverlay);
-//                            container.removeView(countdownTextView);
-                            countdownOverlay = null;
-                            countdownTextView = null;
-//                        }
+                        countdownOverlay = null;
+                        countdownTextView = null;
+
                         // Start the actual test
                         isCountdownActive = false;
                         // Tell RecordFragment that test has started
                         RecordFragment.setTestStarted(true);
+                        if ("DualTask".equals(assessmentType)) {
+                            onDualTaskStarted();
+                        }
                     })
                     .start();
         }
@@ -265,7 +325,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         }
     }
 
-
     @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater,
@@ -292,7 +351,9 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             boolean someoneRecord = bundle.getBoolean("someoneRecord");
             isPreviewMode = bundle.getBoolean("preview");
             SOURCE_ACTIVITY = bundle.getString("SOURCE_ACTIVITY");
-            if (someoneRecord) {
+            if ("DualTask".equals(assessmentType)) {
+                cameraFacing = CameraSelector.LENS_FACING_FRONT;
+            } else if (someoneRecord) {
                 cameraFacing = CameraSelector.LENS_FACING_BACK;
             } else {
                 cameraFacing = CameraSelector.LENS_FACING_FRONT;
@@ -321,8 +382,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             requireActivity().finish();// This closes the Activity and returns to whatever was before that Activity.
         });
 
-//        ImageButton btnSwitchCamera = view.findViewById(R.id.btn_switch_camera);
-//        btnSwitchCamera.setOnClickListener(v -> switchCamera());
+        setupStroopVoiceOverlay();
 
         requireActivity().getOnBackPressedDispatcher().addCallback(
                 getViewLifecycleOwner(),
@@ -336,12 +396,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                             } else {
                                 requireActivity().finish();
                             }
-                        } else {
-                            // ✅ TEST MODE - Disable back or show confirmation
-                            // Option A: Completely disable back
-                            // Do nothing - back is disabled
-
-                            // Option B: Show confirmation dialog
                         }
                     }
                 }
@@ -354,7 +408,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             btnCancel.setText("Cancel Test");
             btnCancel.setBackgroundColor(Color.BLACK);
             btnCancel.setTextColor(Color.WHITE);
-//            setupCancelButton(btnCancel);  // ← Use the method
         } else {
             // PREVIEW MODE
             if (SOURCE_ACTIVITY != null && SOURCE_ACTIVITY.equals("AssessmentFragment")) {
@@ -384,7 +437,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
                 // Add the new fragment but hide it immediately
                 transaction.add(R.id.fragment_container, recordFragment);
-                transaction.hide(recordFragment);  // ✅ Hidden but running
+                transaction.hide(recordFragment);  // Hidden but running
                 transaction.addToBackStack(null);
                 transaction.commit();
                 recordFragment.setViewModel(viewModel);
@@ -403,19 +456,11 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 btnCancel.setTextColor(Color.WHITE);
                 tvInstruction.setVisibility(GONE);
 
-//                // Apply the cancel functionality
-//                setupCancelButton(btnCancel);  // ← Use the same method
-
                 // Cancel any existing countdown
                 cancelCountdown();
 
                 // Start a fresh countdown
                 showCountdown();
-
-//                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-//                    btnCancel.setEnabled(true);
-//                    btnCancel.setAlpha(1.0f);
-//                    btnCancel.setVisibility(VISIBLE);
                 btnCancel.setEnabled(false);
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     btnCancel.setEnabled(true);
@@ -424,9 +469,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
                 btnCancel.setOnClickListener(v2 -> {
                     RecordFragment.setTestStarted(false);
-//                     Intent intent = new Intent(requireContext(), CancellingTest.class);
-//                     startActivityForResult(intent, REQUEST_CODE_CANCEL_TEST);
-
                      Fragment fragment = fm.findFragmentById(R.id.fragment_container);
                      if (fragment instanceof CameraFragment) {
                          CameraFragment cameraFragment = (CameraFragment) fragment;
@@ -438,9 +480,9 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                          recordFragment.cancelTest();  // Direct method call!
                      }
                  });
-//                }, 2000);
             });
         }
+
         // Wait for the views to be properly laid out
         getFragmentCameraBinding().viewFinder.post(new Runnable() {
             @Override
@@ -473,6 +515,22 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         });
     }
 
+    private void cancelTest() {
+        FragmentManager fm = getParentFragmentManager();
+        FragmentTransaction transaction = fm.beginTransaction();
+        RecordFragment.setTestStarted(false);
+        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
+        if (fragment instanceof CameraFragment) {
+            CameraFragment cameraFragment = (CameraFragment) fragment;
+            cameraFragment.stopCamera();
+        }
+        viewModel.setShouldDiscard(true);
+        viewModel.setCooldownActive(true);
+        if (recordFragment != null) {
+            recordFragment.cancelTest();
+        }
+    }
+
     public void previewCalledFromAssessmentFragmentExiting() {
         // Coming from AssessmentFragment - just close everything
         stopCamera();
@@ -486,7 +544,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     private void cancelCountdown() {
-
         countdownHandler.removeCallbacksAndMessages(null);
 
         // Remove the countdown UI if it exists
@@ -507,23 +564,23 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         isCountdownActive = false;
     }
 
-//    private void setupCancelButton(Button btnCancel) {
-//        btnCancel.setOnClickListener(v -> {
-//            stopCamera();
-//
-//            // Start 15-second cooldown immediately
-//            if (getActivity() != null) {
-//                FragmentManager fm = getActivity().getSupportFragmentManager();
-//                Fragment cancelFragment = fm.findFragmentById(R.id.fragment_container);
-//                viewModel.setCooldownActive(true);
-//                Toast.makeText(requireContext(), "System is cleaning up. Please wait for a notice to continue testing",
-//                        Toast.LENGTH_SHORT).show();
-//            }
-//
-//            viewModel.setShouldDiscard(true);
-//            viewModel.setCooldownActive(true);
-//        });
-//    }
+    private void setupCancelButton(Button btnCancel) {
+        btnCancel.setOnClickListener(v -> {
+            stopCamera();
+
+            // Start 15-second cooldown immediately
+            if (getActivity() != null) {
+                FragmentManager fm = getActivity().getSupportFragmentManager();
+                Fragment cancelFragment = fm.findFragmentById(R.id.fragment_container);
+                viewModel.setCooldownActive(true);
+                Toast.makeText(requireContext(), "System is cleaning up. Please wait for a notice to continue testing",
+                        Toast.LENGTH_SHORT).show();
+            }
+
+            viewModel.setShouldDiscard(true);
+            viewModel.setCooldownActive(true);
+        });
+    }
 
     // Update the values displayed in the bottom sheet. Reset Poselandmarker
     // helper.
@@ -543,43 +600,35 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     public void stopCamera() {
-        Log.d(TAG, "Stopping camera...");
-
-        // FIRST: Stop accepting new frames
+        stopVoiceStroop();
+        // Stop accepting new frames
         if (imageAnalyzer != null) {
             imageAnalyzer.clearAnalyzer();
-//            try {
-//                Thread.sleep(100); // Brief pause for current frame to complete
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//            }
             imageAnalyzer = null;
         }
 
-        // 2. Clear pose landmarker
+        // Clear pose landmarker
         if (poseLandmarkerHelper != null) {
             poseLandmarkerHelper.clearPoseLandmarker();
             poseLandmarkerHelper = null;
         }
 
-        // 3. Clear overlay
+        // Clear overlay
         if (_fragmentCameraBinding != null && _fragmentCameraBinding.overlay != null) {
             _fragmentCameraBinding.overlay.clear();
             _fragmentCameraBinding.overlay.invalidate();
         }
 
-        // 1. Unbind camera use cases
+        // Unbind camera use cases
         if (cameraProvider != null) {
             cameraProvider.unbindAll();
             cameraProvider = null;
         }
 
-        // 4. Shutdown executor (if you want to completely stop)
+        // Shutdown executor (if you want to completely stop)
         if (backgroundExecutor != null && !backgroundExecutor.isShutdown()) {
             backgroundExecutor.shutdown();
         }
-
-        Log.d(TAG, "Camera stopped");
     }
 
     // Initialize CameraX, and prepare to bind the camera use cases
@@ -600,12 +649,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         }, ContextCompat.getMainExecutor(requireContext()));
     }
 
-    /*
-    Preview (4:3 + rotation) <-> ImageAnalyzer (4:3 + rotation)
-    What user sees                 What ML processes
-    Same coordinate system       Same coordinate system
-    overlay.setResults() can correctly map landmarks
-    */
     // Declare and bind preview, capture and analysis use cases
     @SuppressLint("UnsafeOptInUsageError")
     private void bindCameraUseCases() {
@@ -758,29 +801,15 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             // Re-enable views
             setViewsEnabled(true);
 
-//            if (blockingOverlay != null) {
-//                blockingOverlay.setVisibility(View.GONE);
-//            }
-
             if (resultCode == getActivity().RESULT_OK && data != null) {
                 boolean cancelled = data.getBooleanExtra("cancelled", false);
                 boolean saving = data.getBooleanExtra("Saving", false);
                 boolean finished = data.getBooleanExtra("finished", false);
                 if (cancelled || finished || saving) {
-//                    AssessmentFragment fragment = new AssessmentFragment();
-//                    requireActivity().getSupportFragmentManager().beginTransaction()
-//                            .replace(R.id.fragment_container, fragment)
-//                            .addToBackStack("Assessment fragment")
-//                            .commitAllowingStateLoss();
                     Intent intent = new Intent(requireContext(), MainActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     intent.putExtra("navigate_to_assessment", true);
                     startActivity(intent);
-
-                    // Close the current Activity
-//                    requireActivity().finish();
-//                    FragmentManager fm = requireActivity().getSupportFragmentManager();
-//                    fm.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
                 }
             }
         }

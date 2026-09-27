@@ -89,7 +89,7 @@ public class TrendFragment extends Fragment {
         if (assessments == null || assessments.isEmpty()) {
             // NO DATA - Create empty charts
             charts.add(createEmptyBalanceChart());
-            charts.add(createEmptySpasticityChart());
+//            charts.add(createEmptySpasticityChart());
             charts.add(createEmptyEnduranceChart());
             charts.add(createEmptyWalkingSpeedChart());
         } else {
@@ -100,7 +100,7 @@ public class TrendFragment extends Fragment {
 //            charts.add(createEnduranceChartMockData(assessments));
             // HAS DATA - Create charts from real data
             charts.add(createBalanceChartFromData(assessments));
-            charts.add(createARJChartFromData(assessments));
+//            charts.add(createARJChartFromData(assessments));
             charts.add(createEnduranceChartFromData(assessments));
             charts.add(createWalkingSpeedChartFromData(assessments));
         }
@@ -195,37 +195,37 @@ public class TrendFragment extends Fragment {
         return chart;
     }
 
-    private BiomechanicalChart createARJChartMockData(List<AssessmentData> assessments) {
-        float startValue = 2.5f;       // Starting ARJ value (high = poor quality)
-        float targetValue = 0.8f;      // Target ARJ value (low = good quality)
-        float dailyChange = 0.0047f;   // Gradual decrease (about 1.7 over 365 days)
-        float variation = 0.15f;       // Random variation
-        float maxValue = 5.0f;         // Max possible ARJ
-        float minValue = 0.2f;         // Min possible ARJ
-        boolean increasingIsBad = true; // For ARJ, higher is worse (decreasing trend is good)
-
-        Map<Date, Float> baselineData = generateTrendData(startValue, targetValue, dailyChange,
-                variation, maxValue, minValue, increasingIsBad);
-
-        // Dual task ARJ is typically higher (worse) than baseline
-        Map<Date, Float> dualTaskData = generateTrendData(startValue + 0.4f, targetValue + 0.3f,
-                dailyChange, variation, maxValue, minValue, increasingIsBad);
-
-        // Sensory ataxia ARJ is typically higher (worse) than baseline
-        Map<Date, Float> sensoryAtaxiaData = generateTrendData(startValue + 0.6f, targetValue + 0.4f,
-                dailyChange, variation, maxValue, minValue, increasingIsBad);
-
-        ARJChart chart = new ARJChart(2, "Average Rectified Jerk (ARJ)", baselineData);
-
-        if (!dualTaskData.isEmpty()) {
-            chart.setDualTaskData(dualTaskData);
-        }
-        if (!sensoryAtaxiaData.isEmpty()) {
-            chart.setSensoryAtaxiaData(sensoryAtaxiaData);
-        }
-
-        return chart;
-    }
+//    private BiomechanicalChart createARJChartMockData(List<AssessmentData> assessments) {
+//        float startValue = 2.5f;       // Starting ARJ value (high = poor quality)
+//        float targetValue = 0.8f;      // Target ARJ value (low = good quality)
+//        float dailyChange = 0.0047f;   // Gradual decrease (about 1.7 over 365 days)
+//        float variation = 0.15f;       // Random variation
+//        float maxValue = 5.0f;         // Max possible ARJ
+//        float minValue = 0.2f;         // Min possible ARJ
+//        boolean increasingIsBad = true; // For ARJ, higher is worse (decreasing trend is good)
+//
+//        Map<Date, Float> baselineData = generateTrendData(startValue, targetValue, dailyChange,
+//                variation, maxValue, minValue, increasingIsBad);
+//
+//        // Dual task ARJ is typically higher (worse) than baseline
+//        Map<Date, Float> dualTaskData = generateTrendData(startValue + 0.4f, targetValue + 0.3f,
+//                dailyChange, variation, maxValue, minValue, increasingIsBad);
+//
+//        // Sensory ataxia ARJ is typically higher (worse) than baseline
+//        Map<Date, Float> sensoryAtaxiaData = generateTrendData(startValue + 0.6f, targetValue + 0.4f,
+//                dailyChange, variation, maxValue, minValue, increasingIsBad);
+//
+////        ARJChart chart = new ARJChart(2, "Average Rectified Jerk (ARJ)", baselineData);
+//
+//        if (!dualTaskData.isEmpty()) {
+//            chart.setDualTaskData(dualTaskData);
+//        }
+//        if (!sensoryAtaxiaData.isEmpty()) {
+//            chart.setSensoryAtaxiaData(sensoryAtaxiaData);
+//        }
+//
+//        return chart;
+//    }
 
     private BiomechanicalChart createBalanceChartMockData(List<AssessmentData> assessments) {
         Map<Date, Float> baselineData = new TreeMap<>();
@@ -292,11 +292,11 @@ public class TrendFragment extends Fragment {
         return chart;
     }
 
-    private ARJChart createEmptySpasticityChart() {
-        Map<Date, Float> emptyData = new HashMap<>();
-        ARJChart chart = new ARJChart(2, "Average Rectified Jerk (ARJ)", emptyData);
-        return chart;
-    }
+//    private ARJChart createEmptySpasticityChart() {
+//        Map<Date, Float> emptyData = new HashMap<>();
+//        ARJChart chart = new ARJChart(2, "Average Rectified Jerk (ARJ)", emptyData);
+//        return chart;
+//    }
 
     private EnduranceChart createEmptyEnduranceChart() {
         Map<Date, Float> emptyData = new HashMap<>();
@@ -364,64 +364,64 @@ public class TrendFragment extends Fragment {
         return chart;
     }
 
-    private ARJChart createARJChartFromData(List<AssessmentData> assessments) {
-        Map<Date, Float> baselineData = new TreeMap<>();
-        Map<Date, Float> dualTaskData = new TreeMap<>();
-        Map<Date, Float> sensoryAtaxiaData = new TreeMap<>();
-
-        for (AssessmentData assessment : assessments) {
-            Date date = assessment.getTimestamp();
-
-            // BASELINE data - calculate average stiffness
-            if (assessment.getBaseline() != null && assessment.getBaseline().getARJ() != null) {
-                float avgARJ = calculateARV(assessment.getBaseline().getARJ());
-                if (avgARJ > 0) {
-                    baselineData.put(date, avgARJ);
-                }
-            }
-
-            // DUAL TASK data
-            if (assessment.getDualTask() != null && assessment.getDualTask().getARJ() != null) {
-                float avgStiffness = calculateARV(assessment.getDualTask().getARJ());
-                if (avgStiffness > 0) {
-                    dualTaskData.put(date, avgStiffness);
-                }
-            }
-
-            // SENSORY ATAXIA data
-            if (assessment.getSensoryAtaxia() != null && assessment.getSensoryAtaxia().getARJ() != null) {
-                float avgStiffness = calculateARV(assessment.getSensoryAtaxia().getARJ());
-                if (avgStiffness > 0) {
-                    sensoryAtaxiaData.put(date, avgStiffness);
-                }
-            }
-        }
-
-        // Determine condition
-        String condition = "No Data";
-        if (!baselineData.isEmpty()) {
-            Date latestDate = baselineData.keySet().iterator().next();
-            for (Date date : baselineData.keySet()) {
-                if (date.after(latestDate)) {
-                    latestDate = date;
-                }
-            }
-            float latestValue = baselineData.get(latestDate);
-            condition = determineSpasticityCondition(latestValue);
-        }
-
-        // id used to distinguish between different charts
-        ARJChart chart = new ARJChart(2, "Average Rectified Jerk", baselineData);
-
-        if (!dualTaskData.isEmpty()) {
-            chart.setDualTaskData(dualTaskData);
-        }
-        if (!sensoryAtaxiaData.isEmpty()) {
-            chart.setSensoryAtaxiaData(sensoryAtaxiaData);
-        }
-
-        return chart;
-    }
+//    private ARJChart createARJChartFromData(List<AssessmentData> assessments) {
+//        Map<Date, Float> baselineData = new TreeMap<>();
+//        Map<Date, Float> dualTaskData = new TreeMap<>();
+//        Map<Date, Float> sensoryAtaxiaData = new TreeMap<>();
+//
+//        for (AssessmentData assessment : assessments) {
+//            Date date = assessment.getTimestamp();
+//
+//            // BASELINE data - calculate average stiffness
+//            if (assessment.getBaseline() != null && assessment.getBaseline().getARJ() != null) {
+//                float avgARJ = calculateARV(assessment.getBaseline().getARJ());
+//                if (avgARJ > 0) {
+//                    baselineData.put(date, avgARJ);
+//                }
+//            }
+//
+//            // DUAL TASK data
+//            if (assessment.getDualTask() != null && assessment.getDualTask().getARJ() != null) {
+//                float avgStiffness = calculateARV(assessment.getDualTask().getARJ());
+//                if (avgStiffness > 0) {
+//                    dualTaskData.put(date, avgStiffness);
+//                }
+//            }
+//
+//            // SENSORY ATAXIA data
+//            if (assessment.getSensoryAtaxia() != null && assessment.getSensoryAtaxia().getARJ() != null) {
+//                float avgStiffness = calculateARV(assessment.getSensoryAtaxia().getARJ());
+//                if (avgStiffness > 0) {
+//                    sensoryAtaxiaData.put(date, avgStiffness);
+//                }
+//            }
+//        }
+//
+//        // Determine condition
+//        String condition = "No Data";
+//        if (!baselineData.isEmpty()) {
+//            Date latestDate = baselineData.keySet().iterator().next();
+//            for (Date date : baselineData.keySet()) {
+//                if (date.after(latestDate)) {
+//                    latestDate = date;
+//                }
+//            }
+//            float latestValue = baselineData.get(latestDate);
+//            condition = determineSpasticityCondition(latestValue);
+//        }
+//
+//        // id used to distinguish between different charts
+//        ARJChart chart = new ARJChart(2, "Average Rectified Jerk", baselineData);
+//
+//        if (!dualTaskData.isEmpty()) {
+//            chart.setDualTaskData(dualTaskData);
+//        }
+//        if (!sensoryAtaxiaData.isEmpty()) {
+//            chart.setSensoryAtaxiaData(sensoryAtaxiaData);
+//        }
+//
+//        return chart;
+//    }
 
     private EnduranceChart createEnduranceChartFromData(List<AssessmentData> assessments) {
         Map<Date, Float> baselineData = new TreeMap<>();

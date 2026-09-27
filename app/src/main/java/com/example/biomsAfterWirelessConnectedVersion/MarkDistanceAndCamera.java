@@ -9,7 +9,6 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -19,17 +18,14 @@ import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.VideoView;
-
+import android.widget.ImageView;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
-
-import java.net.URL;
 
 public class MarkDistanceAndCamera extends AppCompatActivity {
 
@@ -72,25 +68,24 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
         ImageButton back = findViewById(R.id.back);
         CheckBox propRecording = findViewById(R.id.propRecording);
         TextView surfaceBody = findViewById(R.id.surfaceBody);
-        VideoView someoneRecording = findViewById(R.id.someoneRecord);
         NestedScrollView scrollView = findViewById(R.id.nested_scroll_view); // Add this
         TextView previewModeNext = findViewById(R.id.previewModeNext);
         CheckBox walk = findViewById(R.id.walk);
         TextView sensoryAtaxia = findViewById(R.id.SensoryAtaxia);
         TextView dualTask = findViewById(R.id.DualTask);
-        TextView arjAndBalance = findViewById(R.id.ARJAndBalance);
+        TextView swaAndBalance = findViewById(R.id.SwayAreaAndBalance);
 
         if (!seeInstructionsOnly) {
-            arjAndBalance.setVisibility(GONE);
-            if (assessmentType.equals("ARJAndBalance")) {
+            swaAndBalance.setVisibility(GONE);
+            if (assessmentType.equals("SwayAreaAndBalance")) {
                 sensoryAtaxia.setVisibility(GONE);
                 dualTask.setVisibility(GONE);
             } else if (assessmentType.equals("SensoryAtaxia")) {
                 dualTask.setVisibility(GONE);
-                sensoryAtaxia.setText("Walk straight towards camera with eyes closed, and, if possible, without assistance.");
+                sensoryAtaxia.setText("Stand in front of camera with eyes closed for 15 seconds.");
             } else if (assessmentType.equals("DualTask")) {
                 sensoryAtaxia.setVisibility(GONE);
-                dualTask.setText("Walk straight towards camera while saying the alphabet backwards, eyes open.");
+                dualTask.setText("Stand in front of camera while saying the ink colors, eyes open.");
             }
         }
 
@@ -101,34 +96,12 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
             Log.d("Entering if", "if entered");
         }
 
-        String videoPath = "android.resource://" + getPackageName() + "/" + R.raw.someone_false;
-        Uri uri = Uri.parse(videoPath);
-        VideoView propRecord = findViewById(R.id.propRecord);
-        propRecord.setVideoURI(uri);
-        propRecord.setOnPreparedListener(mp -> {
-            propRecord.start();
-            mp.setLooping(true);
-        });
-
-        String videoPathSomeone = "android.resource://" + getPackageName() + "/" + R.raw.someone_record;
-        Uri uriSomeone = Uri.parse(videoPathSomeone);
-        someoneRecording.setVideoURI(uriSomeone);
-        someoneRecording.setOnPreparedListener(mp -> {
-            // Video is ready to play - start it
-            someoneRecording.start();
-            // Optional: Loop the video if it's a demonstration
-             mp.setLooping(true);
-        });
-
-        setupVideoView(someoneRecording, uriSomeone);
-        setupVideoView(propRecord, uri);
+        ImageView propRecord = findViewById(R.id.propRecord);
 
         if (someoneRecord) {
             propRecording.setVisibility(GONE);
             surfaceBody.setVisibility(GONE);
             propRecord.setVisibility(GONE);
-        } else {
-            propRecord.start();
         }
 
         next.setOnClickListener(v -> {
@@ -143,6 +116,15 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
                 return;
             }
 
+            if ("DualTask".equals(assessmentType)
+                    && ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        REQUEST_CODE_AUDIO_PERM);
+                return;
+            }
+
             if (scrollView != null) {
                 scrollView.setVisibility(GONE);
             }
@@ -152,7 +134,6 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
             bundle.putBoolean("someoneRecord", someoneRecord);
             bundle.putBoolean("preview", preview);
 
-            pauseAllVideos(someoneRecording, propRecord);
 
             ////block touch                blockTouchEvents(false);  // In onResume or after camera stops
             /// Need to show a prompt asking for camera permission
@@ -177,14 +158,38 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
                 if (scrollView != null) {
                     scrollView.setVisibility(VISIBLE);
                 }
-                // Resume videos if needed
-                resumeAllVideos(someoneRecording, propRecord);
             }
         });
 
         back.setOnClickListener(v -> {
             finish();
         });
+    }
+
+    private static final int REQUEST_CODE_AUDIO_PERM = 300;
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_CODE_AUDIO_PERM) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            } else {
+                new AlertDialog.Builder(this)
+                        .setTitle("Microphone Required")
+                        .setMessage("The Dual Task test needs microphone access to detect your spoken answers. "
+                                + "Without it, the test cannot run.")
+                        .setPositiveButton("Try Again", (d, w) -> {
+                            ActivityCompat.requestPermissions(this,
+                                    new String[]{Manifest.permission.RECORD_AUDIO},
+                                    REQUEST_CODE_AUDIO_PERM);
+                        })
+                        .setNegativeButton("Cancel", (d, w) -> { /* stay on this screen */ })
+                        .setCancelable(false)
+                        .show();
+            }
+        }
     }
 
     private void setupVideoView(VideoView videoView, Uri uri) {

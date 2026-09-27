@@ -6,7 +6,6 @@ import android.os.Bundle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
-import android.provider.ContactsContract;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,7 +30,7 @@ import java.util.Locale;
 public class HomeFragment extends Fragment {
 
     Button recordButton;
-    TextView todoListARJB, todoListWSE, reportPreview, todoListSA, todoListDT, latestProgression;
+    TextView todoListSWB, todoListWSE, reportPreview, todoListSA, todoListDT, latestProgression;
     private BottomNavigationView bottomNavigationView;
 
 
@@ -53,7 +52,7 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         recordButton = view.findViewById(R.id.recordButton);
-        todoListARJB = view.findViewById(R.id.todoListARJB);
+        todoListSWB = view.findViewById(R.id.todoListSWB);
         todoListWSE = view.findViewById(R.id.todoListWSE);
         todoListSA = view.findViewById(R.id.todoListSA);
         todoListDT = view.findViewById(R.id.todoListDT);
@@ -80,17 +79,11 @@ public class HomeFragment extends Fragment {
         });
 
         List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(requireContext());
-//        AssessmentData latestGraph = null;
         if (allAssessment != null && !allAssessment.isEmpty()) {
-//            latestGraph = allAssessment.get(0);
             // Filter to today
             SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
             String todayStr = sdf.format(new Date());
-
-//            Float arjLeftObj = latestGraph.getBaseline().getARJ().get("left_knee");
-//            Float arjRightObj = latestGraph.getBaseline().getARJ().get("right_knee");
-
-            Float bestARJLeft = null;
+//            Float bestARJLeft = null;
             Float bestARJRight = null;
             Float bestBalance = null;
             Float bestWalkingSpeed = null;
@@ -103,19 +96,19 @@ public class HomeFragment extends Fragment {
 
                 // For each metric, take the most recent non-null/non-zero value
                 if (assessment.getBaseline() != null && assessment.getBaseline().getARJ() != null) {
-                    Float arjLeft = assessment.getBaseline().getARJ().get("left_knee");
-                    if (arjLeft != null && arjLeft != 0) {
-                        if (bestARJLeft == null || assessment.getTimestamp().getTime() > latestTimestampForMetric) {
-                            bestARJLeft = arjLeft;
-                        }
-                    }
+//                    Float arjLeft = assessment.getBaseline().getARJ().get("left_knee");
+//                    if (arjLeft != null && arjLeft != 0) {
+//                        if (bestARJLeft == null || assessment.getTimestamp().getTime() > latestTimestampForMetric) {
+//                            bestARJLeft = arjLeft;
+//                        }
+//                    }
 
-                    Float arjRight = assessment.getBaseline().getARJ().get("right_knee");
-                    if (arjRight != null && arjRight != 0) {
-                        if (bestARJRight == null || assessment.getTimestamp().getTime() > latestTimestampForMetric) {
-                            bestARJRight = arjRight;
-                        }
-                    }
+//                    Float arjRight = assessment.getBaseline().getARJ().get("right_knee");
+//                    if (arjRight != null && arjRight != 0) {
+//                        if (bestARJRight == null || assessment.getTimestamp().getTime() > latestTimestampForMetric) {
+//                            bestARJRight = arjRight;
+//                        }
+//                    }
 
                     float balance = assessment.getBaseline().getBalanceScore();
                     if (balance != 0) {
@@ -144,15 +137,15 @@ public class HomeFragment extends Fragment {
             }
 
             // Use best values (fall back to 0 if null)
-            float arjLeft = bestARJLeft != null ? bestARJLeft : 0f;
-            float arjRight = bestARJRight != null ? bestARJRight : 0f;
+//            float arjLeft = bestARJLeft != null ? bestARJLeft : 0f;
+//            float arjRight = bestARJRight != null ? bestARJRight : 0f;
             float balance = bestBalance != null ? bestBalance : 0f;
             float ws = bestWalkingSpeed != null ? bestWalkingSpeed : 0f;
             float endurance = bestEndurance != null ? bestEndurance : 0f;
 
             latestProgression.setText(String.format(Locale.US,
-                    "Speed: %f m/s\nSway Area: %f mm²\nARJ left knee: %f m/s³\nARJ right knee: %f m/s³\nEndurance: %f s",
-                    ws, balance, arjLeft, arjRight, endurance));
+                    "Speed: %f m/s\nSway Area: %f mm²\nEndurance: %f s",
+                    ws, balance, endurance));
         }
 
         List<ReportModel> allReport = DataStorageManager.loadAllReports(requireContext());
@@ -164,12 +157,12 @@ public class HomeFragment extends Fragment {
         if (latestReport != null) {
             float speedToday = latestReport.getSpeedCV();
             float balanceToday = latestReport.getBalanceCV();
-            float arjLeftToday = latestReport.getARJLeftCV();
-            float arjRightToday = latestReport.getARJRightCV();
+//            float arjLeftToday = latestReport.getARJLeftCV();
+//            float arjRightToday = latestReport.getARJRightCV();
             float enduranceToday = latestReport.getEnduranceCV();
             reportPreview.setText(String.format(Locale.US,
-                    "Speed: %f %%\nSway Area: %f %%\nARJ left knee: %f %%\nARJ right knee: %f %%\nEndurance: %f %%",
-                    speedToday, balanceToday, arjLeftToday, arjRightToday, enduranceToday));
+                    "Speed: %f %%\nSway Area: %f %%\nEndurance: %f %%",
+                    speedToday, balanceToday, enduranceToday));
         }
 
         // Navigating to record fragment
@@ -193,8 +186,7 @@ public class HomeFragment extends Fragment {
 
 
     private void setUpToDo() {
-
-        todoListARJB.setVisibility(View.VISIBLE);
+        todoListSWB.setVisibility(View.VISIBLE);
         todoListWSE.setVisibility(View.VISIBLE);
         todoListDT.setVisibility(View.VISIBLE);
         todoListSA.setVisibility(View.VISIBLE);
@@ -214,8 +206,8 @@ public class HomeFragment extends Fragment {
             if (!currentDate.equals(todayStr)) continue;
 
             // Check INDIVIDUAL test dates, not the combined status
-            if (assessment.getARJAndBalanceTestDate() != null) {
-                todoListARJB.setVisibility(View.GONE);
+            if (assessment.getSwayAreaAndBalanceTestDate() != null) {
+                todoListSWB.setVisibility(View.GONE);
             }
             if (assessment.getWSAndEnduranceTestDate() != null) {
                 todoListWSE.setVisibility(View.GONE);

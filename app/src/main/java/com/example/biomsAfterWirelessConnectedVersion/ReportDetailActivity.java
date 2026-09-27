@@ -89,21 +89,21 @@ public class ReportDetailActivity extends AppCompatActivity {
         // Extract data from intent/report fragment and store them in class variables
         reportDate = intent.getStringExtra("date");
         speedValue = intent.getFloatExtra("speed", 0.0f);
-        arjRightValue = intent.getFloatExtra("arjRight", 0.0f);
-        arjLeftValue = intent.getFloatExtra("arjLeft", 0.0f);
+//        arjRightValue = intent.getFloatExtra("arjRight", 0.0f);
+//        arjLeftValue = intent.getFloatExtra("arjLeft", 0.0f);
         balanceValue = intent.getFloatExtra("balance", 0.0f);
         enduranceValue = intent.getFloatExtra("endurance", 0.0f);
-        sensoryAtaxiaARJLeftValue = intent.getFloatExtra("sensoryAtaxiaARJLeft", 0.0f);
-        sensoryAtaxiaARJRightValue = intent.getFloatExtra("sensoryAtaxiaARJRight", 0.0f);
+//        sensoryAtaxiaARJLeftValue = intent.getFloatExtra("sensoryAtaxiaARJLeft", 0.0f);
+//        sensoryAtaxiaARJRightValue = intent.getFloatExtra("sensoryAtaxiaARJRight", 0.0f);
         sensoryAtaxiaBalanceValue = intent.getFloatExtra("sensoryAtaxiaBalance", 0.0f);
-        dualTaskARJLeftValue = intent.getFloatExtra("dualTaskARJLeft", 0.0f);
-        dualTaskARJRightValue = intent.getFloatExtra("dualTaskARJRight", 0.0f);
+//        dualTaskARJLeftValue = intent.getFloatExtra("dualTaskARJLeft", 0.0f);
+//        dualTaskARJRightValue = intent.getFloatExtra("dualTaskARJRight", 0.0f);
         dualTaskBalanceValue = intent.getFloatExtra("dualTaskBalance", 0.0f);
         // SD & CV
-        ARJSDRightValue = intent.getFloatExtra("ARJRightSD", 0.0f);
-        ARJSDLeftValue = intent.getFloatExtra("ARJLeftSD", 0.0f);
-        ARJCVRightValue = intent.getFloatExtra("ARJRightCV", 0.0f);
-        ARJCVLeftValue = intent.getFloatExtra("ARJLeftCV", 0.0f);
+//        ARJSDRightValue = intent.getFloatExtra("ARJRightSD", 0.0f);
+//        ARJSDLeftValue = intent.getFloatExtra("ARJLeftSD", 0.0f);
+//        ARJCVRightValue = intent.getFloatExtra("ARJRightCV", 0.0f);
+//        ARJCVLeftValue = intent.getFloatExtra("ARJLeftCV", 0.0f);
         BalanceSDValue = intent.getFloatExtra("BalanceSD", 0.0f);
         BalanceCVValue = intent.getFloatExtra("BalanceCV", 0.0f);
         EnduranceSDValue = intent.getFloatExtra("EnduranceSD", 0.0f);
@@ -111,11 +111,11 @@ public class ReportDetailActivity extends AppCompatActivity {
         WSSDValue = intent.getFloatExtra("WalkingSD", 0.0f);
         WSCVValue = intent.getFloatExtra("WalkingCV", 0.0f);
         // DTC
-        DTCARJLeftSA = intent.getFloatExtra("sensoryAtaxiaARJLeftDTC", 0.0f);
-        DTCARJRightSA = intent.getFloatExtra("sensoryAtaxiaARJRightDTC", 0.0f);
+//        DTCARJLeftSA = intent.getFloatExtra("sensoryAtaxiaARJLeftDTC", 0.0f);
+//        DTCARJRightSA = intent.getFloatExtra("sensoryAtaxiaARJRightDTC", 0.0f);
         DTCBalanceSA = intent.getFloatExtra("sensoryAtaxiaBalanceDTC", 0.0f);
-        DTCARJLeftDT = intent.getFloatExtra("dualTaskARJLeftDTC", 0.0f);
-        DTCARJRightDT = intent.getFloatExtra("dualTaskARJRightDTC", 0.0f);
+//        DTCARJLeftDT = intent.getFloatExtra("dualTaskARJLeftDTC", 0.0f);
+//        DTCARJRightDT = intent.getFloatExtra("dualTaskARJRightDTC", 0.0f);
         DTCBalanceDT = intent.getFloatExtra("dualTaskBalanceDTC", 0.0f);
     }
 
@@ -123,10 +123,10 @@ public class ReportDetailActivity extends AppCompatActivity {
         date.setText(reportDate);
 
         // SD & CV section
-        ARJRightSD.setText(String.format("%f", ARJSDRightValue));
-        ARJRightCV.setText(String.format("%f %%", ARJCVRightValue));
-        ARJLeftSD.setText(String.format("%f", ARJSDLeftValue));
-        ARJLeftCV.setText(String.format("%f %%", ARJCVLeftValue));
+//        ARJRightSD.setText(String.format("%f", ARJSDRightValue));
+//        ARJRightCV.setText(String.format("%f %%", ARJCVRightValue));
+//        ARJLeftSD.setText(String.format("%f", ARJSDLeftValue));
+//        ARJLeftCV.setText(String.format("%f %%", ARJCVLeftValue));
         BalanceSD.setText(String.format("%f ", BalanceSDValue));
         BalanceCV.setText(String.format("%f %%", BalanceCVValue));
         WSSD.setText(String.format("%f", WSSDValue));
@@ -135,11 +135,11 @@ public class ReportDetailActivity extends AppCompatActivity {
         EnduranceCV.setText(String.format("%f %%", EnduranceCVValue));
 
         // DTC section
-        dtcARJLeftDT.setText(String.format("%f %%", DTCARJLeftDT));
-        dtcARJRightDT.setText(String.format("%f %%", DTCARJRightDT));
+//        dtcARJLeftDT.setText(String.format("%f %%", DTCARJLeftDT));
+//        dtcARJRightDT.setText(String.format("%f %%", DTCARJRightDT));
         dtcBalanceDT.setText(String.format("%f %%", DTCBalanceDT));
-        dtcARJLeftSA.setText(String.format("%f %%", DTCARJLeftSA));
-        dtcARJRightSA.setText(String.format("%f %%", DTCARJRightSA));
+//        dtcARJLeftSA.setText(String.format("%f %%", DTCARJLeftSA));
+//        dtcARJRightSA.setText(String.format("%f %%", DTCARJRightSA));
         dtcBalanceSA.setText(String.format("%f %%", DTCBalanceSA));
 
         // Speed section
@@ -147,8 +147,8 @@ public class ReportDetailActivity extends AppCompatActivity {
 //        speedTrend.setText(String.format("%f", speedTrendValue));
 
         // ARJ section
-        ARJTodayRight.setText(String.format("%f m/s³", arjRightValue));
-        ARJTodayLeft.setText(String.format("%f m/s³", arjLeftValue));
+//        ARJTodayRight.setText(String.format("%f m/s³", arjRightValue));
+//        ARJTodayLeft.setText(String.format("%f m/s³", arjLeftValue));
 //        ARJTrendRight.setText(String.format("%.2f", arjTrendRightValue));
 //        ARJTrendLeft.setText(String.format("%.2f", arjTrendLeftValue));
 
@@ -161,14 +161,14 @@ public class ReportDetailActivity extends AppCompatActivity {
 //        enduranceTrend.setText(String.format("%f", enduranceTrendValue));
 
         // Sensory Ataxia section
-        sensoryAtaxiaARJLeftToday.setText(String.format("%f m/s³", sensoryAtaxiaARJLeftValue));
-        sensoryAtaxiaARJRightToday.setText(String.format("%f m/s³", sensoryAtaxiaARJRightValue));
+//        sensoryAtaxiaARJLeftToday.setText(String.format("%f m/s³", sensoryAtaxiaARJLeftValue));
+//        sensoryAtaxiaARJRightToday.setText(String.format("%f m/s³", sensoryAtaxiaARJRightValue));
         sensoryAtaxiaBalanceToday.setText(String.format("%f mm²", sensoryAtaxiaBalanceValue));
 //        sensoryAtaxiaTrend.setText(String.format("%f", sensoryAtaxiaTrendValue));
 
         // Dual Task section
-        dualTaskARJLeftToday.setText(String.format("%f m/s³", dualTaskARJLeftValue));
-        dualTaskARJRightToday.setText(String.format("%f m/s³", dualTaskARJRightValue));
+//        dualTaskARJLeftToday.setText(String.format("%f m/s³", dualTaskARJLeftValue));
+//        dualTaskARJRightToday.setText(String.format("%f m/s³", dualTaskARJRightValue));
         dualTaskBalanceToday.setText(String.format("%f mm²", dualTaskBalanceValue));
 //        dualTaskTrend.setText(String.format("%f", dualTaskTrendValue));
     }
@@ -256,23 +256,23 @@ public class ReportDetailActivity extends AppCompatActivity {
     }
     private void initializeViews() {
         date = findViewById(R.id.date);
-        ARJTodayRight = findViewById(R.id.ARJValueRightToday);
-        ARJTodayLeft = findViewById(R.id.ARJValueLeftToday);
+//        ARJTodayRight = findViewById(R.id.ARJValueRightToday);
+//        ARJTodayLeft = findViewById(R.id.ARJValueLeftToday);
         balanceToday = findViewById(R.id.BalanceToday);
         speedToday = findViewById(R.id.WSToday);
         enduranceToday = findViewById(R.id.EnduranceToday);
-        sensoryAtaxiaARJLeftToday = findViewById(R.id.sensoryAtaxiaARJLeftToday);
-        sensoryAtaxiaARJRightToday = findViewById(R.id.sensoryAtaxiaARJRightToday);
+//        sensoryAtaxiaARJLeftToday = findViewById(R.id.sensoryAtaxiaARJLeftToday);
+//        sensoryAtaxiaARJRightToday = findViewById(R.id.sensoryAtaxiaARJRightToday);
         sensoryAtaxiaBalanceToday = findViewById(R.id.sensoryAtaxiaBalanceToday);
-        dualTaskARJLeftToday = findViewById(R.id.dualTaskARJLeftToday);
-        dualTaskARJRightToday = findViewById(R.id.dualTaskARJRightToday);
+//        dualTaskARJLeftToday = findViewById(R.id.dualTaskARJLeftToday);
+//        dualTaskARJRightToday = findViewById(R.id.dualTaskARJRightToday);
         dualTaskBalanceToday = findViewById(R.id.dualTaskBalanceToday);
         shareReportButton = findViewById(R.id.shareReportButton);
         // SD & CV
-        ARJLeftSD = findViewById(R.id.ARJSDLeft);
-        ARJLeftCV = findViewById(R.id.ARJCVLeft);
-        ARJRightSD = findViewById(R.id.ARJSDRight);
-        ARJRightCV = findViewById(R.id.ARJCVRight);
+//        ARJLeftSD = findViewById(R.id.ARJSDLeft);
+//        ARJLeftCV = findViewById(R.id.ARJCVLeft);
+//        ARJRightSD = findViewById(R.id.ARJSDRight);
+//        ARJRightCV = findViewById(R.id.ARJCVRight);
         BalanceSD = findViewById(R.id.BalanceSD);
         BalanceCV = findViewById(R.id.BalanceCV);
         WSSD = findViewById(R.id.WSSD);
@@ -280,12 +280,11 @@ public class ReportDetailActivity extends AppCompatActivity {
         EnduranceSD = findViewById(R.id.EnduranceSD);
         EnduranceCV = findViewById(R.id.EnduranceCV);
         // DTC
-        dtcARJLeftDT = findViewById(R.id.ARJDTDTCLeftToday);
-        dtcARJRightDT = findViewById(R.id.ARJDTDTCRightToday);
+//        dtcARJLeftDT = findViewById(R.id.ARJDTDTCLeftToday);
+//        dtcARJRightDT = findViewById(R.id.ARJDTDTCRightToday);
         dtcBalanceDT = findViewById(R.id.BalanceDTDTCToday);
-        dtcARJLeftSA = findViewById(R.id.ARJSADTCLeftToday);
-        dtcARJRightSA = findViewById(R.id.ARJSADTCRightToday);
+//        dtcARJLeftSA = findViewById(R.id.ARJSADTCLeftToday);
+//        dtcARJRightSA = findViewById(R.id.ARJSADTCRightToday);
         dtcBalanceSA = findViewById(R.id.BalanceSADTCToday);
     }
-
 }

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
@@ -92,39 +91,11 @@
             android:layout_marginStart="30dp" />
 
         <TextView
-            android:id="@+id/ARJTest"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Average Rectified Jerk"
-            app:layout_constraintTop_toBottomOf="@id/HowToViewValuesBody"
-            app:layout_constraintStart_toStartOf="parent"
-            android:fontFamily="@font/profile_pro_black"
-            android:textSize="18sp"
-            android:layout_marginStart="30dp"
-            android:layout_marginTop="30dp"/>
-
-        <TextView
-            android:id="@+id/arjBody"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Average rectified jerk (ARJ) measures movement smoothness. Lower ARJ means more fluidity."
-            app:layout_constraintTop_toBottomOf="@id/ARJTest"
-            android:paddingStart="30dp"
-            android:paddingEnd="30dp"
-            android:paddingTop="10dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginEnd="30dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="16sp"
-            android:layout_marginStart="30dp" />
-
-        <TextView
             android:id="@+id/balanceTest"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Balance"
-            app:layout_constraintTop_toBottomOf="@id/arjBody"
+            app:layout_constraintTop_toBottomOf="@id/HowToViewValuesBody"
             app:layout_constraintStart_toStartOf="parent"
             android:fontFamily="@font/profile_pro_black"
             android:textSize="18sp"

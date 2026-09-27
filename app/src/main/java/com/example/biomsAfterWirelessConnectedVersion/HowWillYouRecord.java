@@ -58,6 +58,19 @@ public class HowWillYouRecord extends AppCompatActivity {
         seeInstructionsOnly = incomingIntent.getBooleanExtra("seeInstructionsOnly", false);
         Log.d("HowWillYouRecord recieving", "seeInstructions seeInstructionsOnly recieved as " + seeInstructionsOnly);
 
+        if ("DualTask".equals(assessmentType)) {
+            HowWillYouRecord.someoneRecord = false;
+            Intent intent = new Intent(this, MarkDistanceAndCamera.class);
+            intent.putExtra("assessmentType", assessmentType);
+            intent.putExtra("someoneRecord", false);
+            if (seeInstructionsOnly) {
+                intent.putExtra("seeInstructionsOnly", true);
+            }
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         someoneElseRecord.setOnClickListener(v -> {
             HowWillYouRecord.someoneRecord = true;
             Intent intent = new Intent(this, MarkDistanceAndCamera.class);

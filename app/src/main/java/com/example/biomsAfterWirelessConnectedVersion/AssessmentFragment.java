@@ -68,7 +68,7 @@ public class AssessmentFragment extends Fragment {
             // call  hw will you record, which navigates to MarkDistance, but need to stop it once it discovers that this is just instructions
             Intent intent = new Intent(requireContext(), HowWillYouRecord.class);
             intent.putExtra("seeInstructionsOnly", true);
-            Log.d("Coming from assessmentfragment, opening the instructions", "opening instructions, passed seeInstructions as key and value true");
+            Log.d("Coming from assessment fragment, opening the instructions", "opening instructions, passed seeInstructions as key and value true");
             startActivity(intent);
         });
 
@@ -147,7 +147,7 @@ public class AssessmentFragment extends Fragment {
         titleView.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black));
         builder.setCustomTitle(titleView);
 
-        String[] types = {"ARJ and balance", "Dual Task", "Sensory Ataxia", "Speed and endurance"};
+        String[] types = {"Sway area and balance", "Dual Task", "Sensory Ataxia", "Speed and endurance"};
 
         // Custom adapter with your font
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(

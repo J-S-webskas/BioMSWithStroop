@@ -48,7 +48,7 @@
                 android:id="@+id/distanceBody"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mark a spot (8-10 meters away) where you can walk for at least 15 seconds towards the camera in full view. "
+                android:text="Mark a spot where you are in full view to the camera"
                 app:layout_constraintTop_toBottomOf="@id/markDistance"
                 android:paddingStart="30dp"
                 android:paddingEnd="30dp"
@@ -59,7 +59,7 @@
                 android:textSize="16sp"
                 android:layout_marginStart="30dp" />
 
-            <VideoView
+            <ImageView
                 android:id="@+id/someoneRecord"
                 android:layout_width="wrap_content"
                 android:layout_height="500dp"
@@ -67,6 +67,8 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/distanceBody"
                 android:layout_marginTop="10dp"
+                android:src="@drawable/prop_record"
+                android:adjustViewBounds="true"
                 android:layout_marginStart="30dp"
                 android:layout_marginEnd="30dp"
                 android:paddingStart="30dp"
@@ -102,12 +104,14 @@
                 android:textSize="16sp"
                 android:layout_marginStart="30dp" />
 
-            <VideoView
+            <ImageView
                 android:id="@+id/propRecord"
                 android:layout_width="wrap_content"
                 android:layout_height="500dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
+                android:src="@drawable/someone_record"
+                android:adjustViewBounds="true"
                 app:layout_constraintTop_toBottomOf="@id/surfaceBody"
                 android:layout_marginTop="10dp"
                 android:layout_marginStart="30dp"
@@ -148,7 +152,7 @@
                 android:id="@+id/walk"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Walk Towards the Camera"
+                android:text="Stand and Face the Camera (30 seconds)"
                 android:fontFamily="@font/profile_pro_black"
                 android:textSize="20dp"
                 app:layout_constraintTop_toBottomOf="@id/propRecord"
@@ -157,26 +161,22 @@
                 android:layout_marginStart="30dp"/>
 
             <TextView
-                android:id="@+id/ARJAndBalance"
+                android:id="@+id/SwayAreaAndBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="• If you want to record Average Rectified Jerk and Balance:\nWalk straight towards camera"
+                android:text="• If you want to record Sway Area and Balance:\nstand up and face the camera until test ends"
                 app:layout_constraintTop_toBottomOf="@id/walk"
-                android:paddingStart="30dp"
-                android:paddingEnd="30dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                android:layout_marginEnd="30dp"
                 android:fontFamily="@font/profile_pro"
-                android:textSize="16sp"
-                android:layout_marginStart="30dp"/>
+                android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/SensoryAtaxia"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="• If you want to record Sensory Ataxia: \nWalk straight towards camera with eyes closed, and, if possible, without assistance."
-                app:layout_constraintTop_toBottomOf="@id/ARJAndBalance"
+                android:text="• If you want to record Sensory Ataxia: \nstand up, eyes closed, and face the camera until test ends"
+                app:layout_constraintTop_toBottomOf="@id/SwayAreaAndBalance"
                 android:paddingStart="30dp"
                 android:paddingEnd="30dp"
                 android:layout_marginTop="10dp"
@@ -191,7 +191,7 @@
                 android:id="@+id/DualTask"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="• If you want to record Dual Task:\nWalk straight towards camera while saying the alphabet backwards, eyes open."
+                android:text="• If you want to record Dual Task:\n Stand in front of camera while saying the alphabet backwards, eyes open."
                 app:layout_constraintTop_toBottomOf="@id/SensoryAtaxia"
                 android:paddingStart="30dp"
                 android:paddingEnd="30dp"

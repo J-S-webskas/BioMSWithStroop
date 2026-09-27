@@ -91,59 +91,59 @@
             android:fontFamily="@font/profile_pro_medi"
             android:textSize="19sp"/>
 
-        <TextView
-            android:text="ARJ (left knee)"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
+<!--        <TextView-->
+<!--            android:text="ARJ (left knee)"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro_medi"-->
+<!--            android:textSize="19sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJSDLeft"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJSDLeft"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJCVLeft"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJCVLeft"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:text="ARJ (right knee)"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
+<!--        <TextView-->
+<!--            android:text="ARJ (right knee)"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro_medi"-->
+<!--            android:textSize="19sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJSDRight"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJSDRight"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJCVRight"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJCVRight"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
         <TextView
             android:text="Sway Area"
@@ -266,41 +266,41 @@
             android:fontFamily="@font/profile_pro_medi"
             android:textSize="19sp"/>
 
-        <TextView
-            android:text="ARJ (left knee)"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
+<!--        <TextView-->
+<!--            android:text="ARJ (left knee)"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro_medi"-->
+<!--            android:textSize="19sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJValueLeftToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJValueLeftToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:text="ARJ (right knee)"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
+<!--        <TextView-->
+<!--            android:text="ARJ (right knee)"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro_medi"-->
+<!--            android:textSize="19sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJValueRightToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJValueRightToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
         <TextView
             android:text="Sway Area"
@@ -406,59 +406,59 @@
             android:fontFamily="@font/profile_pro_medi"
             android:textSize="19sp"/>
 
-        <TextView
-            android:text="ARJ (left knee)"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
+<!--        <TextView-->
+<!--            android:text="ARJ (left knee)"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro_medi"-->
+<!--            android:textSize="19sp"/>-->
 
-        <TextView
-            android:id="@+id/dualTaskARJLeftToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/dualTaskARJLeftToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJDTDTCLeftToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJDTDTCLeftToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:text="ARJ (right knee)"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
+<!--        <TextView-->
+<!--            android:text="ARJ (right knee)"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro_medi"-->
+<!--            android:textSize="19sp"/>-->
 
-        <TextView
-            android:id="@+id/dualTaskARJRightToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/dualTaskARJRightToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJDTDTCRightToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJDTDTCRightToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
         <TextView
             android:text="Sway Area"
@@ -537,59 +537,59 @@
             android:fontFamily="@font/profile_pro_medi"
             android:textSize="19sp"/>
 
-        <TextView
-            android:text="ARJ (left knee)"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
+<!--        <TextView-->
+<!--            android:text="ARJ (left knee)"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro_medi"-->
+<!--            android:textSize="19sp"/>-->
 
-        <TextView
-            android:id="@+id/sensoryAtaxiaARJLeftToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/sensoryAtaxiaARJLeftToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJSADTCLeftToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJSADTCLeftToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:text="ARJ (right knee)"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
+<!--        <TextView-->
+<!--            android:text="ARJ (right knee)"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro_medi"-->
+<!--            android:textSize="19sp"/>-->
 
-        <TextView
-            android:id="@+id/sensoryAtaxiaARJRightToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/sensoryAtaxiaARJRightToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
-        <TextView
-            android:id="@+id/ARJSADTCRightToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
+<!--        <TextView-->
+<!--            android:id="@+id/ARJSADTCRightToday"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_columnWeight="1"-->
+<!--            android:padding="8dp"-->
+<!--            android:fontFamily="@font/profile_pro"-->
+<!--            android:textSize="20sp"/>-->
 
         <TextView
             android:text="Sway Area"
@@ -619,7 +619,5 @@
             android:textSize="20sp"/>
 
     </GridLayout>
-
 </LinearLayout>
-
 </ScrollView>

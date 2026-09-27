@@ -412,40 +412,39 @@ public class PoseLandmarkerHelper {
 
             if (poseLandmarkerHelperListener != null) {
                 boolean hasValidPose = false;
-                    // Check if we have valid pose detection
-                    if (result != null && result.landmarks() != null && !result.landmarks().isEmpty()) {
-                        List<PoseLandmarkerResult> resultList = new ArrayList<>();
+                // Check if we have valid pose detection
+                if (result != null && result.landmarks() != null && !result.landmarks().isEmpty()) {
+                    List<PoseLandmarkerResult> resultList = new ArrayList<>();
 
-                        resultList.add(result);  // Coordinate data of the current frame
-                        ResultBundle bundle = new ResultBundle(resultList, inferenceTime, input.getHeight(), input.getWidth());  // input.getHeight() and input.getWidth() get the pixel dimensions of the camera frame/image that was processed.
-                        poseLandmarkerHelperListener.onResults(bundle); // onResults is implemented inside of CameraFragment
-                        // Get the first (and only) PoseLandmarkerResult from the list
-                        List<NormalizedLandmark> landmarks = bundle.results.get(0).landmarks().get(0);  // first person's 33 landmarks all in here
-                        List<Landmark> worldLandmarks = result.worldLandmarks().get(0);
+                    resultList.add(result);  // Coordinate data of the current frame
+                    ResultBundle bundle = new ResultBundle(resultList, inferenceTime, input.getHeight(), input.getWidth());  // input.getHeight() and input.getWidth() get the pixel dimensions of the camera frame/image that was processed.
+                    poseLandmarkerHelperListener.onResults(bundle); // onResults is implemented inside of CameraFragment
+                    // Get the first (and only) PoseLandmarkerResult from the list
+                    List<NormalizedLandmark> landmarks = bundle.results.get(0).landmarks().get(0);  // first person's 33 landmarks all in here
+                    List<Landmark> worldLandmarks = result.worldLandmarks().get(0);
 
-                        if (landmarks != null && landmarks.size() > 28) {
-                            updateCacheIfNeeded(context);
-                            double mass = cachedMass;
-                            List<Double> xz_final= new ArrayList<>();
-                            ///todo: check if the user actually has all these landmarks first, or is landmarks > 28 already did this
-                            if ("female".equalsIgnoreCase(cachedSex)) {
-                                xz_final= calculateCOMForFemale(mass, worldLandmarks);
-                            } else { // For others, just do male
-                                xz_final= calculateCOMForMale(mass, worldLandmarks);
-                            }
-                            double comZ_final = 0, comX_final = 0;
-                            if (!xz_final.isEmpty()) {
-                                comX_final = xz_final.get(0);
-                                comZ_final = xz_final.get(1);
-                            }
+                    if (landmarks != null && landmarks.size() > 28) {
+                        updateCacheIfNeeded(context);
+                        double mass = cachedMass;
+                        List<Double> xz_final= new ArrayList<>();
+                        if ("female".equalsIgnoreCase(cachedSex)) {
+                            xz_final= calculateCOMForFemale(mass, worldLandmarks);
+                        } else { // For others, just do male
+                            xz_final= calculateCOMForMale(mass, worldLandmarks);
+                        }
+                        double comZ_final = 0, comX_final = 0;
+                        if (!xz_final.isEmpty()) {
+                            comX_final = xz_final.get(0);
+                            comZ_final = xz_final.get(1);
+                        }
 
-                            hasValidPose = true;
-                            if (RecordFragment.isTestStarted()) {
-                                RecordFragment.setHasValidPose(true);
-                            }
-                            float left_hip = calculateAngle(landmarks.get(11), landmarks.get(23), landmarks.get(25));
-                            float right_knee = calculateAngle(landmarks.get(24), landmarks.get(26), landmarks.get(28));
-                            float left_knee = calculateAngle(landmarks.get(23), landmarks.get(25), landmarks.get(27));
+                        hasValidPose = true;
+                        if (RecordFragment.isTestStarted()) {
+                            RecordFragment.setHasValidPose(true);
+                        }
+                        float left_hip = calculateAngle(landmarks.get(11), landmarks.get(23), landmarks.get(25));
+                        float right_knee = calculateAngle(landmarks.get(24), landmarks.get(26), landmarks.get(28));
+                        float left_knee = calculateAngle(landmarks.get(23), landmarks.get(25), landmarks.get(27));
 
                         if (RecordFragment.isTestStarted()) {
                             // pass the COM x and y to record fragment:
@@ -473,24 +472,24 @@ public class PoseLandmarkerHelper {
                 }
             }
         } catch (IndexOutOfBoundsException e){
-                Log.e(TAG, "IndexOutOfBoundsException in returnLivestreamResult: " + e.getMessage());
-                Log.e(TAG, "This typically occurs when no pose is detected or insufficient landmarks");
-                if (poseLandmarkerHelperListener != null) {
-                    // Notify listener with empty result to avoid breaking the stream
-                    ResultBundle emptyBundle = new ResultBundle(new ArrayList<>(), 0,
-                            input != null ? input.getHeight() : 0,
-                            input != null ? input.getWidth() : 0);
-                    poseLandmarkerHelperListener.onResults(emptyBundle);
-                }
+            Log.e(TAG, "IndexOutOfBoundsException in returnLivestreamResult: " + e.getMessage());
+            Log.e(TAG, "This typically occurs when no pose is detected or insufficient landmarks");
+            if (poseLandmarkerHelperListener != null) {
+                // Notify listener with empty result to avoid breaking the stream
+                ResultBundle emptyBundle = new ResultBundle(new ArrayList<>(), 0,
+                        input != null ? input.getHeight() : 0,
+                        input != null ? input.getWidth() : 0);
+                poseLandmarkerHelperListener.onResults(emptyBundle);
+            }
         } catch (NullPointerException e){
-                Log.e(TAG, "NullPointerException in returnLivestreamResult: " + e.getMessage());
-                Log.e(TAG, "This occurs when result, landmarks, or input is null");
-                if (poseLandmarkerHelperListener != null) {
-                    ResultBundle emptyBundle = new ResultBundle(new ArrayList<>(), 0,
-                            input != null ? input.getHeight() : 0,
-                            input != null ? input.getWidth() : 0);
-                    poseLandmarkerHelperListener.onResults(emptyBundle);
-                }
+            Log.e(TAG, "NullPointerException in returnLivestreamResult: " + e.getMessage());
+            Log.e(TAG, "This occurs when result, landmarks, or input is null");
+            if (poseLandmarkerHelperListener != null) {
+                ResultBundle emptyBundle = new ResultBundle(new ArrayList<>(), 0,
+                        input != null ? input.getHeight() : 0,
+                        input != null ? input.getWidth() : 0);
+                poseLandmarkerHelperListener.onResults(emptyBundle);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Unexpected error: " + e.getMessage(), e);
             // Send clear signal on error
@@ -621,7 +620,7 @@ public class PoseLandmarkerHelper {
         double comZ = 0;  // Using Z for depth (forward/backward in normalized space)
         double totalMassUsed = 0;
 
-        // Example: Trunk (approximate using shoulder and hip midpoints)
+        // Trunk (approximate using shoulder and hip midpoints)
         Landmark leftShoulder = worldLandmarks.get(11);
         Landmark rightShoulder = worldLandmarks.get(12);
         Landmark leftHip = worldLandmarks.get(23);
@@ -643,17 +642,6 @@ public class PoseLandmarkerHelper {
         comX += trunkCOM_X * trunkMass;
         comZ += trunkCOM_Z * trunkMass;
         totalMassUsed += trunkMass;
-
-//        double real_sway_x = normalized_x / shoulder_width;  // Makes it relative to body size
-
-        // Midpoint of shoulders
-        double trunkX = (leftShoulder.x() + rightShoulder.x()) / 2;
-        double trunkZ = (leftShoulder.z() + rightShoulder.z()) / 2;
-//
-//        // Trunk mass ratio (43.46% for male)
-//        comX += trunkX * 0.4346 * totalMass;
-//        comZ += trunkZ * 0.4346 * totalMass;
-//        totalMassUsed += 0.4346 * totalMass;
 
         // 2. LEFT THIGH (14.78% for female)
         Landmark leftHipJoint = worldLandmarks.get(23);    // Proximal end

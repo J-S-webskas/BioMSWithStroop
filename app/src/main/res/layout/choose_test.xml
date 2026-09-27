@@ -18,7 +18,7 @@
         android:layout_marginTop="60dp"/>
 
     <androidx.cardview.widget.CardView
-        android:id="@+id/ARJAndBalance"
+        android:id="@+id/SwayAreaAndBalance"
         android:layout_width="match_parent"
         android:layout_height="140dp"
         android:layout_marginEnd="16dp"
@@ -43,10 +43,10 @@
             android:padding="16dp">
 
             <TextView
-                android:id="@+id/ARJText"
+                android:id="@+id/SWABText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Average Rectified Jerk and Balance"
+                android:text="Sway Area and balance"
                 android:padding="10dp"
                 android:textSize="20sp"
                 android:layout_gravity="center"
@@ -54,7 +54,7 @@
                 android:fontFamily="@font/profile_pro_bold"/>
 
             <TextView
-                android:id="@+id/ARJCompleted"
+                android:id="@+id/SWABCompleted"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Completed. Next test is tomorrow"
@@ -80,7 +80,7 @@
         android:gravity="center"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ARJAndBalance"
+        app:layout_constraintTop_toBottomOf="@id/SwayAreaAndBalance"
         app:layout_constraintBottom_toTopOf="@id/sensoryAtaxia"
         app:layout_constraintHeight_default="percent"
         app:layout_constraintHeight_percent="0.12">

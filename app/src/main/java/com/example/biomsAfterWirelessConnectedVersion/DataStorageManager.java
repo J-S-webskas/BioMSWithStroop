@@ -1,7 +1,5 @@
 package com.example.biomsAfterWirelessConnectedVersion;
 
-import static androidx.core.content.ContentProviderCompat.requireContext;
-
 import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
@@ -172,7 +170,7 @@ public class DataStorageManager {
         if (assessment == null) return true;
 
         // Check if all test dates are null
-        boolean hasARJDate = assessment.getARJAndBalanceTestDate() != null;
+        boolean hasARJDate = assessment.getSwayAreaAndBalanceTestDate() != null;
         boolean hasWSDate = assessment.getWSAndEnduranceTestDate() != null;
         boolean hasDualTaskDate = assessment.getDualTaskTestDate() != null;
         boolean hasSensoryDate = assessment.getSensoryAtaxiaTestDate() != null;
@@ -238,8 +236,8 @@ public class DataStorageManager {
             // Find the latest date based on the stored test date for the assessments
             switch (assessmentType) {
                 case "ARJ and balance":
-                    if (assessment.getARJAndBalanceTestDate() != null) {
-                        assessmentDate = sdf.format(assessment.getARJAndBalanceTestDate());
+                    if (assessment.getSwayAreaAndBalanceTestDate() != null) {
+                        assessmentDate = sdf.format(assessment.getSwayAreaAndBalanceTestDate());
                     }
                     break;
                 case "Dual Task":
@@ -279,7 +277,7 @@ public class DataStorageManager {
                 targetAssessment.getBaseline().setARJ(new HashMap<>());
                 targetAssessment.getBaseline().setWalkingSpeed(0f);
                 targetAssessment.getBaseline().setEnduranceScore(0f);
-                targetAssessment.setARJAndBalanceTestDate(null);
+                targetAssessment.setSwayAreaAndBalanceTestDate(null);
 
                 // Clear comparisons
                 if (targetAssessment.getComparisons() != null) {
@@ -347,8 +345,8 @@ public class DataStorageManager {
             }
 
             // Also check by any test date
-            if (assessment.getARJAndBalanceTestDate() != null &&
-                    DATE_FORMAT.format(assessment.getARJAndBalanceTestDate()).equals(todayDateString)) {
+            if (assessment.getSwayAreaAndBalanceTestDate() != null &&
+                    DATE_FORMAT.format(assessment.getSwayAreaAndBalanceTestDate()).equals(todayDateString)) {
                 return assessment;
             }
             if (assessment.getWSAndEnduranceTestDate() != null &&
@@ -465,10 +463,10 @@ public class DataStorageManager {
 
         // Clear only the selected test type data
         switch (assessmentType) {
-            case "ARJ and balance":
+            case "Sway area and balance":
                 targetAssessment.getBaseline().setBalanceScore(0f);
                 targetAssessment.getBaseline().setARJ(new HashMap<>());
-                targetAssessment.setARJAndBalanceTestDate(null);
+                targetAssessment.setSwayAreaAndBalanceTestDate(null);
 
                 // Clear comparisons
                 if (targetAssessment.getComparisons() != null) {
@@ -479,7 +477,7 @@ public class DataStorageManager {
                     targetAssessment.getComparisons().setSensoryAtaxiaARJLeftKneeChange(0f);
                     targetAssessment.getComparisons().setSensoryAtaxiaARJRightKneeChange(0f);
                 }
-                Toast.makeText(context, "ARJ and balance data cleared for " + dateStr, Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Sway area and balance data cleared for " + dateStr, Toast.LENGTH_SHORT).show();
                 break;
 
             case "Dual Task":

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/stroop_voice_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="top|center_horizontal"
+    android:layout_marginTop="60dp"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#80000000"
+    android:visibility="gone">
+
+    <TextView
+        android:id="@+id/tv_voice_instruction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="Speak aloud the COLOR of the word ink:"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- Big high-contrast Stroop word text -->
+    <TextView
+        android:id="@+id/tv_stroop_word"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:shadowColor="#000000"
+        android:shadowDx="4"
+        android:shadowDy="4"
+        android:shadowRadius="6"
+        android:text="RED"
+        android:textColor="#00FF00"
+        android:textSize="72sp"
+        android:textStyle="bold" />
+
+    <!-- Audio indicator showing speech status -->
+    <TextView
+        android:id="@+id/tv_voice_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="🎤 Listening for voice..."
+        android:textColor="#FFEB3B"
+        android:textSize="16sp" />
+
+</LinearLayout>
