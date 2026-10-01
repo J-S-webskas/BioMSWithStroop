@@ -138,6 +138,11 @@ public class ReportFragment extends Fragment {
             return;
         }
 
+        // DataStorageManager loads assessments sorted newest first. Sort chronologically (oldest first) so T1 is earliest trial.
+        List<AssessmentData> chronologicalAssessments = new ArrayList<>(allAssessment);
+        java.util.Collections.sort(chronologicalAssessments, (a1, a2) ->
+                a1.getTimestamp().compareTo(a2.getTimestamp()));
+
         // Filter assessments for the selected date
         SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
         String targetDateString = sdf.format(targetDate);
@@ -195,7 +200,7 @@ public class ReportFragment extends Fragment {
         ArrayList<Float> saBalanceTrials = new ArrayList<>();
         ArrayList<Float> saDTCTrials = new ArrayList<>();
 
-        for (AssessmentData assessment : allAssessment) {
+        for (AssessmentData assessment : chronologicalAssessments) {
             String currentDate = sdf.format(assessment.getTimestamp());
             long currentTimestamp = assessment.getTimestamp().getTime();
 

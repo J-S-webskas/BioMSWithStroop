@@ -295,6 +295,11 @@ public class AutoReportGenerationService extends Service {
         float WSCV = (WSSD / getMean(allSpeedValues)) * 100;
         float EnduranceCV = (EnduranceSD / getMean(allEnduranceValues)) * 100;
 
+        // Sort chronological (oldest first) so T1 = earliest trial
+        List<AssessmentData> chronologicalAssessments = new ArrayList<>(allAssessments);
+        java.util.Collections.sort(chronologicalAssessments, (a1, a2) ->
+                a1.getTimestamp().compareTo(a2.getTimestamp()));
+
         ArrayList<Float> balanceTrials = new ArrayList<>();
         ArrayList<Float> speedTrials = new ArrayList<>();
         ArrayList<Float> enduranceTrials = new ArrayList<>();
@@ -303,7 +308,7 @@ public class AutoReportGenerationService extends Service {
         ArrayList<Float> saBalanceTrials = new ArrayList<>();
         ArrayList<Float> saDTCTrials = new ArrayList<>();
 
-        for (AssessmentData assessment : allAssessments) {
+        for (AssessmentData assessment : chronologicalAssessments) {
             String currentDate = sdf.format(assessment.getTimestamp());
             if (!currentDate.equals(targetDateString)) continue;
 

@@ -176,10 +176,18 @@ public class AssessmentFragment extends Fragment {
 
     private void showTrialPickerForDeletion(String dateStr, String assessmentType) {
         java.util.List<AssessmentData> allAssessments = DataStorageManager.loadAllAssessments(requireContext());
+
+        // Sort chronologically (oldest first) so index 0 = T1
+        java.util.List<AssessmentData> chronologicalAssessments = new java.util.ArrayList<>(allAssessments);
+        java.util.Collections.sort(chronologicalAssessments, (a1, a2) -> {
+            if (a1.getTimestamp() == null || a2.getTimestamp() == null) return 0;
+            return a1.getTimestamp().compareTo(a2.getTimestamp());
+        });
+
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US);
         java.util.List<AssessmentData> matchingTrials = new java.util.ArrayList<>();
 
-        for (AssessmentData assessment : allAssessments) {
+        for (AssessmentData assessment : chronologicalAssessments) {
             if (assessment.getTimestamp() == null) continue;
             String aDate = sdf.format(assessment.getTimestamp());
             if (!aDate.equals(dateStr)) continue;
