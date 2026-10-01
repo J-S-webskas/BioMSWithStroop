@@ -424,14 +424,14 @@ public class DataStorageManager {
             return "Not Found"; // Fixed: return a default value
         }
     }
-    private static boolean deleteAssessmentFile(Context context, String sessionId) {
+    public static boolean deleteAssessmentFile(Context context, String sessionId) {
         String filename = "assessment_" + sessionId + FILE_EXTENSION;
         File file = new File(context.getFilesDir(), filename);
 
         if (file.exists()) {
             boolean deleted = file.delete();
             if (deleted) {
-                Log.d(TAG, "Deleted empty assessment file: " + filename);
+                Log.d(TAG, "Deleted assessment file: " + filename);
             } else {
                 Log.e(TAG, "Failed to delete assessment file: " + filename);
             }
