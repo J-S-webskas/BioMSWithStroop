@@ -87,8 +87,7 @@ public class ReportFragment extends Fragment {
             Intent intent = new Intent(requireContext(), ReportDetailActivity.class);
 
             // Pass the report data
-            // Today
-            intent.putExtra("date", report.getDate());  // Convert Date to long
+            intent.putExtra("date", report.getDate());
             intent.putExtra("speed", report.getSpeedToday());
             intent.putExtra("arjRight", report.getArjRightKneeToday());
             intent.putExtra("arjLeft", report.getArjLeftKneeToday());
@@ -118,6 +117,9 @@ public class ReportFragment extends Fragment {
             intent.putExtra("BalanceCV", report.getBalanceCV());
             intent.putExtra("EnduranceCV", report.getEnduranceCV());
             intent.putExtra("WalkingCV", report.getSpeedCV());
+
+            // Trials
+            intent.putExtra("reportModel", report);
 
             startActivity(intent);
         });
@@ -185,72 +187,51 @@ public class ReportFragment extends Fragment {
 
         boolean hasDataForDate = false;
 
+        ArrayList<Float> balanceTrials = new ArrayList<>();
+        ArrayList<Float> speedTrials = new ArrayList<>();
+        ArrayList<Float> enduranceTrials = new ArrayList<>();
+        ArrayList<Float> dtBalanceTrials = new ArrayList<>();
+        ArrayList<Float> dtDTCTrials = new ArrayList<>();
+        ArrayList<Float> saBalanceTrials = new ArrayList<>();
+        ArrayList<Float> saDTCTrials = new ArrayList<>();
+
         for (AssessmentData assessment : allAssessment) {
             String currentDate = sdf.format(assessment.getTimestamp());
             long currentTimestamp = assessment.getTimestamp().getTime();
-
-            // Collect all data for SD/CV
-//            Float arjLeftSDCV = assessment.getBaseline().getARJ().get("left_knee");
-//            if (arjLeftSDCV != null && arjLeftSDCV != 0) {
-//                allARJLeftValues.add(arjLeftSDCV);
-//            }
-
-//            Float arjRightSDCV = assessment.getBaseline().getARJ().get("right_knee");
-//            if (arjRightSDCV != null && arjRightSDCV != 0) {
-//                allARJRightValues.add(arjRightSDCV);
-//            }
-
-            float balanceSDCV = assessment.getBaseline().getBalanceScore();
-            if (assessment.getSwayAreaAndBalanceTestDate() != null) {
-                allBalanceValues.add(balanceSDCV);
-            }
-
-            float walkingSpeedSDCV = assessment.getBaseline().getWalkingSpeed();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
-                allSpeedValues.add(walkingSpeedSDCV);
-            }
-
-            float enduranceSDCV = assessment.getBaseline().getEnduranceScore();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
-                allEnduranceValues.add(enduranceSDCV);
-            }
 
             // Process only data from the selected date
             if (!currentDate.equals(targetDateString)) continue;
 
             hasDataForDate = true;
 
-            // Baseline data
-//            Float arjLeft = assessment.getBaseline().getARJ().get("left_knee");
-//            if (arjLeft != null && arjLeft != 0) {
-//                if (bestARJLeft == null || currentTimestamp > latestTimestamp) {
-//                    bestARJLeft = arjLeft;
-//                }
-//            }
-//
-//            Float arjRight = assessment.getBaseline().getARJ().get("right_knee");
-//            if (arjRight != null && arjRight != 0) {
-//                if (bestARJRight == null || currentTimestamp > latestTimestamp) {
-//                    bestARJRight = arjRight;
-//                }
-//            }
-
             float balance = assessment.getBaseline().getBalanceScore();
-            if (assessment.getSwayAreaAndBalanceTestDate() != null) {
+            if (assessment.getSwayAreaAndBalanceTestDate() != null || balance > 0) {
+                if (balance > 0) {
+                    balanceTrials.add(balance);
+                    allBalanceValues.add(balance);
+                }
                 if (bestBalance == null || currentTimestamp > latestTimestamp) {
                     bestBalance = balance;
                 }
             }
 
             float walkingSpeed = assessment.getBaseline().getWalkingSpeed();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
+            if (assessment.getWSAndEnduranceTestDate() != null || walkingSpeed > 0) {
+                if (walkingSpeed > 0) {
+                    speedTrials.add(walkingSpeed);
+                    allSpeedValues.add(walkingSpeed);
+                }
                 if (bestWalkingSpeed == null || currentTimestamp > latestTimestamp) {
                     bestWalkingSpeed = walkingSpeed;
                 }
             }
 
             float endurance = assessment.getBaseline().getEnduranceScore();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
+            if (assessment.getWSAndEnduranceTestDate() != null || endurance > 0) {
+                if (endurance > 0) {
+                    enduranceTrials.add(endurance);
+                    allEnduranceValues.add(endurance);
+                }
                 if (bestEndurance == null || currentTimestamp > latestTimestamp) {
                     bestEndurance = endurance;
                 }
@@ -263,22 +244,9 @@ public class ReportFragment extends Fragment {
             // Dual Task data
             DualTaskAssessment dualTask = assessment.getDualTask();
             if (dualTask != null) {
-//                Float dtArjLeft = dualTask.getARJ().get("left_knee");
-//                if (dtArjLeft != null && dtArjLeft != 0) {
-//                    if (bestDTARJLeft == null || currentTimestamp > latestDTTimestamp) {
-//                        bestDTARJLeft = dtArjLeft;
-//                    }
-//                }
-//
-//                Float dtArjRight = dualTask.getARJ().get("right_knee");
-//                if (dtArjRight != null && dtArjRight != 0) {
-//                    if (bestDTARJRight == null || currentTimestamp > latestDTTimestamp) {
-//                        bestDTARJRight = dtArjRight;
-//                    }
-//                }
-
                 float dtBalance = dualTask.getBalanceScore();
-                if (assessment.getDualTaskTestDate() != null) {
+                if (assessment.getDualTaskTestDate() != null || dtBalance > 0) {
+                    if (dtBalance > 0) dtBalanceTrials.add(dtBalance);
                     if (bestDTBalance == null || currentTimestamp > latestDTTimestamp) {
                         bestDTBalance = dtBalance;
                     }
@@ -291,22 +259,9 @@ public class ReportFragment extends Fragment {
             // Sensory Ataxia data
             SensoryAtaxiaAssessment sensory = assessment.getSensoryAtaxia();
             if (sensory != null) {
-                Float saArjLeft = sensory.getARJ().get("left_knee");
-//                if (saArjLeft != null && saArjLeft != 0) {
-//                    if (bestSAARJLeft == null || currentTimestamp > latestSATimestamp) {
-//                        bestSAARJLeft = saArjLeft;
-//                    }
-//                }
-//
-//                Float saArjRight = sensory.getARJ().get("right_knee");
-//                if (saArjRight != null && saArjRight != 0) {
-//                    if (bestSAARJRight == null || currentTimestamp > latestSATimestamp) {
-//                        bestSAARJRight = saArjRight;
-//                    }
-//                }
-
                 float saBalance = sensory.getBalanceScore();
-                if (assessment.getSensoryAtaxiaTestDate() != null) {
+                if (assessment.getSensoryAtaxiaTestDate() != null || saBalance > 0) {
+                    if (saBalance > 0) saBalanceTrials.add(saBalance);
                     if (bestSABalance == null || currentTimestamp > latestSATimestamp) {
                         bestSABalance = saBalance;
                     }
@@ -317,12 +272,15 @@ public class ReportFragment extends Fragment {
             }
 
             TestComparisons comparisons = assessment.getComparisons();
-//            DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
-//            DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
-            DTBalanceDTC = comparisons.getDualTaskBalanceChange();
-//            SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
-//            SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
-            SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
+            if (comparisons != null) {
+                float dtcDT = comparisons.getDualTaskBalanceChange();
+                if (dtcDT != 0) dtDTCTrials.add(dtcDT);
+                float dtcSA = comparisons.getSensoryAtaxiaBalanceChange();
+                if (dtcSA != 0) saDTCTrials.add(dtcSA);
+
+                if (dtcDT != 0) DTBalanceDTC = dtcDT;
+                if (dtcSA != 0) SABalanceDTC = dtcSA;
+            }
         }
 
         if (!hasDataForDate) {
@@ -331,62 +289,47 @@ public class ReportFragment extends Fragment {
         }
 
         // Use best values for the selected date
-//        ARJLeftKneeToday = bestARJLeft != null ? bestARJLeft : 0f;
-//        ARJRightKneeToday = bestARJRight != null ? bestARJRight : 0f;
         balanceToday = bestBalance != null ? bestBalance : 0f;
         speedToday = bestWalkingSpeed != null ? bestWalkingSpeed : 0f;
         enduranceToday = bestEndurance != null ? bestEndurance : 0f;
-//        DTARJLeftKneeToday = bestDTARJLeft != null ? bestDTARJLeft : 0f;
-//        DTARJRightKneeToday = bestDTARJRight != null ? bestDTARJRight : 0f;
         DTbalanceToday = bestDTBalance != null ? bestDTBalance : 0f;
-//        SAARJLeftKneeToday = bestSAARJLeft != null ? bestSAARJLeft : 0f;
-//        SAARJRightKneeToday = bestSAARJRight != null ? bestSAARJRight : 0f;
         SAbalanceToday = bestSABalance != null ? bestSABalance : 0f;
 
-        // Calculate SD and CV
-//        float ARJRightKneeSD = standardDeviation(allARJRightValues);
-//        float ARJLeftKneeSD = standardDeviation(allARJLeftValues);
+        // Calculate SD and CV across trials
         float BalanceSD = standardDeviation(allBalanceValues);
         float EnduranceSD = standardDeviation(allEnduranceValues);
         float WSSD = standardDeviation(allSpeedValues);
 
-//        float ARJLeftKneeCV = (ARJLeftKneeSD / getMean(allARJLeftValues)) * 100;
-//        float ARJRightKneeCV = (ARJRightKneeSD / getMean(allARJRightValues)) * 100;
         float BalanceCV = (BalanceSD / getMean(allBalanceValues)) * 100;
         float WSCV = (WSSD / getMean(allSpeedValues)) * 100;
         float EnduranceCV = (EnduranceSD / getMean(allEnduranceValues)) * 100;
 
         // Create new Report
         ReportModel newReport = new ReportModel();
-//        newReport.setArjLeftKneeToday(ARJLeftKneeToday);
-//        newReport.setArjRightKneeToday(ARJRightKneeToday);
         newReport.setBalanceToday(balanceToday);
         newReport.setSpeedToday(speedToday);
         newReport.setEnduranceToday(enduranceToday);
-//        newReport.setSensoryAtaxiaARJLeftToday(SAARJLeftKneeToday);
-//        newReport.setSensoryAtaxiaARJRightToday(SAARJRightKneeToday);
         newReport.setSensoryAtaxiaBalanceToday(SAbalanceToday);
-//        newReport.setDualTaskARJLeftToday(DTARJLeftKneeToday);
-//        newReport.setDualTaskARJRightToday(DTARJRightKneeToday);
         newReport.setDualTaskBalanceToday(DTbalanceToday);
         // DTC
-//        newReport.setDualTaskDTCARJLeft(DTARJLeftKneeDTC);
-//        newReport.setDualTaskDTCARJRight(DTARJRightKneeDTC);
         newReport.setDualTaskDTCBalance(DTBalanceDTC);
-//        newReport.setSensoryAtaxiaDTCARJLeft(SAARJLeftKneeDTC);
-//        newReport.setSensoryAtaxiaDTCARJRight(SAARJRightKneeDTC);
         newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
         // SD & CV
-//        newReport.setARJLeftSD(ARJLeftKneeSD);
-//        newReport.setARJRightSD(ARJRightKneeSD);
         newReport.setBalanceSD(BalanceSD);
         newReport.setEnduranceSD(EnduranceSD);
         newReport.setSpeedSD(WSSD);
-//        newReport.setARJLeftCV(ARJLeftKneeCV);
-//        newReport.setARJRightCV(ARJRightKneeCV);
         newReport.setBalanceCV(BalanceCV);
         newReport.setEnduranceCV(EnduranceCV);
         newReport.setSpeedCV(WSCV);
+
+        // Set Trial Lists
+        newReport.setBalanceTrials(balanceTrials);
+        newReport.setSpeedTrials(speedTrials);
+        newReport.setEnduranceTrials(enduranceTrials);
+        newReport.setDualTaskBalanceTrials(dtBalanceTrials);
+        newReport.setDualTaskDTCTrials(dtDTCTrials);
+        newReport.setSensoryAtaxiaBalanceTrials(saBalanceTrials);
+        newReport.setSensoryAtaxiaDTCTrials(saDTCTrials);
 
         newReport.setTimeStamp(targetDate);
 
