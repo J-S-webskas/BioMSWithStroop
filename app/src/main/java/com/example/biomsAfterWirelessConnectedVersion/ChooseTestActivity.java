@@ -64,61 +64,26 @@ public class ChooseTestActivity extends AppCompatActivity {
         TextView WSCompleted = findViewById(R.id.WSCompleted);
         TextView WSText = findViewById(R.id.WSText);
 
-        boolean SACompleted = testCompleted("SensoryAtaxia");
-        boolean swabCompleted = testCompleted("SwayAreaAndBalance");
-        boolean DTCompleted = testCompleted("DualTask");
-        boolean wsCompleted = testCompleted("WSAndEndurance");
+        boolean swabEverCompleted = hasEverCompletedSwayAreaAndBalance();
 
-        // If SA and balance is not recorded, return
-        if (!swabCompleted) {
+        // If Sway Area & balance was never recorded, disable Dual Task and Sensory Ataxia
+        if (!swabEverCompleted) {
             dualTaskRecordARJ.setVisibility(VISIBLE);
             dualTaskText.setTextColor(Color.GRAY);
             sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
             sensoryAtaxiaText.setTextColor(Color.GRAY);
-        }
-        if (SACompleted) {
-            sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
-            sensoryAtaxiaRecordARJ.setText("Completed. Next test is tomorrow");
-            sensoryAtaxiaText.setTextColor(Color.GRAY);
-        }
-        if (DTCompleted) {
-            dualTaskRecordARJ.setVisibility(VISIBLE);
-            dualTaskRecordARJ.setText("Completed. Next test is tomorrow");
-            dualTaskText.setTextColor(Color.GRAY);
-        }
-        if (swabCompleted) {
-            ARJCompleted.setVisibility(VISIBLE);
-            ARJText.setTextColor(Color.GRAY);
-        }
-        if (wsCompleted) {
-            WSCompleted.setVisibility(VISIBLE);
-            WSText.setTextColor(Color.GRAY);
         }
 
         SwayAreaAndBalance.setOnClickListener(v -> {
-            // If ARJ and balance is not recorded, return
-            if (swabCompleted) {
-                ARJCompleted.setVisibility(VISIBLE);
-                ARJText.setTextColor(Color.GRAY);
-                return;
-            }
             assessmentType = "SwayAreaAndBalance";
-            // Navigate to how to record
             Intent intent = new Intent(this, HowWillYouRecord.class);
             intent.putExtra("assessmentType", assessmentType);
             startActivity(intent);
         });
 
         DualTask.setOnClickListener(v -> {
-            // If sawb and balance is not recorded, return
-            if (!swabCompleted) {
+            if (!swabEverCompleted && !hasEverCompletedSwayAreaAndBalance()) {
                 dualTaskRecordARJ.setVisibility(VISIBLE);
-                dualTaskText.setTextColor(Color.GRAY);
-                return;
-            }
-            if (DTCompleted) {
-                dualTaskRecordARJ.setVisibility(VISIBLE);
-                dualTaskRecordARJ.setText("Completed. Next test is tomorrow");
                 dualTaskText.setTextColor(Color.GRAY);
                 return;
             }
@@ -129,17 +94,9 @@ public class ChooseTestActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-
         sensoryAtaxia.setOnClickListener(v -> {
-            // If ARJ and balance is not recorded, return
-            if (!swabCompleted) {
+            if (!swabEverCompleted && !hasEverCompletedSwayAreaAndBalance()) {
                 sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
-                sensoryAtaxiaText.setTextColor(Color.GRAY);
-                return;
-            }
-            if (SACompleted) {
-                sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
-                sensoryAtaxiaRecordARJ.setText("Completed. Next test is tomorrow");
                 sensoryAtaxiaText.setTextColor(Color.GRAY);
                 return;
             }
@@ -147,24 +104,13 @@ public class ChooseTestActivity extends AppCompatActivity {
             Intent intent = new Intent(this, HowWillYouRecord.class);
             intent.putExtra("assessmentType", assessmentType);
             startActivity(intent);
-            // Handle Sensory Ataxia
-            // If ARJ and balance is not recorded, return
-            // Other-wise, call camera
-            // Set test = sa
         });
 
         speedAndEndurance.setOnClickListener(v -> {
-            // If ARJ and balance is not recorded, return
-            if (wsCompleted) {
-                WSCompleted.setVisibility(VISIBLE);
-                WSText.setTextColor(Color.GRAY);
-                return;
-            }
             assessmentType = "SpeedAndEndurance";
             Intent intent = new Intent(this, HowWillYouTime.class);
             intent.putExtra("assessmentType", assessmentType);
             startActivity(intent);
-            // Handle Speed and Endurance
         });
 
         back.setOnClickListener(v -> {
@@ -172,45 +118,13 @@ public class ChooseTestActivity extends AppCompatActivity {
         });
     }
 
-    private boolean testCompleted(String testType) {
+    private boolean hasEverCompletedSwayAreaAndBalance() {
         List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(this);
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-        String todayStr = sdf.format(new Date());
-        boolean swabDoneToday = false;
-        boolean wsDoneToday = false;
-        boolean dualTaskDoneToday = false;
-        boolean sensoryDoneToday = false;
-
         for (AssessmentData assessment : allAssessment) {
-            String assessmentDate = sdf.format(assessment.getTimestamp());
-            // Only check today's assessments
-            if (assessmentDate.equals(todayStr)) {
-                // Check INDIVIDUAL test dates instead of combined status
-                if (assessment.getSwayAreaAndBalanceTestDate() != null) {
-                    swabDoneToday = true;
-                }
-                if (assessment.getWSAndEnduranceTestDate() != null) {
-                    wsDoneToday = true;
-                }
-                if (assessment.getDualTaskTestDate() != null) {
-                    dualTaskDoneToday = true;
-                }
-                if (assessment.getSensoryAtaxiaTestDate() != null) {
-                    sensoryDoneToday = true;
-                }
+            if (assessment.getSwayAreaAndBalanceTestDate() != null ||
+                (assessment.getBaseline() != null && assessment.getBaseline().getBalanceScore() > 0)) {
+                return true;
             }
-        }
-        if (testType.equals("SwayAreaAndBalance") && swabDoneToday) {
-            return true;
-        }
-        if (testType.equals("SensoryAtaxia") && sensoryDoneToday) {
-            return true;
-        }
-        if (testType.equals("DualTask") && dualTaskDoneToday) {
-            return true;
-        }
-        if (testType.equals("WSAndEndurance") && wsDoneToday) {
-            return true;
         }
         return false;
     }

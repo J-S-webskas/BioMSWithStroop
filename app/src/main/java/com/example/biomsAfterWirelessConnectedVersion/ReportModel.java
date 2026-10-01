@@ -1,7 +1,9 @@
 package com.example.biomsAfterWirelessConnectedVersion;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 public class ReportModel implements Serializable {
@@ -123,6 +125,36 @@ public class ReportModel implements Serializable {
     private String dualTaskTrend;
     private String currentValueBaseline;
     private String reportId;
+
+    // Trial Lists
+    private List<Float> balanceTrials = new ArrayList<>();
+    private List<Float> speedTrials = new ArrayList<>();
+    private List<Float> enduranceTrials = new ArrayList<>();
+    private List<Float> dualTaskBalanceTrials = new ArrayList<>();
+    private List<Float> dualTaskDTCTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaBalanceTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaDTCTrials = new ArrayList<>();
+
+    public List<Float> getBalanceTrials() { return balanceTrials; }
+    public void setBalanceTrials(List<Float> trials) { this.balanceTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSpeedTrials() { return speedTrials; }
+    public void setSpeedTrials(List<Float> trials) { this.speedTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getEnduranceTrials() { return enduranceTrials; }
+    public void setEnduranceTrials(List<Float> trials) { this.enduranceTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskBalanceTrials() { return dualTaskBalanceTrials; }
+    public void setDualTaskBalanceTrials(List<Float> trials) { this.dualTaskBalanceTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskDTCTrials() { return dualTaskDTCTrials; }
+    public void setDualTaskDTCTrials(List<Float> trials) { this.dualTaskDTCTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaBalanceTrials() { return sensoryAtaxiaBalanceTrials; }
+    public void setSensoryAtaxiaBalanceTrials(List<Float> trials) { this.sensoryAtaxiaBalanceTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaDTCTrials() { return sensoryAtaxiaDTCTrials; }
+    public void setSensoryAtaxiaDTCTrials(List<Float> trials) { this.sensoryAtaxiaDTCTrials = trials != null ? trials : new ArrayList<>(); }
 
     public float getDualTaskDTCARJLeft() {
         return dualTaskDTCARJLeft;

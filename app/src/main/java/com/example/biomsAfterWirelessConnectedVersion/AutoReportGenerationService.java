@@ -295,6 +295,50 @@ public class AutoReportGenerationService extends Service {
         float WSCV = (WSSD / getMean(allSpeedValues)) * 100;
         float EnduranceCV = (EnduranceSD / getMean(allEnduranceValues)) * 100;
 
+        // Sort chronological (oldest first) so T1 = earliest trial
+        List<AssessmentData> chronologicalAssessments = new ArrayList<>(allAssessments);
+        java.util.Collections.sort(chronologicalAssessments, (a1, a2) ->
+                a1.getTimestamp().compareTo(a2.getTimestamp()));
+
+        ArrayList<Float> balanceTrials = new ArrayList<>();
+        ArrayList<Float> speedTrials = new ArrayList<>();
+        ArrayList<Float> enduranceTrials = new ArrayList<>();
+        ArrayList<Float> dtBalanceTrials = new ArrayList<>();
+        ArrayList<Float> dtDTCTrials = new ArrayList<>();
+        ArrayList<Float> saBalanceTrials = new ArrayList<>();
+        ArrayList<Float> saDTCTrials = new ArrayList<>();
+
+        for (AssessmentData assessment : chronologicalAssessments) {
+            String currentDate = sdf.format(assessment.getTimestamp());
+            if (!currentDate.equals(targetDateString)) continue;
+
+            float balance = assessment.getBaseline().getBalanceScore();
+            if (balance > 0) balanceTrials.add(balance);
+
+            float speed = assessment.getBaseline().getWalkingSpeed();
+            if (speed > 0) speedTrials.add(speed);
+
+            float endurance = assessment.getBaseline().getEnduranceScore();
+            if (endurance > 0) enduranceTrials.add(endurance);
+
+            if (assessment.getDualTask() != null && assessment.getDualTask().getBalanceScore() > 0) {
+                dtBalanceTrials.add(assessment.getDualTask().getBalanceScore());
+            }
+
+            if (assessment.getSensoryAtaxia() != null && assessment.getSensoryAtaxia().getBalanceScore() > 0) {
+                saBalanceTrials.add(assessment.getSensoryAtaxia().getBalanceScore());
+            }
+
+            if (assessment.getComparisons() != null) {
+                if (assessment.getComparisons().getDualTaskBalanceChange() != 0) {
+                    dtDTCTrials.add(assessment.getComparisons().getDualTaskBalanceChange());
+                }
+                if (assessment.getComparisons().getSensoryAtaxiaBalanceChange() != 0) {
+                    saDTCTrials.add(assessment.getComparisons().getSensoryAtaxiaBalanceChange());
+                }
+            }
+        }
+
         // Build Report object
         ReportModel newReport = new ReportModel();
         newReport.setArjLeftKneeToday(bestARJLeft != null ? bestARJLeft : 0f);
@@ -326,6 +370,14 @@ public class AutoReportGenerationService extends Service {
         newReport.setBalanceCV(BalanceCV);
         newReport.setEnduranceCV(EnduranceCV);
         newReport.setSpeedCV(WSCV);
+
+        newReport.setBalanceTrials(balanceTrials);
+        newReport.setSpeedTrials(speedTrials);
+        newReport.setEnduranceTrials(enduranceTrials);
+        newReport.setDualTaskBalanceTrials(dtBalanceTrials);
+        newReport.setDualTaskDTCTrials(dtDTCTrials);
+        newReport.setSensoryAtaxiaBalanceTrials(saBalanceTrials);
+        newReport.setSensoryAtaxiaDTCTrials(saDTCTrials);
 
         newReport.setTimeStamp(targetDate);
 
