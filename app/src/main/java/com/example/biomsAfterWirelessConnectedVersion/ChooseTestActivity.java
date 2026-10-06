@@ -69,11 +69,13 @@ public class ChooseTestActivity extends AppCompatActivity {
         boolean DTCompleted = testCompleted("DualTask");
         boolean wsCompleted = testCompleted("WSAndEndurance");
 
-        // If SA and balance is not recorded, return
+        // If Sway Area and Balance is not recorded, return
         if (!swabCompleted) {
             dualTaskRecordARJ.setVisibility(VISIBLE);
+            dualTaskRecordARJ.setText("Record Sway Area and Balance first");
             dualTaskText.setTextColor(Color.GRAY);
             sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
+            sensoryAtaxiaRecordARJ.setText("Record Sway Area and Balance first");
             sensoryAtaxiaText.setTextColor(Color.GRAY);
         }
         if (SACompleted) {
@@ -113,6 +115,7 @@ public class ChooseTestActivity extends AppCompatActivity {
             // If sawb and balance is not recorded, return
             if (!swabCompleted) {
                 dualTaskRecordARJ.setVisibility(VISIBLE);
+                dualTaskRecordARJ.setText("Record Sway Area and Balance first");
                 dualTaskText.setTextColor(Color.GRAY);
                 return;
             }
@@ -134,6 +137,7 @@ public class ChooseTestActivity extends AppCompatActivity {
             // If ARJ and balance is not recorded, return
             if (!swabCompleted) {
                 sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
+                sensoryAtaxiaRecordARJ.setText("Record Sway Area and Balance first");
                 sensoryAtaxiaText.setTextColor(Color.GRAY);
                 return;
             }
