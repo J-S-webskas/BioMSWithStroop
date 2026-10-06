@@ -55,8 +55,8 @@ public class StroopVoiceManager implements RecognitionListener {
     private static final int[] COLOR_VALUES = {
             Color.RED,
             Color.BLUE,
-            Color.parseColor("#008000"), // Green
-            Color.parseColor("#FFB300")  // Yellow
+            0xFF008000, // Green (#008000)
+            0xFFFFB300  // Yellow (#FFB300)
     };
 
     private final Context context;
@@ -96,7 +96,10 @@ public class StroopVoiceManager implements RecognitionListener {
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US);
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 100L);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
     }
 
     public void startTest() {
@@ -154,15 +157,109 @@ public class StroopVoiceManager implements RecognitionListener {
         }
     }
 
-    private void processSpokenText(String spokenText) {
-        if (!isListeningActive || currentTrial == null) return;
+    public static String findMatchingColor(String spokenText) {
+        if (spokenText == null || spokenText.trim().isEmpty()) {
+            return null;
+        }
 
         String upperSpoken = spokenText.toUpperCase(Locale.US);
-        String matchedColor = null;
 
+        // 1. Direct substring check for standard color names
         for (String color : COLOR_NAMES) {
             if (upperSpoken.contains(color)) {
-                matchedColor = color;
+                return color;
+            }
+        }
+
+        // 2. Word token extraction
+        String[] words = upperSpoken.split("[^A-Z]+");
+
+        for (String word : words) {
+            if (word.isEmpty()) continue;
+
+            // Direct word matches
+            for (String color : COLOR_NAMES) {
+                if (word.equals(color)) {
+                    return color;
+                }
+            }
+
+            // Check aliases/homophones
+            if (isRedAlias(word)) return "RED";
+            if (isBlueAlias(word)) return "BLUE";
+            if (isGreenAlias(word)) return "GREEN";
+            if (isYellowAlias(word)) return "YELLOW";
+
+            // Check fuzzy Damerau-Levenshtein distance for close matches (distance <= 1)
+            for (String color : COLOR_NAMES) {
+                if (Math.abs(word.length() - color.length()) <= 1) {
+                    if (getDamerauLevenshteinDistance(word, color) <= 1) {
+                        return color;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean isRedAlias(String word) {
+        return word.equals("READ") || word.equals("RAD") || word.equals("LED") ||
+               word.equals("REDD") || word.equals("RADD");
+    }
+
+    private static boolean isBlueAlias(String word) {
+        return word.equals("BLEW") || word.equals("BLU") || word.equals("BLOO") ||
+               word.equals("BLOW");
+    }
+
+    private static boolean isGreenAlias(String word) {
+        return word.equals("GREENE") || word.equals("GRIN") || word.equals("GRAIN") ||
+               word.equals("GREAN") || word.equals("GRAN");
+    }
+
+    private static boolean isYellowAlias(String word) {
+        return word.equals("YELLO") || word.equals("YALLOW") || word.equals("YELLA");
+    }
+
+    public static int getDamerauLevenshteinDistance(String s1, String s2) {
+        int len1 = s1.length();
+        int len2 = s2.length();
+        int[][] dp = new int[len1 + 1][len2 + 1];
+
+        for (int i = 0; i <= len1; i++) dp[i][0] = i;
+        for (int j = 0; j <= len2; j++) dp[0][j] = j;
+
+        for (int i = 1; i <= len1; i++) {
+            for (int j = 1; j <= len2; j++) {
+                int cost = (s1.charAt(i - 1) == s2.charAt(j - 1)) ? 0 : 1;
+                dp[i][j] = Math.min(
+                        Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
+                        dp[i - 1][j - 1] + cost
+                );
+                if (i > 1 && j > 1 && s1.charAt(i - 1) == s2.charAt(j - 2) && s1.charAt(i - 2) == s2.charAt(j - 1)) {
+                    dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + cost);
+                }
+            }
+        }
+        return dp[len1][len2];
+    }
+
+    private void processSpokenText(String spokenText) {
+        if (spokenText != null) {
+            List<String> list = new ArrayList<>();
+            list.add(spokenText);
+            processSpokenMatches(list);
+        }
+    }
+
+    private void processSpokenMatches(List<String> matches) {
+        if (!isListeningActive || currentTrial == null || matches == null) return;
+
+        String matchedColor = null;
+        for (String candidate : matches) {
+            matchedColor = findMatchingColor(candidate);
+            if (matchedColor != null) {
                 break;
             }
         }
@@ -211,7 +308,7 @@ public class StroopVoiceManager implements RecognitionListener {
     public void onResults(Bundle results) {
         ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         if (matches != null && !matches.isEmpty()) {
-            processSpokenText(matches.get(0));
+            processSpokenMatches(matches);
         } else {
             startListening();
         }
@@ -221,7 +318,7 @@ public class StroopVoiceManager implements RecognitionListener {
     public void onPartialResults(Bundle partialResults) {
         ArrayList<String> matches = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         if (matches != null && !matches.isEmpty()) {
-            processSpokenText(matches.get(0));
+            processSpokenMatches(matches);
         }
     }
 
