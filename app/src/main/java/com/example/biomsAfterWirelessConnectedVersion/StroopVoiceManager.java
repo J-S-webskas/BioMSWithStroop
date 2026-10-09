@@ -53,10 +53,10 @@ public class StroopVoiceManager implements RecognitionListener {
     private static final String TAG = "StroopVoiceManager";
     private static final String[] COLOR_NAMES = {"RED", "BLUE", "GREEN", "YELLOW"};
     private static final int[] COLOR_VALUES = {
-            Color.RED,
-            Color.BLUE,
-            Color.parseColor("#008000"), // Green
-            Color.parseColor("#FFB300")  // Yellow
+            0xFFFF0000, // Color.RED
+            0xFF0000FF, // Color.BLUE
+            0xFF008000, // Green
+            0xFFFFB300  // Yellow
     };
 
     private final Context context;
@@ -154,18 +154,25 @@ public class StroopVoiceManager implements RecognitionListener {
         }
     }
 
-    private void processSpokenText(String spokenText) {
-        if (!isListeningActive || currentTrial == null) return;
-
-        String upperSpoken = spokenText.toUpperCase(Locale.US);
-        String matchedColor = null;
-
-        for (String color : COLOR_NAMES) {
-            if (upperSpoken.contains(color)) {
-                matchedColor = color;
-                break;
+    public static String matchColorWord(String spokenText) {
+        if (spokenText == null || spokenText.trim().isEmpty()) {
+            return null;
+        }
+        String[] words = spokenText.toUpperCase(Locale.US).split("[^A-Z]+");
+        for (String word : words) {
+            for (String color : COLOR_NAMES) {
+                if (word.equals(color)) {
+                    return color;
+                }
             }
         }
+        return null;
+    }
+
+    public boolean processSpokenText(String spokenText) {
+        if (!isListeningActive || currentTrial == null) return false;
+
+        String matchedColor = matchColorWord(spokenText);
 
         if (matchedColor != null) {
             long rt = SystemClock.elapsedRealtime() - trialStartTimeMs;
@@ -183,10 +190,36 @@ public class StroopVoiceManager implements RecognitionListener {
 
             // Immediately advance to next trial
             nextTrial();
+            startListening();
+            return true;
         }
 
-        // Keep speech recognizer listening continuously
-        startListening();
+        return false;
+    }
+
+    public StroopTrial getCurrentTrial() {
+        return currentTrial;
+    }
+
+    public void setCurrentTrial(StroopTrial trial) {
+        this.currentTrial = trial;
+        this.trialStartTimeMs = SystemClock.elapsedRealtime();
+    }
+
+    public int getTotalTrials() {
+        return totalTrials;
+    }
+
+    public int getCorrectCount() {
+        return correctCount;
+    }
+
+    public List<Long> getReactionTimes() {
+        return reactionTimes;
+    }
+
+    public boolean isListeningActive() {
+        return isListeningActive;
     }
 
     public VoiceStroopResult stopTest() {
@@ -209,19 +242,31 @@ public class StroopVoiceManager implements RecognitionListener {
 
     @Override
     public void onResults(Bundle results) {
-        ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-        if (matches != null && !matches.isEmpty()) {
-            processSpokenText(matches.get(0));
-        } else {
+        if (results != null) {
+            ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+            if (matches != null && !matches.isEmpty()) {
+                for (String match : matches) {
+                    if (processSpokenText(match)) {
+                        return;
+                    }
+                }
+            }
+        }
+        if (isListeningActive) {
             startListening();
         }
     }
 
     @Override
     public void onPartialResults(Bundle partialResults) {
+        if (partialResults == null) return;
         ArrayList<String> matches = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         if (matches != null && !matches.isEmpty()) {
-            processSpokenText(matches.get(0));
+            for (String match : matches) {
+                if (processSpokenText(match)) {
+                    break;
+                }
+            }
         }
     }
 
