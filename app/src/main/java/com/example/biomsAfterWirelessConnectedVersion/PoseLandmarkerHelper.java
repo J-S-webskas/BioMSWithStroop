@@ -68,6 +68,9 @@ public class PoseLandmarkerHelper {
     private String cachedSex = null;
     private boolean isFirstRun = true;
     private PoseLandmarker poseLandmarker;
+    private double[] filteredCHip = null;
+    private static final double ALPHA = 0.25;
+    private static final double DEFAULT_FOV_H_DEGREES = 60.0;
 
     // todo: pass this from record fragment
     public static boolean preview = true;
@@ -115,6 +118,7 @@ public class PoseLandmarkerHelper {
             poseLandmarker.close();
         }
         poseLandmarker = null;
+        filteredCHip = null;
     }
 
     private void updateCacheIfNeeded(Context context) {
@@ -434,8 +438,17 @@ public class PoseLandmarkerHelper {
                         }
                         double comZ_final = 0, comX_final = 0;
                         if (!xz_final.isEmpty()) {
-                            comX_final = xz_final.get(0);
-                            comZ_final = xz_final.get(1);
+                            double comX_rel = xz_final.get(0);
+                            double comZ_rel = xz_final.get(1);
+
+                            double[] cameraSpaceHip = calculateCameraSpaceHip(landmarks, worldLandmarks, input.getWidth(), input.getHeight());
+                            if (cameraSpaceHip != null) {
+                                comX_final = cameraSpaceHip[0] + comX_rel;
+                                comZ_final = cameraSpaceHip[2] + comZ_rel;
+                            } else {
+                                comX_final = comX_rel;
+                                comZ_final = comZ_rel;
+                            }
                         }
 
                         hasValidPose = true;
@@ -459,6 +472,7 @@ public class PoseLandmarkerHelper {
                     }
                 }
                 if (!hasValidPose) {
+                    filteredCHip = null;
                     if (RecordFragment.isTestStarted()) {
                         RecordFragment.setHasValidPose(false);
                     }
@@ -747,6 +761,74 @@ public class PoseLandmarkerHelper {
 
         // // Ensure angle is between 0-180
         // return Math.abs(angleDeg) <= 180 ? Math.abs(angleDeg) : 360 - Math.abs(angleDeg);
+    }
+
+    public double[] calculateCameraSpaceHip(List<NormalizedLandmark> landmarks, List<Landmark> worldLandmarks, int width, int height) {
+        if (landmarks == null || worldLandmarks == null || landmarks.size() <= 24 || worldLandmarks.size() <= 24 || width <= 0 || height <= 0) {
+            return null;
+        }
+
+        NormalizedLandmark l_sh = landmarks.get(11);
+        NormalizedLandmark r_sh = landmarks.get(12);
+        NormalizedLandmark l_hip = landmarks.get(23);
+        NormalizedLandmark r_hip = landmarks.get(24);
+
+        double l_sh_px_x = l_sh.x() * width;
+        double l_sh_px_y = l_sh.y() * height;
+        double r_sh_px_x = r_sh.x() * width;
+        double r_sh_px_y = r_sh.y() * height;
+        double sh_mid_px_x = (l_sh_px_x + r_sh_px_x) / 2.0;
+        double sh_mid_px_y = (l_sh_px_y + r_sh_px_y) / 2.0;
+
+        double l_hip_px_x = l_hip.x() * width;
+        double l_hip_px_y = l_hip.y() * height;
+        double r_hip_px_x = r_hip.x() * width;
+        double r_hip_px_y = r_hip.y() * height;
+        double hip_mid_px_x = (l_hip_px_x + r_hip_px_x) / 2.0;
+        double hip_mid_px_y = (l_hip_px_y + r_hip_px_y) / 2.0;
+
+        double d_torso_pixels = Math.hypot(sh_mid_px_x - hip_mid_px_x, sh_mid_px_y - hip_mid_px_y);
+        if (d_torso_pixels <= 1e-5) {
+            return null;
+        }
+
+        Landmark l_sh_w = worldLandmarks.get(11);
+        Landmark r_sh_w = worldLandmarks.get(12);
+        Landmark l_hip_w = worldLandmarks.get(23);
+        Landmark r_hip_w = worldLandmarks.get(24);
+
+        double sh_mid_w_x = (l_sh_w.x() + r_sh_w.x()) / 2.0;
+        double sh_mid_w_y = (l_sh_w.y() + r_sh_w.y()) / 2.0;
+        double sh_mid_w_z = (l_sh_w.z() + r_sh_w.z()) / 2.0;
+
+        double hip_mid_w_x = (l_hip_w.x() + r_hip_w.x()) / 2.0;
+        double hip_mid_w_y = (l_hip_w.y() + r_hip_w.y()) / 2.0;
+        double hip_mid_w_z = (l_hip_w.z() + r_hip_w.z()) / 2.0;
+
+        double dx = sh_mid_w_x - hip_mid_w_x;
+        double dy = sh_mid_w_y - hip_mid_w_y;
+        double dz = sh_mid_w_z - hip_mid_w_z;
+        double D_torso_meters = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        double f_pixels = width / (2.0 * Math.tan(Math.toRadians(DEFAULT_FOV_H_DEGREES / 2.0)));
+        double cx = width / 2.0;
+        double cy = height / 2.0;
+
+        double Z_hip = f_pixels * D_torso_meters / d_torso_pixels;
+        double X_hip = D_torso_meters * (hip_mid_px_x - cx) / d_torso_pixels;
+        double Y_hip = D_torso_meters * (hip_mid_px_y - cy) / d_torso_pixels;
+
+        double[] rawCHip = new double[]{X_hip, Y_hip, Z_hip};
+
+        if (filteredCHip == null) {
+            filteredCHip = rawCHip;
+        } else {
+            filteredCHip[0] = ALPHA * rawCHip[0] + (1 - ALPHA) * filteredCHip[0];
+            filteredCHip[1] = ALPHA * rawCHip[1] + (1 - ALPHA) * filteredCHip[1];
+            filteredCHip[2] = ALPHA * rawCHip[2] + (1 - ALPHA) * filteredCHip[2];
+        }
+
+        return filteredCHip;
     }
 
     private void returnLivestreamError(RuntimeException error) {
