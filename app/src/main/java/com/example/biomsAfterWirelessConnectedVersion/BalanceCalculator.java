@@ -67,7 +67,7 @@ public class BalanceCalculator {
         float chiSquare = 5.991f;
         float area = (float) (Math.PI * chiSquare * Math.sqrt(Math.abs(lambda1 * lambda2)));
 
-        swayArea = area * 1000000f;  // Convert m² to mm²
+        swayArea = area * 10000f;  // Convert m² to cm²
     }
 
     private float[] calculateEigenvalues2x2(float[][] matrix) {
