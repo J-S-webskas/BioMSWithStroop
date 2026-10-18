@@ -11,10 +11,14 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.content.Context;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.util.SizeF;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
@@ -700,8 +704,38 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             // Attach the viewfinder's surface provider to preview use case
             // SurfaceProvider = Interface that provides a drawing surface
             preview.setSurfaceProvider(getFragmentCameraBinding().viewFinder.getSurfaceProvider());
+
+            updateDynamicFov();
         } catch (Exception exc) {
             Log.e(TAG, "Use case binding failed", exc);
+        }
+    }
+
+    private void updateDynamicFov() {
+        try {
+            Context ctx = getContext();
+            if (ctx != null && poseLandmarkerHelper != null) {
+                CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
+                if (cameraManager != null) {
+                    int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
+                            CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
+                    for (String id : cameraManager.getCameraIdList()) {
+                        CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+                        Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                        if (facing != null && facing == targetFacing) {
+                            float[] focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
+                            SizeF sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
+                            if (focalLengths != null && focalLengths.length > 0 && sensorSize != null && sensorSize.getWidth() > 0) {
+                                double fovH = 2.0 * Math.toDegrees(Math.atan((sensorSize.getWidth() / 2.0) / focalLengths[0]));
+                                poseLandmarkerHelper.setFovDegrees(fovH);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception exc) {
+            Log.e(TAG, "Dynamic FOV calculation failed, defaulting to 60 degrees", exc);
         }
     }
 

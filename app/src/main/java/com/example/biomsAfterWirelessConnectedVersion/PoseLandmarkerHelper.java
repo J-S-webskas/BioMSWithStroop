@@ -70,7 +70,23 @@ public class PoseLandmarkerHelper {
     private PoseLandmarker poseLandmarker;
     private double[] filteredCHip = null;
     private static final double ALPHA = 0.25;
-    private static final double DEFAULT_FOV_H_DEGREES = 60.0;
+    public static final double DEFAULT_FOV_H_DEGREES = 60.0;
+    private double fovHDegrees = DEFAULT_FOV_H_DEGREES;
+    private boolean wasTestStarted = false;
+
+    public void setFovDegrees(double fov) {
+        if (fov > 0) {
+            this.fovHDegrees = fov;
+        }
+    }
+
+    public double getFovDegrees() {
+        return fovHDegrees;
+    }
+
+    public void resetFilter() {
+        filteredCHip = null;
+    }
 
     // todo: pass this from record fragment
     public static boolean preview = true;
@@ -452,7 +468,13 @@ public class PoseLandmarkerHelper {
                         }
 
                         hasValidPose = true;
-                        if (RecordFragment.isTestStarted()) {
+                        boolean currentlyStarted = RecordFragment.isTestStarted();
+                        if (currentlyStarted && !wasTestStarted) {
+                            filteredCHip = null; // Clean reset at start of trial
+                        }
+                        wasTestStarted = currentlyStarted;
+
+                        if (currentlyStarted) {
                             RecordFragment.setHasValidPose(true);
                         }
                         float left_hip = calculateAngle(landmarks.get(11), landmarks.get(23), landmarks.get(25));
@@ -810,7 +832,7 @@ public class PoseLandmarkerHelper {
         double dz = sh_mid_w_z - hip_mid_w_z;
         double D_torso_meters = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-        double f_pixels = width / (2.0 * Math.tan(Math.toRadians(DEFAULT_FOV_H_DEGREES / 2.0)));
+        double f_pixels = width / (2.0 * Math.tan(Math.toRadians(fovHDegrees / 2.0)));
         double cx = width / 2.0;
         double cy = height / 2.0;
 
