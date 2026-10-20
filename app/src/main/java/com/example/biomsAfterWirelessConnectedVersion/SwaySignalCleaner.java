@@ -65,6 +65,7 @@ public class SwaySignalCleaner {
         public float durationS = 0f;                   // (n-1)/rate — grid span
         public float validFraction = 0f;               // real samples / grid points
         public float meanRawRateHz = 0f;               // real samples / real duration
+        public int interpolatedCount = 0;              // grid points filled across a dropout gap
     }
 
     /**
@@ -91,6 +92,19 @@ public class SwaySignalCleaner {
         int gridN = (int) Math.floor(spanMs / stepMs) + 1;
         if (gridN < 1) gridN = 1;
 
+        // Median raw interval: the yardstick for "this grid point was filled
+        // in across a dropout gap" vs ordinary between-frame interpolation.
+        double medianIntervalMs = stepMs;
+        if (n > 2) {
+            double[] diffs = new double[n - 1];
+            for (int i = 0; i < n - 1; i++) {
+                diffs[i] = Math.max(0, samples.get(i + 1).timestampMs - samples.get(i).timestampMs);
+            }
+            Arrays.sort(diffs);
+            medianIntervalMs = diffs[diffs.length / 2];
+            if (medianIntervalMs <= 0) medianIntervalMs = stepMs;
+        }
+
         int seg = 0;
         for (int g = 0; g < gridN; g++) {
             double tg = t0 + g * stepMs;
@@ -98,6 +112,7 @@ public class SwaySignalCleaner {
             COMSample a = samples.get(seg);
             COMSample b = samples.get(Math.min(seg + 1, n - 1));
             double dt = b.timestampMs - a.timestampMs;
+            if (dt > 1.5 * medianIntervalMs) r.interpolatedCount++;
             double frac = dt > 0 ? (tg - a.timestampMs) / dt : 0.0;
             if (frac < 0) frac = 0;
             if (frac > 1) frac = 1;

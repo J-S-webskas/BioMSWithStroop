@@ -87,6 +87,19 @@ public class PoseLandmarkerHelper {
         return fovHDegrees;
     }
 
+    // Frames during the current test where MediaPipe returned no pose —
+    // the patient was "lost". Read (and reset) by the export at save time;
+    // reset again when a test starts.
+    private static int droppedFrameCount = 0;
+
+    public static int getDroppedFrameCount() {
+        return droppedFrameCount;
+    }
+
+    public static void resetDroppedFrameCount() {
+        droppedFrameCount = 0;
+    }
+
     public PoseLandmarkerHelper(Context context) {
         this(DEFAULT_POSE_DETECTION_CONFIDENCE,
                 DEFAULT_POSE_TRACKING_CONFIDENCE,
@@ -485,6 +498,7 @@ public class PoseLandmarkerHelper {
                 }
                 if (!hasValidPose) {
                     if (RecordFragment.isTestStarted()) {
+                        droppedFrameCount++;
                         RecordFragment.setHasValidPose(false);
                     }
                     Log.d(TAG, "No valid pose detected, sending clear signal");
