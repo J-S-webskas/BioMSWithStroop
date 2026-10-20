@@ -3,6 +3,8 @@ package com.example.biomsAfterWirelessConnectedVersion;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -16,6 +18,33 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
+/**
+ * Voice-driven Stroop test.
+ *
+ * The patient stands a few meters from the phone (tripod setup) and names
+ * the ink color aloud, so this class is tuned for FAR-FIELD recognition,
+ * which is much harder than talking into a handset:
+ *
+ *  - UNPROCESSED audio source (API 30+): the default recognition audio path
+ *    applies handset telephony processing (AEC / noise suppression tuned
+ *    for a near-field talker) that distorts speech arriving from 2-3 m.
+ *    The raw microphone is the better far-field input in a quiet room.
+ *  - Prefer-offline recognition: removes network round-trip latency and
+ *    the dropped results that flaky clinic Wi-Fi causes.
+ *  - One judgment per utterance (latching + blackout): the first accepted
+ *    match judges the trial and latches; results arriving within a short
+ *    blackout window after a judgment are ignored. Without this, a single
+ *    utterance could advance TWO trials — its partial result judging
+ *    trial N, then its late final result judging trial N+1 against the
+ *    wrong color. Far-field latency made this likely, and it silently
+ *    corrupted both accuracy and reaction times.
+ *  - Partials are accepted only on an EXACT color word in the top-3
+ *    hypotheses (high precision, low latency); final results get the full
+ *    treatment: n-best ordered by confidence, then exact -> alias ->
+ *    fuzzy matching.
+ *  - An RMS watchdog restarts the recognizer if it wedges silently
+ *    (no speech callbacks for several seconds while a trial is live).
+ */
 public class StroopVoiceManager implements RecognitionListener {
 
     public interface StroopVoiceListener {
@@ -59,6 +88,11 @@ public class StroopVoiceManager implements RecognitionListener {
             Color.parseColor("#FFB300")  // Yellow
     };
 
+    /** If no speech-related callback arrives for this long while a trial is
+     *  live, assume the recognizer wedged and restart it. */
+    private static final long WATCHDOG_SILENCE_MS = 8000L;
+    private static final long WATCHDOG_PERIOD_MS = 4000L;
+
     private final Context context;
     private final StroopVoiceListener listener;
     private final Random random = new Random();
@@ -77,6 +111,48 @@ public class StroopVoiceManager implements RecognitionListener {
     private final List<Long> reactionTimes = new ArrayList<>();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    // --- Far-field session management -------------------------------------
+    // Timestamp of the last judgment. Results arriving within the blackout
+    // window after a judgment are ignored: they belong to the utterance just
+    // judged (a stale final trailing its accepted partial), not to the new
+    // trial — a genuine new answer cannot physically be spoken and
+    // recognized within this window anyway.
+    private long lastJudgeMs = 0L;
+    private static final long JUDGE_BLACKOUT_MS = 800L;
+    // Coalesces multiple posted startListening() calls into one actual start.
+    private boolean listenStartQueued = false;
+    // Last time any speech callback fired (watchdog input).
+    private long lastSpeechActivityMs = 0L;
+
+    // --- Compatibility fallback ladder --------------------------------------
+    // Some OEM recognition services hard-fail EVERY session on intent extras
+    // they cannot honor (observed in the field as: no onReadyForSpeech, no
+    // results, no visible error — just silence). On hard errors we rebuild
+    // the intent with fewer extras and retry:
+    //   level 0: UNPROCESSED audio source + prefer-offline (best far-field)
+    //   level 1: default audio source   + prefer-offline
+    //   level 2: plain default intent   (what the original code used)
+    // If even level 2 hard-fails repeatedly, recognition is genuinely
+    // unavailable on this device: stop restarting and tell the listener.
+    private int fallbackLevel = 0;
+    private int consecutiveHardErrors = 0;
+    private boolean recognizerDisabled = false;
+    private static final int MAX_HARD_ERRORS_AT_TOP_LEVEL = 3;
+
+    private final Runnable watchdog = new Runnable() {
+        @Override
+        public void run() {
+            if (!isListeningActive) return;
+            if (!recognizerDisabled
+                    && SystemClock.elapsedRealtime() - lastSpeechActivityMs > WATCHDOG_SILENCE_MS) {
+                Log.d(TAG, "Recognizer silent too long; restarting session.");
+                lastSpeechActivityMs = SystemClock.elapsedRealtime();
+                startListening();
+            }
+            mainHandler.postDelayed(this, WATCHDOG_PERIOD_MS);
+        }
+    };
+
     public StroopVoiceManager(Context context, StroopVoiceListener listener) {
         this.context = context;
         this.listener = listener;
@@ -92,14 +168,34 @@ public class StroopVoiceManager implements RecognitionListener {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context);
         speechRecognizer.setRecognitionListener(this);
 
-        recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 100L);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
+        recognizerIntent = buildRecognizerIntent();
+    }
+
+    /** Builds the recognition intent for the current fallback level. */
+    private Intent buildRecognizerIntent() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US);
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10);
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 100L);
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
+        if (fallbackLevel <= 1) {
+            // Keep recognition on-device so weak clinic Wi-Fi cannot add
+            // latency or drop results.
+            intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+        }
+        if (fallbackLevel == 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Bypass the handset audio processing (AEC / noise suppression
+            // tuned for near-field telephony) that distorts a voice arriving
+            // from a few meters away. Dropped at fallback level 1+: some
+            // OEM services fail every session when handed an audio source
+            // they cannot honor.
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE,
+                    MediaRecorder.AudioSource.UNPROCESSED);
+        }
+        return intent;
     }
 
     public void startTest() {
@@ -109,14 +205,25 @@ public class StroopVoiceManager implements RecognitionListener {
         lastTextIndex = -1;
         lastColorIndex = -1;
         isListeningActive = true;
+        // Fresh test: retry the full fallback ladder from the top.
+        recognizerDisabled = false;
+        fallbackLevel = 0;
+        consecutiveHardErrors = 0;
+        recognizerIntent = buildRecognizerIntent();
+        lastSpeechActivityMs = SystemClock.elapsedRealtime();
 
         nextTrial();
         startListening();
+        mainHandler.postDelayed(watchdog, WATCHDOG_PERIOD_MS);
     }
 
     private void startListening() {
-        if (!isListeningActive || speechRecognizer == null) return;
+        if (!isListeningActive || speechRecognizer == null || recognizerDisabled) return;
+        if (listenStartQueued) return;
+        listenStartQueued = true;
         mainHandler.post(() -> {
+            listenStartQueued = false;
+            if (!isListeningActive || speechRecognizer == null) return;
             try {
                 speechRecognizer.startListening(recognizerIntent);
             } catch (Exception e) {
@@ -240,49 +347,91 @@ public class StroopVoiceManager implements RecognitionListener {
         return dp[len1][len2];
     }
 
-    private void processSpokenText(String spokenText) {
-        if (spokenText != null) {
-            List<String> list = new ArrayList<>();
-            list.add(spokenText);
-            processSpokenMatches(list);
-        }
-    }
-
+    /**
+     * Judges one utterance against the current trial — at most once. The
+     * latch + blackout guard is what stops a single utterance being judged
+     * twice (partial now, stale final a few hundred ms later, against the
+     * NEXT trial).
+     */
     private void processSpokenMatches(List<String> matches) {
         if (!isListeningActive || currentTrial == null || matches == null) return;
+        if (SystemClock.elapsedRealtime() - lastJudgeMs < JUDGE_BLACKOUT_MS) return;
 
-        String matchedColor = null;
         for (String candidate : matches) {
-            matchedColor = findMatchingColor(candidate);
+            String matchedColor = findMatchingColor(candidate);
             if (matchedColor != null) {
+                judge(matchedColor);
                 break;
             }
         }
 
-        if (matchedColor != null) {
-            long rt = SystemClock.elapsedRealtime() - trialStartTimeMs;
-            boolean isCorrect = matchedColor.equalsIgnoreCase(currentTrial.colorName);
+        startListening();
+    }
 
-            totalTrials++;
-            if (isCorrect) {
-                correctCount++;
-                reactionTimes.add(rt);
+    /**
+     * Partial results trade precision for speed: accept only an EXACT color
+     * word appearing in one of the top-3 hypotheses. Anything weaker waits
+     * for the final result's full matching (aliases + fuzzy).
+     */
+    private void processPartialMatches(List<String> matches) {
+        if (!isListeningActive || currentTrial == null || matches == null) return;
+        if (SystemClock.elapsedRealtime() - lastJudgeMs < JUDGE_BLACKOUT_MS) return;
+
+        int topN = Math.min(3, matches.size());
+        for (int i = 0; i < topN; i++) {
+            String text = matches.get(i);
+            if (text == null) continue;
+            String upper = text.toUpperCase(Locale.US);
+            for (String color : COLOR_NAMES) {
+                if (upper.contains(color)) {
+                    judge(color);
+                    startListening();
+                    return;
+                }
             }
+        }
+        // No exact hit yet: keep listening, do NOT restart (a restart here
+        // would chop the patient's utterance in half).
+    }
 
-            if (listener != null) {
-                listener.onSpokenResult(matchedColor, isCorrect);
-            }
+    /** Records the verdict for the current trial and moves on. Latches so
+     *  no second result from the same utterance can judge again. */
+    private void judge(String matchedColor) {
+        lastJudgeMs = SystemClock.elapsedRealtime();
 
-            // go to next trial
-            nextTrial();
+        long rt = lastJudgeMs - trialStartTimeMs;
+        boolean isCorrect = matchedColor.equalsIgnoreCase(currentTrial.colorName);
+
+        totalTrials++;
+        if (isCorrect) {
+            correctCount++;
+            reactionTimes.add(rt);
         }
 
-        // keep speech recognizer listening continuously
-        startListening();
+        if (listener != null) {
+            listener.onSpokenResult(matchedColor, isCorrect);
+        }
+
+        nextTrial();
+    }
+
+    /** Orders n-best hypotheses by confidence score (descending) when the
+     *  engine provides scores; otherwise keeps the engine's own order. */
+    private static List<String> orderByConfidence(List<String> matches, float[] scores) {
+        if (scores == null || scores.length != matches.size()) {
+            return matches;
+        }
+        List<Integer> order = new ArrayList<>();
+        for (int i = 0; i < matches.size(); i++) order.add(i);
+        order.sort((a, b) -> Float.compare(scores[b], scores[a]));
+        List<String> sorted = new ArrayList<>(matches.size());
+        for (int i : order) sorted.add(matches.get(i));
+        return sorted;
     }
 
     public VoiceStroopResult stopTest() {
         isListeningActive = false;
+        mainHandler.removeCallbacks(watchdog);
         if (speechRecognizer != null) {
             speechRecognizer.stopListening();
             speechRecognizer.destroy();
@@ -297,13 +446,17 @@ public class StroopVoiceManager implements RecognitionListener {
         return new VoiceStroopResult(totalTrials, correctCount, accuracy, avgRt);
     }
 
-    // Speechrecognizer callbacks
+    // SpeechRecognizer callbacks
 
     @Override
     public void onResults(Bundle results) {
+        lastSpeechActivityMs = SystemClock.elapsedRealtime();
+        consecutiveHardErrors = 0;
         ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        Log.d(TAG, "onResults: " + matches);
         if (matches != null && !matches.isEmpty()) {
-            processSpokenMatches(matches);
+            float[] scores = results.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES);
+            processSpokenMatches(orderByConfidence(matches, scores));
         } else {
             startListening();
         }
@@ -311,23 +464,93 @@ public class StroopVoiceManager implements RecognitionListener {
 
     @Override
     public void onPartialResults(Bundle partialResults) {
+        lastSpeechActivityMs = SystemClock.elapsedRealtime();
         ArrayList<String> matches = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         if (matches != null && !matches.isEmpty()) {
-            processSpokenMatches(matches);
+            processPartialMatches(matches);
         }
     }
 
     @Override
     public void onError(int error) {
-        // automatically restart speech listening if no speech detected
-        if (isListeningActive) {
-            startListening();
+        lastSpeechActivityMs = SystemClock.elapsedRealtime();
+        // ALWAYS log the code: without it, a dead recognizer is
+        // indistinguishable from a quiet room.
+        Log.e(TAG, "onError: " + errorName(error) + " (" + error + ")"
+                + " fallbackLevel=" + fallbackLevel);
+        if (!isListeningActive || recognizerDisabled) return;
+
+        if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+            recognizerDisabled = true;
+            listener.onError("Microphone permission not granted — voice test cannot run.");
+            return;
+        }
+
+        if (isHardError(error)) {
+            consecutiveHardErrors++;
+            if (fallbackLevel < 2) {
+                fallbackLevel++;
+                consecutiveHardErrors = 0;
+                recognizerIntent = buildRecognizerIntent();
+                Log.e(TAG, "Hard recognizer error; rebuilding intent at fallback level " + fallbackLevel);
+            } else if (consecutiveHardErrors >= MAX_HARD_ERRORS_AT_TOP_LEVEL) {
+                recognizerDisabled = true;
+                listener.onError("Voice recognition is not available on this device (error "
+                        + errorName(error) + ").");
+                return;
+            }
+        }
+
+        if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
+            // Service still tearing down the previous session; brief pause.
+            mainHandler.postDelayed(this::startListening, 500);
+            return;
+        }
+
+        startListening();
+    }
+
+    /** Errors that mean the service rejected the session itself (as opposed
+     *  to "no speech heard"), and should trigger the fallback ladder. */
+    private static boolean isHardError(int error) {
+        return error == SpeechRecognizer.ERROR_AUDIO
+                || error == SpeechRecognizer.ERROR_SERVER
+                || error == SpeechRecognizer.ERROR_CLIENT
+                || error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
+                || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE;
+    }
+
+    private static String errorName(int error) {
+        switch (error) {
+            case SpeechRecognizer.ERROR_NETWORK_TIMEOUT: return "ERROR_NETWORK_TIMEOUT";
+            case SpeechRecognizer.ERROR_NETWORK: return "ERROR_NETWORK";
+            case SpeechRecognizer.ERROR_AUDIO: return "ERROR_AUDIO";
+            case SpeechRecognizer.ERROR_SERVER: return "ERROR_SERVER";
+            case SpeechRecognizer.ERROR_CLIENT: return "ERROR_CLIENT";
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: return "ERROR_SPEECH_TIMEOUT";
+            case SpeechRecognizer.ERROR_NO_MATCH: return "ERROR_NO_MATCH";
+            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: return "ERROR_RECOGNIZER_BUSY";
+            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS: return "ERROR_INSUFFICIENT_PERMISSIONS";
+            case SpeechRecognizer.ERROR_TOO_MANY_REQUESTS: return "ERROR_TOO_MANY_REQUESTS";
+            case SpeechRecognizer.ERROR_SERVER_DISCONNECTED: return "ERROR_SERVER_DISCONNECTED";
+            case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED: return "ERROR_LANGUAGE_NOT_SUPPORTED";
+            case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: return "ERROR_LANGUAGE_UNAVAILABLE";
+            default: return "ERROR_" + error;
         }
     }
 
-    @Override public void onReadyForSpeech(Bundle params) {}
-    @Override public void onBeginningOfSpeech() {}
-    @Override public void onRmsChanged(float rmsdB) {}
+    @Override public void onReadyForSpeech(Bundle params) {
+        lastSpeechActivityMs = SystemClock.elapsedRealtime();
+        Log.d(TAG, "onReadyForSpeech (fallbackLevel=" + fallbackLevel + ")");
+    }
+    @Override public void onBeginningOfSpeech() {
+        lastSpeechActivityMs = SystemClock.elapsedRealtime();
+        consecutiveHardErrors = 0;
+        Log.d(TAG, "onBeginningOfSpeech");
+    }
+    @Override public void onRmsChanged(float rmsdB) {
+        lastSpeechActivityMs = SystemClock.elapsedRealtime();
+    }
     @Override public void onBufferReceived(byte[] buffer) {}
     @Override public void onEndOfSpeech() {}
     @Override public void onEvent(int eventType, Bundle params) {}
