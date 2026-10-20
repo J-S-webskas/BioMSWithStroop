@@ -93,20 +93,36 @@ public class ReportFragment extends Fragment {
             intent.putExtra("arjRight", report.getArjRightKneeToday());
             intent.putExtra("arjLeft", report.getArjLeftKneeToday());
             intent.putExtra("balance", report.getBalanceToday());
+            intent.putExtra("swayVelocity", report.getSwayVelocityToday());
+            intent.putExtra("swayPathLength", report.getSwayPathLengthToday());
+            intent.putExtra("swayRmsAP", report.getSwayRmsAPToday());
+            intent.putExtra("swayRmsML", report.getSwayRmsMLToday());
             intent.putExtra("endurance", report.getEnduranceToday());
             intent.putExtra("sensoryAtaxiaARJLeft", report.getSensoryAtaxiaARJLeftToday());
             intent.putExtra("sensoryAtaxiaARJRight", report.getSensoryAtaxiaARJRightToday());
             intent.putExtra("sensoryAtaxiaBalance", report.getSensoryAtaxiaBalanceToday());
+            intent.putExtra("sensoryAtaxiaSwayVelocity", report.getSensoryAtaxiaSwayVelocityToday());
+            intent.putExtra("sensoryAtaxiaSwayPathLength", report.getSensoryAtaxiaSwayPathLengthToday());
+            intent.putExtra("sensoryAtaxiaSwayRmsAP", report.getSensoryAtaxiaSwayRmsAPToday());
+            intent.putExtra("sensoryAtaxiaSwayRmsML", report.getSensoryAtaxiaSwayRmsMLToday());
             intent.putExtra("dualTaskARJLeft", report.getDualTaskARJLeftToday());
             intent.putExtra("dualTaskARJRight", report.getDualTaskARJRightToday());
             intent.putExtra("dualTaskBalance", report.getDualTaskBalanceToday());
+            intent.putExtra("dualTaskSwayVelocity", report.getDualTaskSwayVelocityToday());
+            intent.putExtra("dualTaskSwayPathLength", report.getDualTaskSwayPathLengthToday());
+            intent.putExtra("dualTaskSwayRmsAP", report.getDualTaskSwayRmsAPToday());
+            intent.putExtra("dualTaskSwayRmsML", report.getDualTaskSwayRmsMLToday());
             // DTC
             intent.putExtra("dualTaskARJLeftDTC", report.getDualTaskDTCARJLeft());
             intent.putExtra("dualTaskARJRightDTC", report.getDualTaskDTCARJRight());
             intent.putExtra("dualTaskBalanceDTC", report.getDualTaskDTCBalance());
+            intent.putExtra("dualTaskSwayVelocityDTC", report.getDualTaskDTCSwayVelocity());
+            intent.putExtra("dualTaskSwayPathLengthDTC", report.getDualTaskDTCSwayPathLength());
             intent.putExtra("sensoryAtaxiaARJLeftDTC", report.getSensoryAtaxiaDTCARJLeft());
             intent.putExtra("sensoryAtaxiaARJRightDTC", report.getSensoryAtaxiaDTCARJRight());
             intent.putExtra("sensoryAtaxiaBalanceDTC", report.getSensoryAtaxiaDTCBalance());
+            intent.putExtra("sensoryAtaxiaSwayVelocityDTC", report.getSensoryAtaxiaDTCSwayVelocity());
+            intent.putExtra("sensoryAtaxiaSwayPathLengthDTC", report.getSensoryAtaxiaDTCSwayPathLength());
             // SD & CV
             intent.putExtra("ARJLeftSD", report.getARJLeftSD());
             intent.putExtra("ARJRightSD", report.getARJRightSD());
@@ -146,12 +162,25 @@ public class ReportFragment extends Fragment {
         Float bestBalance = null;
         Float bestWalkingSpeed = null;
         Float bestEndurance = null;
+        // Extended sway metrics (latest assessment of the selected date wins)
+        Float bestSwayVelocity = null;
+        Float bestSwayPathLength = null;
+        Float bestSwayRmsAP = null;
+        Float bestSwayRmsML = null;
 //        Float bestDTARJLeft = null;
 //        Float bestDTARJRight = null;
         Float bestDTBalance = null;
+        Float bestDTSwayVelocity = null;
+        Float bestDTSwayPathLength = null;
+        Float bestDTSwayRmsAP = null;
+        Float bestDTSwayRmsML = null;
 //        Float bestSAARJLeft = null;
 //        Float bestSAARJRight = null;
         Float bestSABalance = null;
+        Float bestSASwayVelocity = null;
+        Float bestSASwayPathLength = null;
+        Float bestSASwayRmsAP = null;
+        Float bestSASwayRmsML = null;
 
         long latestTimestamp = 0;
         long latestDTTimestamp = 0;
@@ -170,18 +199,34 @@ public class ReportFragment extends Fragment {
         float balanceToday = 0;
         float speedToday = 0;
         float enduranceToday = 0;
+        float swayVelocityToday = 0;
+        float swayPathLengthToday = 0;
+        float swayRmsAPToday = 0;
+        float swayRmsMLToday = 0;
 //        float SAARJLeftKneeToday = 0;
 //        float SAARJRightKneeToday = 0;
         float SAbalanceToday = 0;
+        float SASwayVelocityToday = 0;
+        float SASwayPathLengthToday = 0;
+        float SASwayRmsAPToday = 0;
+        float SASwayRmsMLToday = 0;
 //        float DTARJLeftKneeToday = 0;
 //        float DTARJRightKneeToday = 0;
         float DTbalanceToday = 0;
+        float DTswayVelocityToday = 0;
+        float DTswayPathLengthToday = 0;
+        float DTswayRmsAPToday = 0;
+        float DTswayRmsMLToday = 0;
 //        float DTARJLeftKneeDTC = 0;
 //        float DTARJRightKneeDTC = 0;
         float DTBalanceDTC = 0;
+        float DTVelocityDTC = 0;
+        float DTPathDTC = 0;
 //        float SAARJLeftKneeDTC = 0;
 //        float SAARJRightKneeDTC = 0;
         float SABalanceDTC = 0;
+        float SAVelocityDTC = 0;
+        float SAPathDTC = 0;
 
         boolean hasDataForDate = false;
 
@@ -240,6 +285,12 @@ public class ReportFragment extends Fragment {
                 if (bestBalance == null || currentTimestamp > latestTimestamp) {
                     bestBalance = balance;
                 }
+                if (bestSwayVelocity == null || currentTimestamp > latestTimestamp) {
+                    bestSwayVelocity = assessment.getBaseline().getSwayMeanVelocity();
+                    bestSwayPathLength = assessment.getBaseline().getSwayPathLength();
+                    bestSwayRmsAP = assessment.getBaseline().getSwayRmsAP();
+                    bestSwayRmsML = assessment.getBaseline().getSwayRmsML();
+                }
             }
 
             float walkingSpeed = assessment.getBaseline().getWalkingSpeed();
@@ -282,6 +333,12 @@ public class ReportFragment extends Fragment {
                     if (bestDTBalance == null || currentTimestamp > latestDTTimestamp) {
                         bestDTBalance = dtBalance;
                     }
+                    if (bestDTSwayVelocity == null || currentTimestamp > latestDTTimestamp) {
+                        bestDTSwayVelocity = dualTask.getSwayMeanVelocity();
+                        bestDTSwayPathLength = dualTask.getSwayPathLength();
+                        bestDTSwayRmsAP = dualTask.getSwayRmsAP();
+                        bestDTSwayRmsML = dualTask.getSwayRmsML();
+                    }
                 }
                 if (currentTimestamp > latestDTTimestamp) {
                     latestDTTimestamp = currentTimestamp;
@@ -310,6 +367,12 @@ public class ReportFragment extends Fragment {
                     if (bestSABalance == null || currentTimestamp > latestSATimestamp) {
                         bestSABalance = saBalance;
                     }
+                    if (bestSASwayVelocity == null || currentTimestamp > latestSATimestamp) {
+                        bestSASwayVelocity = sensory.getSwayMeanVelocity();
+                        bestSASwayPathLength = sensory.getSwayPathLength();
+                        bestSASwayRmsAP = sensory.getSwayRmsAP();
+                        bestSASwayRmsML = sensory.getSwayRmsML();
+                    }
                 }
                 if (currentTimestamp > latestSATimestamp) {
                     latestSATimestamp = currentTimestamp;
@@ -320,9 +383,13 @@ public class ReportFragment extends Fragment {
 //            DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
 //            DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
             DTBalanceDTC = comparisons.getDualTaskBalanceChange();
+            DTVelocityDTC = comparisons.getDualTaskVelocityChange();
+            DTPathDTC = comparisons.getDualTaskPathLengthChange();
 //            SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
 //            SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
             SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
+            SAVelocityDTC = comparisons.getSensoryAtaxiaVelocityChange();
+            SAPathDTC = comparisons.getSensoryAtaxiaPathLengthChange();
         }
 
         if (!hasDataForDate) {
@@ -334,14 +401,26 @@ public class ReportFragment extends Fragment {
 //        ARJLeftKneeToday = bestARJLeft != null ? bestARJLeft : 0f;
 //        ARJRightKneeToday = bestARJRight != null ? bestARJRight : 0f;
         balanceToday = bestBalance != null ? bestBalance : 0f;
+        swayVelocityToday = bestSwayVelocity != null ? bestSwayVelocity : 0f;
+        swayPathLengthToday = bestSwayPathLength != null ? bestSwayPathLength : 0f;
+        swayRmsAPToday = bestSwayRmsAP != null ? bestSwayRmsAP : 0f;
+        swayRmsMLToday = bestSwayRmsML != null ? bestSwayRmsML : 0f;
         speedToday = bestWalkingSpeed != null ? bestWalkingSpeed : 0f;
         enduranceToday = bestEndurance != null ? bestEndurance : 0f;
 //        DTARJLeftKneeToday = bestDTARJLeft != null ? bestDTARJLeft : 0f;
 //        DTARJRightKneeToday = bestDTARJRight != null ? bestDTARJRight : 0f;
         DTbalanceToday = bestDTBalance != null ? bestDTBalance : 0f;
+        DTswayVelocityToday = bestDTSwayVelocity != null ? bestDTSwayVelocity : 0f;
+        DTswayPathLengthToday = bestDTSwayPathLength != null ? bestDTSwayPathLength : 0f;
+        DTswayRmsAPToday = bestDTSwayRmsAP != null ? bestDTSwayRmsAP : 0f;
+        DTswayRmsMLToday = bestDTSwayRmsML != null ? bestDTSwayRmsML : 0f;
 //        SAARJLeftKneeToday = bestSAARJLeft != null ? bestSAARJLeft : 0f;
 //        SAARJRightKneeToday = bestSAARJRight != null ? bestSAARJRight : 0f;
         SAbalanceToday = bestSABalance != null ? bestSABalance : 0f;
+        SASwayVelocityToday = bestSASwayVelocity != null ? bestSASwayVelocity : 0f;
+        SASwayPathLengthToday = bestSASwayPathLength != null ? bestSASwayPathLength : 0f;
+        SASwayRmsAPToday = bestSASwayRmsAP != null ? bestSASwayRmsAP : 0f;
+        SASwayRmsMLToday = bestSASwayRmsML != null ? bestSASwayRmsML : 0f;
 
         // Calculate SD and CV
 //        float ARJRightKneeSD = standardDeviation(allARJRightValues);
@@ -361,21 +440,37 @@ public class ReportFragment extends Fragment {
 //        newReport.setArjLeftKneeToday(ARJLeftKneeToday);
 //        newReport.setArjRightKneeToday(ARJRightKneeToday);
         newReport.setBalanceToday(balanceToday);
+        newReport.setSwayVelocityToday(swayVelocityToday);
+        newReport.setSwayPathLengthToday(swayPathLengthToday);
+        newReport.setSwayRmsAPToday(swayRmsAPToday);
+        newReport.setSwayRmsMLToday(swayRmsMLToday);
         newReport.setSpeedToday(speedToday);
         newReport.setEnduranceToday(enduranceToday);
 //        newReport.setSensoryAtaxiaARJLeftToday(SAARJLeftKneeToday);
 //        newReport.setSensoryAtaxiaARJRightToday(SAARJRightKneeToday);
         newReport.setSensoryAtaxiaBalanceToday(SAbalanceToday);
+        newReport.setSensoryAtaxiaSwayVelocityToday(SASwayVelocityToday);
+        newReport.setSensoryAtaxiaSwayPathLengthToday(SASwayPathLengthToday);
+        newReport.setSensoryAtaxiaSwayRmsAPToday(SASwayRmsAPToday);
+        newReport.setSensoryAtaxiaSwayRmsMLToday(SASwayRmsMLToday);
 //        newReport.setDualTaskARJLeftToday(DTARJLeftKneeToday);
 //        newReport.setDualTaskARJRightToday(DTARJRightKneeToday);
         newReport.setDualTaskBalanceToday(DTbalanceToday);
+        newReport.setDualTaskSwayVelocityToday(DTswayVelocityToday);
+        newReport.setDualTaskSwayPathLengthToday(DTswayPathLengthToday);
+        newReport.setDualTaskSwayRmsAPToday(DTswayRmsAPToday);
+        newReport.setDualTaskSwayRmsMLToday(DTswayRmsMLToday);
         // DTC
 //        newReport.setDualTaskDTCARJLeft(DTARJLeftKneeDTC);
 //        newReport.setDualTaskDTCARJRight(DTARJRightKneeDTC);
         newReport.setDualTaskDTCBalance(DTBalanceDTC);
+        newReport.setDualTaskDTCSwayVelocity(DTVelocityDTC);
+        newReport.setDualTaskDTCSwayPathLength(DTPathDTC);
 //        newReport.setSensoryAtaxiaDTCARJLeft(SAARJLeftKneeDTC);
 //        newReport.setSensoryAtaxiaDTCARJRight(SAARJRightKneeDTC);
         newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
+        newReport.setSensoryAtaxiaDTCSwayVelocity(SAVelocityDTC);
+        newReport.setSensoryAtaxiaDTCSwayPathLength(SAPathDTC);
         // SD & CV
 //        newReport.setARJLeftSD(ARJLeftKneeSD);
 //        newReport.setARJRightSD(ARJRightKneeSD);
@@ -488,12 +583,29 @@ public class ReportFragment extends Fragment {
         float DTARJRightKneeToday = 0;
         float DTbalanceToday = 0;
 
+        float swayVelocityToday = 0;
+        float swayPathLengthToday = 0;
+        float swayRmsAPToday = 0;
+        float swayRmsMLToday = 0;
+        float DTswayVelocityToday = 0;
+        float DTswayPathLengthToday = 0;
+        float DTswayRmsAPToday = 0;
+        float DTswayRmsMLToday = 0;
+        float SASwayVelocityToday = 0;
+        float SASwayPathLengthToday = 0;
+        float SASwayRmsAPToday = 0;
+        float SASwayRmsMLToday = 0;
+
         float DTARJLeftKneeDTC = 0;
         float DTARJRightKneeDTC = 0;
         float DTBalanceDTC = 0;
+        float DTVelocityDTC = 0;
+        float DTPathDTC = 0;
         float SAARJLeftKneeDTC = 0;
         float SAARJRightKneeDTC = 0;
         float SABalanceDTC = 0;
+        float SAVelocityDTC = 0;
+        float SAPathDTC = 0;
 
         // Track best Dual Task values (most recent)
         Float bestDTARJLeft = null;
@@ -502,6 +614,19 @@ public class ReportFragment extends Fragment {
         Float bestSAARJLeft = null;
         Float bestSAARJRight = null;
         Float bestSABalance = null;
+        // Extended sway metrics (latest assessment wins, same pattern as balance)
+        Float bestSwayVelocity = null;
+        Float bestSwayPathLength = null;
+        Float bestSwayRmsAP = null;
+        Float bestSwayRmsML = null;
+        Float bestDTSwayVelocity = null;
+        Float bestDTSwayPathLength = null;
+        Float bestDTSwayRmsAP = null;
+        Float bestDTSwayRmsML = null;
+        Float bestSASwayVelocity = null;
+        Float bestSASwayPathLength = null;
+        Float bestSASwayRmsAP = null;
+        Float bestSASwayRmsML = null;
 
         long latestDTTimestamp = 0;
         long latestSATimestamp = 0;
@@ -574,6 +699,12 @@ public class ReportFragment extends Fragment {
                 if (bestBalance == null || currentTimestamp > latestTimestamp) {
                     bestBalance = balance;
                 }
+                if (bestSwayVelocity == null || currentTimestamp > latestTimestamp) {
+                    bestSwayVelocity = assessment.getBaseline().getSwayMeanVelocity();
+                    bestSwayPathLength = assessment.getBaseline().getSwayPathLength();
+                    bestSwayRmsAP = assessment.getBaseline().getSwayRmsAP();
+                    bestSwayRmsML = assessment.getBaseline().getSwayRmsML();
+                }
                 setBalance.add(balance);
             }
 
@@ -618,6 +749,12 @@ public class ReportFragment extends Fragment {
                     if (bestDTBalance == null || currentTimestamp > latestDTTimestamp) {
                         bestDTBalance = dtBalance;
                     }
+                    if (bestDTSwayVelocity == null || currentTimestamp > latestDTTimestamp) {
+                        bestDTSwayVelocity = dualTask.getSwayMeanVelocity();
+                        bestDTSwayPathLength = dualTask.getSwayPathLength();
+                        bestDTSwayRmsAP = dualTask.getSwayRmsAP();
+                        bestDTSwayRmsML = dualTask.getSwayRmsML();
+                    }
                 }
                 if (currentTimestamp > latestDTTimestamp) {
                     latestDTTimestamp = currentTimestamp;
@@ -630,10 +767,14 @@ public class ReportFragment extends Fragment {
                 DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
                 DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
                 DTBalanceDTC = comparisons.getDualTaskBalanceChange();
+                DTVelocityDTC = comparisons.getDualTaskVelocityChange();
+                DTPathDTC = comparisons.getDualTaskPathLengthChange();
 
                 SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
                 SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
                 SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
+                SAVelocityDTC = comparisons.getSensoryAtaxiaVelocityChange();
+                SAPathDTC = comparisons.getSensoryAtaxiaPathLengthChange();
             }
 
             SensoryAtaxiaAssessment sensory = assessment.getSensoryAtaxia();
@@ -647,6 +788,12 @@ public class ReportFragment extends Fragment {
                 }
 
                 // Add for right and balance similarly
+                if (bestSASwayVelocity == null || currentTimestamp > latestSATimestamp) {
+                    bestSASwayVelocity = sensory.getSwayMeanVelocity();
+                    bestSASwayPathLength = sensory.getSwayPathLength();
+                    bestSASwayRmsAP = sensory.getSwayRmsAP();
+                    bestSASwayRmsML = sensory.getSwayRmsML();
+                }
             }
 
             // === DTC DATA FROM COMPARISONS ===
@@ -656,10 +803,14 @@ public class ReportFragment extends Fragment {
                     DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
                     DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
                     DTBalanceDTC = comparisons.getDualTaskBalanceChange();
+                    DTVelocityDTC = comparisons.getDualTaskVelocityChange();
+                    DTPathDTC = comparisons.getDualTaskPathLengthChange();
 
                     SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
                     SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
                     SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
+                    SAVelocityDTC = comparisons.getSensoryAtaxiaVelocityChange();
+                    SAPathDTC = comparisons.getSensoryAtaxiaPathLengthChange();
                 }
             }
 
@@ -672,6 +823,10 @@ public class ReportFragment extends Fragment {
         ARJLeftKneeToday = bestARJLeft != null ? bestARJLeft : 0f;
         ARJRightKneeToday = bestARJRight != null ? bestARJRight : 0f;
         balanceToday = bestBalance != null ? bestBalance : 0f;
+        swayVelocityToday = bestSwayVelocity != null ? bestSwayVelocity : 0f;
+        swayPathLengthToday = bestSwayPathLength != null ? bestSwayPathLength : 0f;
+        swayRmsAPToday = bestSwayRmsAP != null ? bestSwayRmsAP : 0f;
+        swayRmsMLToday = bestSwayRmsML != null ? bestSwayRmsML : 0f;
         speedToday = bestWalkingSpeed != null ? bestWalkingSpeed : 0f;
         enduranceToday = bestEndurance != null ? bestEndurance : 0f;
 
@@ -679,11 +834,19 @@ public class ReportFragment extends Fragment {
         DTARJLeftKneeToday = bestDTARJLeft != null ? bestDTARJLeft : 0f;
         DTARJRightKneeToday = bestDTARJRight != null ? bestDTARJRight : 0f;
         DTbalanceToday = bestDTBalance != null ? bestDTBalance : 0f;
+        DTswayVelocityToday = bestDTSwayVelocity != null ? bestDTSwayVelocity : 0f;
+        DTswayPathLengthToday = bestDTSwayPathLength != null ? bestDTSwayPathLength : 0f;
+        DTswayRmsAPToday = bestDTSwayRmsAP != null ? bestDTSwayRmsAP : 0f;
+        DTswayRmsMLToday = bestDTSwayRmsML != null ? bestDTSwayRmsML : 0f;
 
         // Set Sensory Ataxia values
         SAARJLeftKneeToday = bestSAARJLeft != null ? bestSAARJLeft : 0f;
         SAARJRightKneeToday = bestSAARJRight != null ? bestSAARJRight : 0f;
         SAbalanceToday = bestSABalance != null ? bestSABalance : 0f;
+        SASwayVelocityToday = bestSASwayVelocity != null ? bestSASwayVelocity : 0f;
+        SASwayPathLengthToday = bestSASwayPathLength != null ? bestSASwayPathLength : 0f;
+        SASwayRmsAPToday = bestSASwayRmsAP != null ? bestSASwayRmsAP : 0f;
+        SASwayRmsMLToday = bestSASwayRmsML != null ? bestSASwayRmsML : 0f;
 
         // Calculating ARJ and balance
         // STANDARD DEVIATION (SD)
@@ -705,21 +868,37 @@ public class ReportFragment extends Fragment {
         newReport.setArjLeftKneeToday(ARJLeftKneeToday);
         newReport.setArjRightKneeToday(ARJRightKneeToday);
         newReport.setBalanceToday(balanceToday);
+        newReport.setSwayVelocityToday(swayVelocityToday);
+        newReport.setSwayPathLengthToday(swayPathLengthToday);
+        newReport.setSwayRmsAPToday(swayRmsAPToday);
+        newReport.setSwayRmsMLToday(swayRmsMLToday);
         newReport.setSpeedToday(speedToday);
         newReport.setEnduranceToday(enduranceToday);
         newReport.setSensoryAtaxiaARJLeftToday(SAARJLeftKneeToday);
         newReport.setSensoryAtaxiaARJRightToday(SAARJRightKneeToday);
         newReport.setSensoryAtaxiaBalanceToday(SAbalanceToday);
+        newReport.setSensoryAtaxiaSwayVelocityToday(SASwayVelocityToday);
+        newReport.setSensoryAtaxiaSwayPathLengthToday(SASwayPathLengthToday);
+        newReport.setSensoryAtaxiaSwayRmsAPToday(SASwayRmsAPToday);
+        newReport.setSensoryAtaxiaSwayRmsMLToday(SASwayRmsMLToday);
         newReport.setDualTaskARJLeftToday(DTARJLeftKneeToday);
         newReport.setDualTaskARJRightToday(DTARJRightKneeToday);
         newReport.setDualTaskBalanceToday(DTbalanceToday);
+        newReport.setDualTaskSwayVelocityToday(DTswayVelocityToday);
+        newReport.setDualTaskSwayPathLengthToday(DTswayPathLengthToday);
+        newReport.setDualTaskSwayRmsAPToday(DTswayRmsAPToday);
+        newReport.setDualTaskSwayRmsMLToday(DTswayRmsMLToday);
         // DTC
         newReport.setDualTaskDTCARJLeft(DTARJLeftKneeDTC);
         newReport.setDualTaskDTCARJRight(DTARJRightKneeDTC);
         newReport.setDualTaskDTCBalance(DTBalanceDTC);
+        newReport.setDualTaskDTCSwayVelocity(DTVelocityDTC);
+        newReport.setDualTaskDTCSwayPathLength(DTPathDTC);
         newReport.setSensoryAtaxiaDTCARJLeft(SAARJLeftKneeDTC);
         newReport.setSensoryAtaxiaDTCARJRight(SAARJRightKneeDTC);
         newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
+        newReport.setSensoryAtaxiaDTCSwayVelocity(SAVelocityDTC);
+        newReport.setSensoryAtaxiaDTCSwayPathLength(SAPathDTC);
         // SD & CV
         newReport.setARJLeftSD(ARJLeftKneeSD);
         newReport.setARJRightSD(ARJRightKneeSD);
