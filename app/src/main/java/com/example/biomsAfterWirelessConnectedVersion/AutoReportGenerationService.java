@@ -334,6 +334,23 @@ public class AutoReportGenerationService extends Service {
         ArrayList<Float> dtDTCTrials = new ArrayList<>();
         ArrayList<Float> saBalanceTrials = new ArrayList<>();
         ArrayList<Float> saDTCTrials = new ArrayList<>();
+        // Sway metric family trials (chronological, same order as balanceTrials)
+        ArrayList<Float> swayPathLengthTrials = new ArrayList<>();
+        ArrayList<Float> swayVelocityTrials = new ArrayList<>();
+        ArrayList<Float> swayRmsAPTrials = new ArrayList<>();
+        ArrayList<Float> swayRmsMLTrials = new ArrayList<>();
+        ArrayList<Float> dtSwayPathLengthTrials = new ArrayList<>();
+        ArrayList<Float> dtSwayVelocityTrials = new ArrayList<>();
+        ArrayList<Float> dtSwayRmsAPTrials = new ArrayList<>();
+        ArrayList<Float> dtSwayRmsMLTrials = new ArrayList<>();
+        ArrayList<Float> dtVelocityDTCTrials = new ArrayList<>();
+        ArrayList<Float> dtPathLengthDTCTrials = new ArrayList<>();
+        ArrayList<Float> saSwayPathLengthTrials = new ArrayList<>();
+        ArrayList<Float> saSwayVelocityTrials = new ArrayList<>();
+        ArrayList<Float> saSwayRmsAPTrials = new ArrayList<>();
+        ArrayList<Float> saSwayRmsMLTrials = new ArrayList<>();
+        ArrayList<Float> saVelocityDTCTrials = new ArrayList<>();
+        ArrayList<Float> saPathLengthDTCTrials = new ArrayList<>();
 
         for (AssessmentData assessment : chronologicalAssessments) {
             String currentDate = sdf.format(assessment.getTimestamp());
@@ -341,6 +358,13 @@ public class AutoReportGenerationService extends Service {
 
             float balance = assessment.getBaseline().getBalanceScore();
             if (balance > 0) balanceTrials.add(balance);
+
+            if (assessment.getBaseline().getSwayPathLength() > 0) {
+                swayPathLengthTrials.add(assessment.getBaseline().getSwayPathLength());
+                swayVelocityTrials.add(assessment.getBaseline().getSwayMeanVelocity());
+                swayRmsAPTrials.add(assessment.getBaseline().getSwayRmsAP());
+                swayRmsMLTrials.add(assessment.getBaseline().getSwayRmsML());
+            }
 
             float speed = assessment.getBaseline().getWalkingSpeed();
             if (speed > 0) speedTrials.add(speed);
@@ -352,8 +376,22 @@ public class AutoReportGenerationService extends Service {
                 dtBalanceTrials.add(assessment.getDualTask().getBalanceScore());
             }
 
+            if (assessment.getDualTask() != null && assessment.getDualTask().getSwayPathLength() > 0) {
+                dtSwayPathLengthTrials.add(assessment.getDualTask().getSwayPathLength());
+                dtSwayVelocityTrials.add(assessment.getDualTask().getSwayMeanVelocity());
+                dtSwayRmsAPTrials.add(assessment.getDualTask().getSwayRmsAP());
+                dtSwayRmsMLTrials.add(assessment.getDualTask().getSwayRmsML());
+            }
+
             if (assessment.getSensoryAtaxia() != null && assessment.getSensoryAtaxia().getBalanceScore() > 0) {
                 saBalanceTrials.add(assessment.getSensoryAtaxia().getBalanceScore());
+            }
+
+            if (assessment.getSensoryAtaxia() != null && assessment.getSensoryAtaxia().getSwayPathLength() > 0) {
+                saSwayPathLengthTrials.add(assessment.getSensoryAtaxia().getSwayPathLength());
+                saSwayVelocityTrials.add(assessment.getSensoryAtaxia().getSwayMeanVelocity());
+                saSwayRmsAPTrials.add(assessment.getSensoryAtaxia().getSwayRmsAP());
+                saSwayRmsMLTrials.add(assessment.getSensoryAtaxia().getSwayRmsML());
             }
 
             if (assessment.getComparisons() != null) {
@@ -362,6 +400,18 @@ public class AutoReportGenerationService extends Service {
                 }
                 if (assessment.getComparisons().getSensoryAtaxiaBalanceChange() != 0) {
                     saDTCTrials.add(assessment.getComparisons().getSensoryAtaxiaBalanceChange());
+                }
+                if (assessment.getComparisons().getDualTaskVelocityChange() != 0) {
+                    dtVelocityDTCTrials.add(assessment.getComparisons().getDualTaskVelocityChange());
+                }
+                if (assessment.getComparisons().getDualTaskPathLengthChange() != 0) {
+                    dtPathLengthDTCTrials.add(assessment.getComparisons().getDualTaskPathLengthChange());
+                }
+                if (assessment.getComparisons().getSensoryAtaxiaVelocityChange() != 0) {
+                    saVelocityDTCTrials.add(assessment.getComparisons().getSensoryAtaxiaVelocityChange());
+                }
+                if (assessment.getComparisons().getSensoryAtaxiaPathLengthChange() != 0) {
+                    saPathLengthDTCTrials.add(assessment.getComparisons().getSensoryAtaxiaPathLengthChange());
                 }
             }
         }
@@ -421,6 +471,22 @@ public class AutoReportGenerationService extends Service {
         newReport.setDualTaskDTCTrials(dtDTCTrials);
         newReport.setSensoryAtaxiaBalanceTrials(saBalanceTrials);
         newReport.setSensoryAtaxiaDTCTrials(saDTCTrials);
+        newReport.setSwayPathLengthTrials(swayPathLengthTrials);
+        newReport.setSwayVelocityTrials(swayVelocityTrials);
+        newReport.setSwayRmsAPTrials(swayRmsAPTrials);
+        newReport.setSwayRmsMLTrials(swayRmsMLTrials);
+        newReport.setDualTaskSwayPathLengthTrials(dtSwayPathLengthTrials);
+        newReport.setDualTaskSwayVelocityTrials(dtSwayVelocityTrials);
+        newReport.setDualTaskSwayRmsAPTrials(dtSwayRmsAPTrials);
+        newReport.setDualTaskSwayRmsMLTrials(dtSwayRmsMLTrials);
+        newReport.setDualTaskVelocityDTCTrials(dtVelocityDTCTrials);
+        newReport.setDualTaskPathLengthDTCTrials(dtPathLengthDTCTrials);
+        newReport.setSensoryAtaxiaSwayPathLengthTrials(saSwayPathLengthTrials);
+        newReport.setSensoryAtaxiaSwayVelocityTrials(saSwayVelocityTrials);
+        newReport.setSensoryAtaxiaSwayRmsAPTrials(saSwayRmsAPTrials);
+        newReport.setSensoryAtaxiaSwayRmsMLTrials(saSwayRmsMLTrials);
+        newReport.setSensoryAtaxiaVelocityDTCTrials(saVelocityDTCTrials);
+        newReport.setSensoryAtaxiaPathLengthDTCTrials(saPathLengthDTCTrials);
 
         newReport.setTimeStamp(targetDate);
 

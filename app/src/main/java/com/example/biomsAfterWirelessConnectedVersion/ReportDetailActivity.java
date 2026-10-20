@@ -43,7 +43,10 @@ public class ReportDetailActivity extends AppCompatActivity {
             dtcARJLeftSA, dtcARJRightSA, dtcARJLeftDT, dtcARJRightDT, dtcBalanceDT, dtcBalanceSA,
             dtcSwayVelocityDT, dtcSwayPathDT, dtcSwayVelocitySA, dtcSwayPathSA,
             ARJRightSD, ARJRightCV, ARJLeftSD, ARJLeftCV, BalanceSD, BalanceCV, WSSD, WSCV, EnduranceSD, EnduranceCV,
-            balanceTrialsTextView, wsTrialsTextView, enduranceTrialsTextView, dualTaskBalanceTrialsTextView, sensoryAtaxiaBalanceTrialsTextView;
+            balanceTrialsTextView, wsTrialsTextView, enduranceTrialsTextView, dualTaskBalanceTrialsTextView, sensoryAtaxiaBalanceTrialsTextView,
+            swayPathLengthTrialsTextView, swayVelocityTrialsTextView, swayRmsAPTrialsTextView, swayRmsMLTrialsTextView,
+            dualTaskSwayPathLengthTrialsTextView, dualTaskSwayVelocityTrialsTextView, dualTaskSwayRmsAPTrialsTextView, dualTaskSwayRmsMLTrialsTextView,
+            sensoryAtaxiaSwayPathLengthTrialsTextView, sensoryAtaxiaSwayVelocityTrialsTextView, sensoryAtaxiaSwayRmsAPTrialsTextView, sensoryAtaxiaSwayRmsMLTrialsTextView;
 
     private Button shareReportButton;
     private String reportDate;
@@ -216,6 +219,43 @@ public class ReportDetailActivity extends AppCompatActivity {
             if (sensoryAtaxiaBalanceTrialsTextView != null) {
                 sensoryAtaxiaBalanceTrialsTextView.setText(formatTrials(reportModel.getSensoryAtaxiaBalanceTrials(), "mm²"));
             }
+            // Sway metric family trials
+            if (swayPathLengthTrialsTextView != null) {
+                swayPathLengthTrialsTextView.setText(formatTrials(reportModel.getSwayPathLengthTrials(), "mm"));
+            }
+            if (swayVelocityTrialsTextView != null) {
+                swayVelocityTrialsTextView.setText(formatTrials(reportModel.getSwayVelocityTrials(), "mm/s"));
+            }
+            if (swayRmsAPTrialsTextView != null) {
+                swayRmsAPTrialsTextView.setText(formatTrials(reportModel.getSwayRmsAPTrials(), "mm"));
+            }
+            if (swayRmsMLTrialsTextView != null) {
+                swayRmsMLTrialsTextView.setText(formatTrials(reportModel.getSwayRmsMLTrials(), "mm"));
+            }
+            if (dualTaskSwayPathLengthTrialsTextView != null) {
+                dualTaskSwayPathLengthTrialsTextView.setText(formatTrials(reportModel.getDualTaskSwayPathLengthTrials(), "mm"));
+            }
+            if (dualTaskSwayVelocityTrialsTextView != null) {
+                dualTaskSwayVelocityTrialsTextView.setText(formatTrials(reportModel.getDualTaskSwayVelocityTrials(), "mm/s"));
+            }
+            if (dualTaskSwayRmsAPTrialsTextView != null) {
+                dualTaskSwayRmsAPTrialsTextView.setText(formatTrials(reportModel.getDualTaskSwayRmsAPTrials(), "mm"));
+            }
+            if (dualTaskSwayRmsMLTrialsTextView != null) {
+                dualTaskSwayRmsMLTrialsTextView.setText(formatTrials(reportModel.getDualTaskSwayRmsMLTrials(), "mm"));
+            }
+            if (sensoryAtaxiaSwayPathLengthTrialsTextView != null) {
+                sensoryAtaxiaSwayPathLengthTrialsTextView.setText(formatTrials(reportModel.getSensoryAtaxiaSwayPathLengthTrials(), "mm"));
+            }
+            if (sensoryAtaxiaSwayVelocityTrialsTextView != null) {
+                sensoryAtaxiaSwayVelocityTrialsTextView.setText(formatTrials(reportModel.getSensoryAtaxiaSwayVelocityTrials(), "mm/s"));
+            }
+            if (sensoryAtaxiaSwayRmsAPTrialsTextView != null) {
+                sensoryAtaxiaSwayRmsAPTrialsTextView.setText(formatTrials(reportModel.getSensoryAtaxiaSwayRmsAPTrials(), "mm"));
+            }
+            if (sensoryAtaxiaSwayRmsMLTrialsTextView != null) {
+                sensoryAtaxiaSwayRmsMLTrialsTextView.setText(formatTrials(reportModel.getSensoryAtaxiaSwayRmsMLTrials(), "mm"));
+            }
         }
     }
 
@@ -224,13 +264,20 @@ public class ReportDetailActivity extends AppCompatActivity {
             return "N/A";
         }
         StringBuilder sb = new StringBuilder();
+        double sum = 0;
         for (int i = 0; i < trials.size(); i++) {
             sb.append("T").append(i + 1).append(": ")
                     .append(String.format(Locale.US, "%.2f", trials.get(i)))
                     .append(" ").append(unit);
+            sum += trials.get(i);
             if (i < trials.size() - 1) {
                 sb.append("\n");
             }
+        }
+        if (trials.size() >= 2) {
+            sb.append("\n").append("Avg: ")
+                    .append(String.format(Locale.US, "%.2f", sum / trials.size()))
+                    .append(" ").append(unit);
         }
         return sb.toString();
     }
@@ -355,5 +402,17 @@ public class ReportDetailActivity extends AppCompatActivity {
         enduranceTrialsTextView = findViewById(R.id.EnduranceTrials);
         dualTaskBalanceTrialsTextView = findViewById(R.id.DualTaskBalanceTrials);
         sensoryAtaxiaBalanceTrialsTextView = findViewById(R.id.SensoryAtaxiaBalanceTrials);
+        swayPathLengthTrialsTextView = findViewById(R.id.swayPathLengthTrials);
+        swayVelocityTrialsTextView = findViewById(R.id.swayVelocityTrials);
+        swayRmsAPTrialsTextView = findViewById(R.id.swayRmsAPTrials);
+        swayRmsMLTrialsTextView = findViewById(R.id.swayRmsMLTrials);
+        dualTaskSwayPathLengthTrialsTextView = findViewById(R.id.dtSwayPathLengthTrials);
+        dualTaskSwayVelocityTrialsTextView = findViewById(R.id.dtSwayVelocityTrials);
+        dualTaskSwayRmsAPTrialsTextView = findViewById(R.id.dtSwayRmsAPTrials);
+        dualTaskSwayRmsMLTrialsTextView = findViewById(R.id.dtSwayRmsMLTrials);
+        sensoryAtaxiaSwayPathLengthTrialsTextView = findViewById(R.id.saSwayPathLengthTrials);
+        sensoryAtaxiaSwayVelocityTrialsTextView = findViewById(R.id.saSwayVelocityTrials);
+        sensoryAtaxiaSwayRmsAPTrialsTextView = findViewById(R.id.saSwayRmsAPTrials);
+        sensoryAtaxiaSwayRmsMLTrialsTextView = findViewById(R.id.saSwayRmsMLTrials);
     }
 }

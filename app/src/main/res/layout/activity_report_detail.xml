@@ -322,6 +322,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/swayPathLengthTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -348,6 +349,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/swayVelocityTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -374,6 +376,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/swayRmsAPTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -400,6 +403,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/swayRmsMLTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -585,6 +589,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/dtSwayPathLengthTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -620,6 +625,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/dtSwayVelocityTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -654,6 +660,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/dtSwayRmsAPTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -688,6 +695,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/dtSwayRmsMLTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -819,6 +827,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/saSwayPathLengthTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -854,6 +863,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/saSwayVelocityTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -888,6 +898,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/saSwayRmsAPTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -922,6 +933,7 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:id="@+id/saSwayRmsMLTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
