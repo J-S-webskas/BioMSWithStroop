@@ -176,9 +176,12 @@ public class AutoReportGenerationService extends Service {
         String targetDateString = sdf.format(targetDate);
 
         Float bestARJLeft = null, bestARJRight = null, bestBalance = null;
+        Float bestSwayVelocity = null, bestSwayPathLength = null, bestSwayRmsAP = null, bestSwayRmsML = null;
         Float bestWalkingSpeed = null, bestEndurance = null;
         Float bestDTARJLeft = null, bestDTARJRight = null, bestDTBalance = null;
+        Float bestDTSwayVelocity = null, bestDTSwayPathLength = null, bestDTSwayRmsAP = null, bestDTSwayRmsML = null;
         Float bestSAARJLeft = null, bestSAARJRight = null, bestSABalance = null;
+        Float bestSASwayVelocity = null, bestSASwayPathLength = null, bestSASwayRmsAP = null, bestSASwayRmsML = null;
 
         long latestTimestamp = 0, latestDTTimestamp = 0, latestSATimestamp = 0;
 
@@ -189,7 +192,9 @@ public class AutoReportGenerationService extends Service {
         ArrayList<Float> allEnduranceValues = new ArrayList<>();
 
         float DTARJLeftKneeDTC = 0, DTARJRightKneeDTC = 0, DTBalanceDTC = 0;
+        float DTVelocityDTC = 0, DTPathDTC = 0;
         float SAARJLeftKneeDTC = 0, SAARJRightKneeDTC = 0, SABalanceDTC = 0;
+        float SAVelocityDTC = 0, SAPathDTC = 0;
 
         for (AssessmentData assessment : allAssessments) {
             String currentDate = sdf.format(assessment.getTimestamp());
@@ -226,6 +231,12 @@ public class AutoReportGenerationService extends Service {
             if (balance != 0 && (bestBalance == null || currentTimestamp > latestTimestamp)) {
                 bestBalance = balance;
             }
+            if (bestSwayVelocity == null || currentTimestamp > latestTimestamp) {
+                bestSwayVelocity = assessment.getBaseline().getSwayMeanVelocity();
+                bestSwayPathLength = assessment.getBaseline().getSwayPathLength();
+                bestSwayRmsAP = assessment.getBaseline().getSwayRmsAP();
+                bestSwayRmsML = assessment.getBaseline().getSwayRmsML();
+            }
             float walkingSpeed = assessment.getBaseline().getWalkingSpeed();
             if (walkingSpeed != 0 && (bestWalkingSpeed == null || currentTimestamp > latestTimestamp)) {
                 bestWalkingSpeed = walkingSpeed;
@@ -251,6 +262,12 @@ public class AutoReportGenerationService extends Service {
                 if (dtBalance != 0 && (bestDTBalance == null || currentTimestamp > latestDTTimestamp)) {
                     bestDTBalance = dtBalance;
                 }
+                if (bestDTSwayVelocity == null || currentTimestamp > latestDTTimestamp) {
+                    bestDTSwayVelocity = dualTask.getSwayMeanVelocity();
+                    bestDTSwayPathLength = dualTask.getSwayPathLength();
+                    bestDTSwayRmsAP = dualTask.getSwayRmsAP();
+                    bestDTSwayRmsML = dualTask.getSwayRmsML();
+                }
                 if (currentTimestamp > latestDTTimestamp) latestDTTimestamp = currentTimestamp;
             }
 
@@ -269,6 +286,12 @@ public class AutoReportGenerationService extends Service {
                 if (saBalance != 0 && (bestSABalance == null || currentTimestamp > latestSATimestamp)) {
                     bestSABalance = saBalance;
                 }
+                if (bestSASwayVelocity == null || currentTimestamp > latestSATimestamp) {
+                    bestSASwayVelocity = sensory.getSwayMeanVelocity();
+                    bestSASwayPathLength = sensory.getSwayPathLength();
+                    bestSASwayRmsAP = sensory.getSwayRmsAP();
+                    bestSASwayRmsML = sensory.getSwayRmsML();
+                }
                 if (currentTimestamp > latestSATimestamp) latestSATimestamp = currentTimestamp;
             }
 
@@ -277,9 +300,13 @@ public class AutoReportGenerationService extends Service {
             DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
             DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
             DTBalanceDTC = comparisons.getDualTaskBalanceChange();
+            DTVelocityDTC = comparisons.getDualTaskVelocityChange();
+            DTPathDTC = comparisons.getDualTaskPathLengthChange();
             SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
             SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
             SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
+            SAVelocityDTC = comparisons.getSensoryAtaxiaVelocityChange();
+            SAPathDTC = comparisons.getSensoryAtaxiaPathLengthChange();
         }
 
         // Calculate SD & CV
@@ -300,21 +327,37 @@ public class AutoReportGenerationService extends Service {
         newReport.setArjLeftKneeToday(bestARJLeft != null ? bestARJLeft : 0f);
         newReport.setArjRightKneeToday(bestARJRight != null ? bestARJRight : 0f);
         newReport.setBalanceToday(bestBalance != null ? bestBalance : 0f);
+        newReport.setSwayVelocityToday(bestSwayVelocity != null ? bestSwayVelocity : 0f);
+        newReport.setSwayPathLengthToday(bestSwayPathLength != null ? bestSwayPathLength : 0f);
+        newReport.setSwayRmsAPToday(bestSwayRmsAP != null ? bestSwayRmsAP : 0f);
+        newReport.setSwayRmsMLToday(bestSwayRmsML != null ? bestSwayRmsML : 0f);
         newReport.setSpeedToday(bestWalkingSpeed != null ? bestWalkingSpeed : 0f);
         newReport.setEnduranceToday(bestEndurance != null ? bestEndurance : 0f);
         newReport.setSensoryAtaxiaARJLeftToday(bestSAARJLeft != null ? bestSAARJLeft : 0f);
         newReport.setSensoryAtaxiaARJRightToday(bestSAARJRight != null ? bestSAARJRight : 0f);
         newReport.setSensoryAtaxiaBalanceToday(bestSABalance != null ? bestSABalance : 0f);
+        newReport.setSensoryAtaxiaSwayVelocityToday(bestSASwayVelocity != null ? bestSASwayVelocity : 0f);
+        newReport.setSensoryAtaxiaSwayPathLengthToday(bestSASwayPathLength != null ? bestSASwayPathLength : 0f);
+        newReport.setSensoryAtaxiaSwayRmsAPToday(bestSASwayRmsAP != null ? bestSASwayRmsAP : 0f);
+        newReport.setSensoryAtaxiaSwayRmsMLToday(bestSASwayRmsML != null ? bestSASwayRmsML : 0f);
         newReport.setDualTaskARJLeftToday(bestDTARJLeft != null ? bestDTARJLeft : 0f);
         newReport.setDualTaskARJRightToday(bestDTARJRight != null ? bestDTARJRight : 0f);
         newReport.setDualTaskBalanceToday(bestDTBalance != null ? bestDTBalance : 0f);
+        newReport.setDualTaskSwayVelocityToday(bestDTSwayVelocity != null ? bestDTSwayVelocity : 0f);
+        newReport.setDualTaskSwayPathLengthToday(bestDTSwayPathLength != null ? bestDTSwayPathLength : 0f);
+        newReport.setDualTaskSwayRmsAPToday(bestDTSwayRmsAP != null ? bestDTSwayRmsAP : 0f);
+        newReport.setDualTaskSwayRmsMLToday(bestDTSwayRmsML != null ? bestDTSwayRmsML : 0f);
 
         newReport.setDualTaskDTCARJLeft(DTARJLeftKneeDTC);
         newReport.setDualTaskDTCARJRight(DTARJRightKneeDTC);
         newReport.setDualTaskDTCBalance(DTBalanceDTC);
+        newReport.setDualTaskDTCSwayVelocity(DTVelocityDTC);
+        newReport.setDualTaskDTCSwayPathLength(DTPathDTC);
         newReport.setSensoryAtaxiaDTCARJLeft(SAARJLeftKneeDTC);
         newReport.setSensoryAtaxiaDTCARJRight(SAARJRightKneeDTC);
         newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
+        newReport.setSensoryAtaxiaDTCSwayVelocity(SAVelocityDTC);
+        newReport.setSensoryAtaxiaDTCSwayPathLength(SAPathDTC);
 
         newReport.setARJLeftSD(ARJLeftKneeSD);
         newReport.setARJRightSD(ARJRightKneeSD);

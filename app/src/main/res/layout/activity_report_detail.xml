@@ -245,7 +245,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:columnCount="2"
-        android:rowCount="5"
+        android:rowCount="9"
         android:layout_marginStart="16dp">
 
         <TextView
@@ -321,6 +321,78 @@
             android:textSize="20sp"/>
 
         <TextView
+            android:text="Sway Path Length"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/swayPathLengthToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway Velocity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/swayVelocityToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway RMS (AP)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/swayRmsAPToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway RMS (ML)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/swayRmsMLToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
             android:text="Walking Speed"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -376,7 +448,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:columnCount="3"
-        android:rowCount="5"
+        android:rowCount="9"
         android:layout_marginStart="16dp">
 
         <TextView
@@ -487,6 +559,112 @@
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
 
+        <TextView
+            android:text="Sway Path Length"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/dtSwayPathLengthToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:id="@+id/dtcSwayPathDT"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway Velocity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/dtSwayVelocityToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:id="@+id/dtcSwayVelocityDT"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway RMS (AP)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/dtSwayRmsAPToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway RMS (ML)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/dtSwayRmsMLToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
     </GridLayout>
 
     <TextView
@@ -507,7 +685,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:columnCount="3"
-        android:rowCount="5"
+        android:rowCount="9"
         android:layout_marginStart="16dp">
 
         <TextView
@@ -611,6 +789,112 @@
 
         <TextView
             android:id="@+id/BalanceSADTCToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway Path Length"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/saSwayPathLengthToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:id="@+id/dtcSwayPathSA"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway Velocity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/saSwayVelocityToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:id="@+id/dtcSwayVelocitySA"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway RMS (AP)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/saSwayRmsAPToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
+            android:text="Sway RMS (ML)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:textSize="19sp"/>
+
+        <TextView
+            android:id="@+id/saSwayRmsMLToday"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"
+            android:fontFamily="@font/profile_pro"
+            android:textSize="20sp"/>
+
+        <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
