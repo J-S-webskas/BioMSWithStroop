@@ -704,7 +704,8 @@ public class RecordFragment extends Fragment {
         currentAssessment = todayAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
-        float swayArea = bc.getSwayArea(COMHistories, requireContext());
+        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories, frameRate);
+        float swayArea = metrics.swayAreaMm2;
         Map<String, Float> ARJScores = new HashMap<>();
 
 //        for (String joint : Arrays.asList("left_knee", "right_knee")) {
@@ -720,6 +721,16 @@ public class RecordFragment extends Fragment {
         } else {
             Log.d("DTC_DEBUG", "baselineBalance <= 0, skipping DTC calculation");
         }
+        float baselineVel = currentAssessment.getBaseline().getSwayMeanVelocity();
+        if (baselineVel > 0) {
+            float vChange = ((metrics.meanVelocityMmS - baselineVel) / baselineVel) * 100f;
+            currentAssessment.getComparisons().setSensoryAtaxiaVelocityChange(vChange);
+        }
+        float baselinePath = currentAssessment.getBaseline().getSwayPathLength();
+        if (baselinePath > 0) {
+            float pChange = ((metrics.pathLengthMm - baselinePath) / baselinePath) * 100f;
+            currentAssessment.getComparisons().setSensoryAtaxiaPathLengthChange(pChange);
+        }
 
 //        Float baselineARJLeftObj = currentAssessment.getBaseline().getARJ().get("left_knee");
 //        Float baselineARJRightObj = currentAssessment.getBaseline().getARJ().get("right_knee");
@@ -733,6 +744,13 @@ public class RecordFragment extends Fragment {
 //        }
 
         currentAssessment.getSensoryAtaxia().setBalanceScore(swayArea);
+        currentAssessment.getSensoryAtaxia().setSwayPathLength(metrics.pathLengthMm);
+        currentAssessment.getSensoryAtaxia().setSwayMeanVelocity(metrics.meanVelocityMmS);
+        currentAssessment.getSensoryAtaxia().setSwayRmsAP(metrics.rmsAPMm);
+        currentAssessment.getSensoryAtaxia().setSwayRmsML(metrics.rmsMLMm);
+        currentAssessment.getSensoryAtaxia().setComTrajX(metrics.trajX);
+        currentAssessment.getSensoryAtaxia().setComTrajZ(metrics.trajZ);
+        currentAssessment.getSensoryAtaxia().setComFrameRate(metrics.frameRate);
         currentAssessment.getSensoryAtaxia().setARJ(ARJScores);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.SENSORY_ATAXIA_COMPLETED);
         currentAssessment.setSensoryAtaxiaTestDate(new Date());
@@ -757,7 +775,8 @@ public class RecordFragment extends Fragment {
         currentAssessment = todayAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
-        float swayArea = bc.getSwayArea(COMHistories, requireContext());
+        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories, frameRate);
+        float swayArea = metrics.swayAreaMm2;
         Map<String, Float> ARJScores = new HashMap<>();
 
 //        for (String joint : Arrays.asList("left_knee", "right_knee")) {
@@ -784,7 +803,24 @@ public class RecordFragment extends Fragment {
             float balanceChange = ((swayArea - baselineBalance) / baselineBalance) * 100f;
             currentAssessment.getComparisons().setDualTaskBalanceChange(balanceChange);
         }
+        float baselineVel = currentAssessment.getBaseline().getSwayMeanVelocity();
+        if (baselineVel > 0) {
+            float vChange = ((metrics.meanVelocityMmS - baselineVel) / baselineVel) * 100f;
+            currentAssessment.getComparisons().setDualTaskVelocityChange(vChange);
+        }
+        float baselinePath = currentAssessment.getBaseline().getSwayPathLength();
+        if (baselinePath > 0) {
+            float pChange = ((metrics.pathLengthMm - baselinePath) / baselinePath) * 100f;
+            currentAssessment.getComparisons().setDualTaskPathLengthChange(pChange);
+        }
         currentAssessment.getDualTask().setBalanceScore(swayArea);
+        currentAssessment.getDualTask().setSwayPathLength(metrics.pathLengthMm);
+        currentAssessment.getDualTask().setSwayMeanVelocity(metrics.meanVelocityMmS);
+        currentAssessment.getDualTask().setSwayRmsAP(metrics.rmsAPMm);
+        currentAssessment.getDualTask().setSwayRmsML(metrics.rmsMLMm);
+        currentAssessment.getDualTask().setComTrajX(metrics.trajX);
+        currentAssessment.getDualTask().setComTrajZ(metrics.trajZ);
+        currentAssessment.getDualTask().setComFrameRate(metrics.frameRate);
         currentAssessment.getDualTask().setARJ(ARJScores);
 
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.DUAL_TASK_COMPLETED);
@@ -809,7 +845,8 @@ public class RecordFragment extends Fragment {
         currentAssessment = todayAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
-        float swayArea = bc.getSwayArea(COMHistories, requireContext());
+        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories, frameRate);
+        float swayArea = metrics.swayAreaMm2;
 //        Map<String, Float> ARJScores = new HashMap<>();
 //        for (String joint : Arrays.asList("left_knee", "right_knee")) {
 //            float arj = AverageRectifiedJerk.calculateAverageRectifiedJerk(
@@ -821,6 +858,13 @@ public class RecordFragment extends Fragment {
 //                COMHistories.size() + " data collected for COM",
 //                Toast.LENGTH_LONG).show();
         currentAssessment.getBaseline().setBalanceScore(swayArea);
+        currentAssessment.getBaseline().setSwayPathLength(metrics.pathLengthMm);
+        currentAssessment.getBaseline().setSwayMeanVelocity(metrics.meanVelocityMmS);
+        currentAssessment.getBaseline().setSwayRmsAP(metrics.rmsAPMm);
+        currentAssessment.getBaseline().setSwayRmsML(metrics.rmsMLMm);
+        currentAssessment.getBaseline().setComTrajX(metrics.trajX);
+        currentAssessment.getBaseline().setComTrajZ(metrics.trajZ);
+        currentAssessment.getBaseline().setComFrameRate(metrics.frameRate);
 //        currentAssessment.getBaseline().setARJ(ARJScores);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.SWAY_AREA_BALANCE_COMPLETED);
         currentAssessment.setSwayAreaAndBalanceTestDate(new Date());
@@ -915,6 +959,8 @@ public class RecordFragment extends Fragment {
         if (assessment == null || assessment.getBaseline() == null) return;
 
         float newBaselineBalance = assessment.getBaseline().getBalanceScore();
+        float newBaselineVel = assessment.getBaseline().getSwayMeanVelocity();
+        float newBaselinePath = assessment.getBaseline().getSwayPathLength();
 //        Float newBaselineARJLeft = assessment.getBaseline().getARJ().get("left_knee");
 //        Float newBaselineARJRight = assessment.getBaseline().getARJ().get("right_knee");
 
@@ -924,6 +970,14 @@ public class RecordFragment extends Fragment {
             if (newBaselineBalance > 0 && dt.getBalanceScore() > 0) {
                 float dtBalanceChange = ((dt.getBalanceScore() - newBaselineBalance) / newBaselineBalance) * 100f;
                 assessment.getComparisons().setDualTaskBalanceChange(dtBalanceChange);
+            }
+            if (newBaselineVel > 0 && dt.getSwayMeanVelocity() > 0) {
+                float dtVelChange = ((dt.getSwayMeanVelocity() - newBaselineVel) / newBaselineVel) * 100f;
+                assessment.getComparisons().setDualTaskVelocityChange(dtVelChange);
+            }
+            if (newBaselinePath > 0 && dt.getSwayPathLength() > 0) {
+                float dtPathChange = ((dt.getSwayPathLength() - newBaselinePath) / newBaselinePath) * 100f;
+                assessment.getComparisons().setDualTaskPathLengthChange(dtPathChange);
             }
 
 //            if (newBaselineARJLeft != null && newBaselineARJLeft > 0 && dt.getARJ().get("left_knee") != null) {
@@ -945,6 +999,14 @@ public class RecordFragment extends Fragment {
             if (newBaselineBalance > 0 && sa.getBalanceScore() > 0) {
                 float saBalanceChange = ((sa.getBalanceScore() - newBaselineBalance) / newBaselineBalance) * 100f;
                 assessment.getComparisons().setSensoryAtaxiaBalanceChange(saBalanceChange);
+            }
+            if (newBaselineVel > 0 && sa.getSwayMeanVelocity() > 0) {
+                float saVelChange = ((sa.getSwayMeanVelocity() - newBaselineVel) / newBaselineVel) * 100f;
+                assessment.getComparisons().setSensoryAtaxiaVelocityChange(saVelChange);
+            }
+            if (newBaselinePath > 0 && sa.getSwayPathLength() > 0) {
+                float saPathChange = ((sa.getSwayPathLength() - newBaselinePath) / newBaselinePath) * 100f;
+                assessment.getComparisons().setSensoryAtaxiaPathLengthChange(saPathChange);
             }
 
 //            if (newBaselineARJLeft != null && newBaselineARJLeft > 0 && sa.getARJ().get("left_knee") != null) {

@@ -1,9 +1,11 @@
 package com.example.biomsAfterWirelessConnectedVersion;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -232,8 +234,17 @@ class BaselineAssessment implements Serializable {
     private JointAngleData jointAngles;
 
     private float walkingSpeed;
-    private float balanceScore;
+    private float balanceScore;   // = sway area (mm^2); kept for existing UI/charts
     private float enduranceScore;
+
+    // Extended sway metric family (same COM trajectory as balanceScore)
+    private float swayPathLength;   // mm
+    private float swayMeanVelocity; // mm/s
+    private float swayRmsAP;        // mm (z/depth axis, frontal camera)
+    private float swayRmsML;        // mm (x axis, frontal camera)
+    private List<Float> comTrajX;   // filtered COM trajectory, meters
+    private List<Float> comTrajZ;
+    private float comFrameRate;     // fps used for velocity
 
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
@@ -249,6 +260,39 @@ class BaselineAssessment implements Serializable {
 
     public float getEnduranceScore() { return enduranceScore; }
     public void setEnduranceScore(float enduranceScore) { this.enduranceScore = enduranceScore; }
+
+    public float getSwayPathLength() { return swayPathLength; }
+    public void setSwayPathLength(float v) { this.swayPathLength = v; }
+
+    public float getSwayMeanVelocity() { return swayMeanVelocity; }
+    public void setSwayMeanVelocity(float v) { this.swayMeanVelocity = v; }
+
+    public float getSwayRmsAP() { return swayRmsAP; }
+    public void setSwayRmsAP(float v) { this.swayRmsAP = v; }
+
+    public float getSwayRmsML() { return swayRmsML; }
+    public void setSwayRmsML(float v) { this.swayRmsML = v; }
+
+    public List<Float> getComTrajX() { return comTrajX; }
+    public void setComTrajX(List<Float> v) { this.comTrajX = v; }
+
+    public List<Float> getComTrajZ() { return comTrajZ; }
+    public void setComTrajZ(List<Float> v) { this.comTrajZ = v; }
+
+    public float getComFrameRate() { return comFrameRate; }
+    public void setComFrameRate(float v) { this.comFrameRate = v; }
+
+    /** Reset all sway fields (used when this test's data is deleted). */
+    public void clearSwayMetrics() {
+        balanceScore = 0f;
+        swayPathLength = 0f;
+        swayMeanVelocity = 0f;
+        swayRmsAP = 0f;
+        swayRmsML = 0f;
+        comTrajX = null;
+        comTrajZ = null;
+        comFrameRate = 0f;
+    }
 }
 
 // DualTaskAssessment
@@ -257,8 +301,18 @@ class DualTaskAssessment implements Serializable {
     private JointAngleData jointAngles;
 
     private float walkingSpeed;
-    private float balanceScore;
+    private float balanceScore;   // = sway area (mm^2); kept for existing UI/charts
     private float enduranceScore;
+
+    // Extended sway metric family (same COM trajectory as balanceScore)
+    private float swayPathLength;   // mm
+    private float swayMeanVelocity; // mm/s
+    private float swayRmsAP;        // mm (z/depth axis, frontal camera)
+    private float swayRmsML;        // mm (x axis, frontal camera)
+    private List<Float> comTrajX;   // filtered COM trajectory, meters
+    private List<Float> comTrajZ;
+    private float comFrameRate;     // fps used for velocity
+
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
 
@@ -273,6 +327,39 @@ class DualTaskAssessment implements Serializable {
 
     public float getEnduranceScore() { return enduranceScore; }
     public void setEnduranceScore(float enduranceScore) { this.enduranceScore = enduranceScore; }
+
+    public float getSwayPathLength() { return swayPathLength; }
+    public void setSwayPathLength(float v) { this.swayPathLength = v; }
+
+    public float getSwayMeanVelocity() { return swayMeanVelocity; }
+    public void setSwayMeanVelocity(float v) { this.swayMeanVelocity = v; }
+
+    public float getSwayRmsAP() { return swayRmsAP; }
+    public void setSwayRmsAP(float v) { this.swayRmsAP = v; }
+
+    public float getSwayRmsML() { return swayRmsML; }
+    public void setSwayRmsML(float v) { this.swayRmsML = v; }
+
+    public List<Float> getComTrajX() { return comTrajX; }
+    public void setComTrajX(List<Float> v) { this.comTrajX = v; }
+
+    public List<Float> getComTrajZ() { return comTrajZ; }
+    public void setComTrajZ(List<Float> v) { this.comTrajZ = v; }
+
+    public float getComFrameRate() { return comFrameRate; }
+    public void setComFrameRate(float v) { this.comFrameRate = v; }
+
+    /** Reset all sway fields (used when this test's data is deleted). */
+    public void clearSwayMetrics() {
+        balanceScore = 0f;
+        swayPathLength = 0f;
+        swayMeanVelocity = 0f;
+        swayRmsAP = 0f;
+        swayRmsML = 0f;
+        comTrajX = null;
+        comTrajZ = null;
+        comFrameRate = 0f;
+    }
 }
 
 // SensoryAtaxiaAssessment
@@ -281,8 +368,18 @@ class SensoryAtaxiaAssessment implements Serializable {
     private JointAngleData jointAngles;
 
     private float walkingSpeed;
-    private float balanceScore;
+    private float balanceScore;   // = sway area (mm^2); kept for existing UI/charts
     private float enduranceScore;
+
+    // Extended sway metric family (same COM trajectory as balanceScore)
+    private float swayPathLength;   // mm
+    private float swayMeanVelocity; // mm/s
+    private float swayRmsAP;        // mm (z/depth axis, frontal camera)
+    private float swayRmsML;        // mm (x axis, frontal camera)
+    private List<Float> comTrajX;   // filtered COM trajectory, meters
+    private List<Float> comTrajZ;
+    private float comFrameRate;     // fps used for velocity
+
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
 
@@ -297,6 +394,39 @@ class SensoryAtaxiaAssessment implements Serializable {
 
     public float getEnduranceScore() { return enduranceScore; }
     public void setEnduranceScore(float enduranceScore) { this.enduranceScore = enduranceScore; }
+
+    public float getSwayPathLength() { return swayPathLength; }
+    public void setSwayPathLength(float v) { this.swayPathLength = v; }
+
+    public float getSwayMeanVelocity() { return swayMeanVelocity; }
+    public void setSwayMeanVelocity(float v) { this.swayMeanVelocity = v; }
+
+    public float getSwayRmsAP() { return swayRmsAP; }
+    public void setSwayRmsAP(float v) { this.swayRmsAP = v; }
+
+    public float getSwayRmsML() { return swayRmsML; }
+    public void setSwayRmsML(float v) { this.swayRmsML = v; }
+
+    public List<Float> getComTrajX() { return comTrajX; }
+    public void setComTrajX(List<Float> v) { this.comTrajX = v; }
+
+    public List<Float> getComTrajZ() { return comTrajZ; }
+    public void setComTrajZ(List<Float> v) { this.comTrajZ = v; }
+
+    public float getComFrameRate() { return comFrameRate; }
+    public void setComFrameRate(float v) { this.comFrameRate = v; }
+
+    /** Reset all sway fields (used when this test's data is deleted). */
+    public void clearSwayMetrics() {
+        balanceScore = 0f;
+        swayPathLength = 0f;
+        swayMeanVelocity = 0f;
+        swayRmsAP = 0f;
+        swayRmsML = 0f;
+        comTrajX = null;
+        comTrajZ = null;
+        comFrameRate = 0f;
+    }
 }
 
 class TestComparisons implements Serializable {
@@ -348,6 +478,12 @@ class TestComparisons implements Serializable {
     private float sensoryAtaxiaARJRightKneeChange; // e.g., -50% (much worse balance eyes closed)
     private float sensoryAtaxiaEnduranceChange; // e.g., -50% (much worse balance eyes closed)
 
+    // Dual-task / sensory-ataxia costs on the extended sway metrics (% change vs baseline)
+    private float dualTaskVelocityChange;
+    private float dualTaskPathLengthChange;
+    private float sensoryAtaxiaVelocityChange;
+    private float sensoryAtaxiaPathLengthChange;
+
     // ASYMMETRY SCORES
     private Map<String, Float> asymmetryScores;  // hip, knee, ankle
 
@@ -375,6 +511,18 @@ class TestComparisons implements Serializable {
     public void setSensoryAtaxiaEnduranceChange(float value) {
         this.sensoryAtaxiaEnduranceChange = value;
     }
+
+    public float getDualTaskVelocityChange() { return dualTaskVelocityChange; }
+    public void setDualTaskVelocityChange(float v) { this.dualTaskVelocityChange = v; }
+
+    public float getDualTaskPathLengthChange() { return dualTaskPathLengthChange; }
+    public void setDualTaskPathLengthChange(float v) { this.dualTaskPathLengthChange = v; }
+
+    public float getSensoryAtaxiaVelocityChange() { return sensoryAtaxiaVelocityChange; }
+    public void setSensoryAtaxiaVelocityChange(float v) { this.sensoryAtaxiaVelocityChange = v; }
+
+    public float getSensoryAtaxiaPathLengthChange() { return sensoryAtaxiaPathLengthChange; }
+    public void setSensoryAtaxiaPathLengthChange(float v) { this.sensoryAtaxiaPathLengthChange = v; }
 
     public float getDualTaskSpeedChange() {
         return dualTaskSpeedChange;

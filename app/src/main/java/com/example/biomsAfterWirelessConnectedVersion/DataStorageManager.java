@@ -273,7 +273,7 @@ public class DataStorageManager {
         switch (assessmentType) {
             case "ARJ and balance":
                 // Clear Baseline data
-                targetAssessment.getBaseline().setBalanceScore(0f);
+                targetAssessment.getBaseline().clearSwayMetrics();
                 targetAssessment.getBaseline().setARJ(new HashMap<>());
                 targetAssessment.getBaseline().setWalkingSpeed(0f);
                 targetAssessment.getBaseline().setEnduranceScore(0f);
@@ -292,7 +292,7 @@ public class DataStorageManager {
 
             case "Dual Task":
                 // ✅ Clear ONLY Dual Task data
-                targetAssessment.getDualTask().setBalanceScore(0f);
+                targetAssessment.getDualTask().clearSwayMetrics();
                 targetAssessment.getDualTask().setARJ(new HashMap<>());
                 targetAssessment.setDualTaskTestDate(null);
 
@@ -306,7 +306,7 @@ public class DataStorageManager {
 
             case "Sensory Ataxia":
                 // ✅ Clear ONLY Sensory Ataxia data
-                targetAssessment.getSensoryAtaxia().setBalanceScore(0f);
+                targetAssessment.getSensoryAtaxia().clearSwayMetrics();
                 targetAssessment.getSensoryAtaxia().setARJ(new HashMap<>());
                 targetAssessment.setSensoryAtaxiaTestDate(null);
 
@@ -464,7 +464,7 @@ public class DataStorageManager {
         // Clear only the selected test type data
         switch (assessmentType) {
             case "Sway area and balance":
-                targetAssessment.getBaseline().setBalanceScore(0f);
+                targetAssessment.getBaseline().clearSwayMetrics();
                 targetAssessment.getBaseline().setARJ(new HashMap<>());
                 targetAssessment.setSwayAreaAndBalanceTestDate(null);
 
@@ -481,7 +481,7 @@ public class DataStorageManager {
                 break;
 
             case "Dual Task":
-                targetAssessment.getDualTask().setBalanceScore(0f);
+                targetAssessment.getDualTask().clearSwayMetrics();
                 targetAssessment.getDualTask().setARJ(new HashMap<>());
                 targetAssessment.setDualTaskTestDate(null);
 
@@ -494,7 +494,7 @@ public class DataStorageManager {
                 break;
 
             case "Sensory Ataxia":
-                targetAssessment.getSensoryAtaxia().setBalanceScore(0f);
+                targetAssessment.getSensoryAtaxia().clearSwayMetrics();
                 targetAssessment.getSensoryAtaxia().setARJ(new HashMap<>());
                 targetAssessment.setSensoryAtaxiaTestDate(null);
 
