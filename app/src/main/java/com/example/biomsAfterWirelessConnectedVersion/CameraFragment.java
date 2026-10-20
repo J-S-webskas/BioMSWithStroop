@@ -323,6 +323,9 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
     @Override
     public void onDestroyView() {
+        // Preview must never inherit a test's focus lock: whatever path
+        // leaves the test screen, the lock ends here.
+        releaseFocusLock();
         _fragmentCameraBinding = null;
         super.onDestroyView();
 
