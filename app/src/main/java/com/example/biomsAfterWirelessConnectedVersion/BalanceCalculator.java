@@ -50,6 +50,16 @@ public class BalanceCalculator {
         }
         List<Float> cleanX = SwaySignalCleaner.despike(rawX, DESPIKE_RADIUS, DESPIKE_THRESHOLD_M);
         List<Float> cleanZ = SwaySignalCleaner.despike(rawZ, DESPIKE_RADIUS, DESPIKE_THRESHOLD_M);
+        // Count frames where the despiker actually replaced a value (the
+        // despiker copies values verbatim, so an exact diff is a true count).
+        int despikedCount = 0;
+        for (int i = 0; i < samples.size(); i++) {
+            if (Float.compare(cleanX.get(i), rawX.get(i)) != 0
+                    || Float.compare(cleanZ.get(i), rawZ.get(i)) != 0) {
+                despikedCount++;
+            }
+        }
+        m.despikedFrames = despikedCount;
         List<COMSample> despiked = new ArrayList<>(samples.size());
         for (int i = 0; i < samples.size(); i++) {
             despiked.add(new COMSample(cleanX.get(i), cleanZ.get(i), samples.get(i).timestampMs));
@@ -80,6 +90,7 @@ public class BalanceCalculator {
         m.sampleCount = n;
         m.frameRate = u.meanRawRateHz;
         m.validFraction = u.validFraction;
+        m.interpolatedFrames = u.interpolatedCount;
         m.effectiveDurationS = u.durationS;
         m.swayAreaMm2 = ellipseArea(filtered);
 

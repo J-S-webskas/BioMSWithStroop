@@ -2,6 +2,7 @@ package com.example.biomsAfterWirelessConnectedVersion;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,17 +10,24 @@ import android.os.Looper;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentManager;
+
+import java.io.File;
 
 public class CancellingTest extends AppCompatActivity {
 
     private TextView cancellingTest;
     private TextView dataNotSaved;
+    private LinearLayout exportActions;
+    private File pendingExport;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +36,11 @@ public class CancellingTest extends AppCompatActivity {
 
         cancellingTest = findViewById(R.id.cancellingTest);
         dataNotSaved = findViewById(R.id.dataNotSaved);
+        exportActions = findViewById(R.id.exportActions);
+        Button btnExportCsv = findViewById(R.id.btnExportCsv);
+        Button btnContinueTest = findViewById(R.id.btnContinueTest);
+        btnExportCsv.setOnClickListener(v -> shareExport());
+        btnContinueTest.setOnClickListener(v -> navigateToMain(getIntent()));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Window window = getWindow();
@@ -55,6 +68,10 @@ public class CancellingTest extends AppCompatActivity {
         boolean saving = intent.getBooleanExtra("Saving", false);
         boolean finished = intent.getBooleanExtra("finished", false);
         boolean simplyNavigatingToMainPage = intent.getBooleanExtra("simplyNavigatingToMainPage", false);
+        // A finished test with a CSV export package waits for the user:
+        // they can tap "Export CSV" (or Continue) instead of being
+        // auto-advanced past the button.
+        boolean exportMode = finished && showExportIfAvailable();
         if (saving) {
             dataNotSaved.setText("If this is a mistake, you can always delete the test");
             cancellingTest.setText("Saving Test");
@@ -63,7 +80,7 @@ public class CancellingTest extends AppCompatActivity {
             dataNotSaved.setText("Will ye not navigate out of the rainbow load page mid-way? :)");
             cancellingTest.setText("Simply navigating to main page");
         }
-        if (finished || simplyNavigatingToMainPage) {
+        if ((finished || simplyNavigatingToMainPage) && !exportMode) {
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
             // Set result to indicate cancellation
             Intent resultIntent = new Intent();
@@ -84,6 +101,48 @@ public class CancellingTest extends AppCompatActivity {
         }
     }
 
+    /** If the last finished test produced a CSV export package, switch this
+     *  screen to export mode (Export CSV / Continue buttons, no auto-advance)
+     *  and return true. */
+    private boolean showExportIfAvailable() {
+        pendingExport = TrialCsvExporter.getPendingExport(this);
+        if (pendingExport == null) return false;
+        cancellingTest.setText("Test Complete");
+        dataNotSaved.setText("Your results are saved.\nExport the CSV data, or continue.");
+        exportActions.setVisibility(View.VISIBLE);
+        return true;
+    }
+
+    /** Shares the export zip (e.g. via Gmail) through the system share sheet. */
+    private void shareExport() {
+        if (pendingExport == null) {
+            Toast.makeText(this, "No export available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Uri uri = FileProvider.getUriForFile(this,
+                getPackageName() + ".fileprovider", pendingExport);
+        Intent share = new Intent(Intent.ACTION_SEND);
+        share.setType("application/zip");
+        share.putExtra(Intent.EXTRA_STREAM, uri);
+        share.putExtra(Intent.EXTRA_SUBJECT, pendingExport.getName());
+        share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(Intent.createChooser(share, "Export CSV data"));
+    }
+
+    /** The same return-to-main navigation the auto-advance handler performs. */
+    private void navigateToMain(Intent source) {
+        boolean saving = source != null && source.getBooleanExtra("Saving", false);
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("cancelled", true);
+        resultIntent.putExtra("Saving", saving);
+        setResult(RESULT_OK, resultIntent);
+        Intent intent1 = new Intent(this, MainActivity.class);
+        intent1.putExtra("navigate_to_assessment", true);
+        intent1.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent1);
+        finish();
+    }
+
     @SuppressLint("MissingSuperCall") // Specifically suppress "call super" warning
     @Override
     public void onBackPressed() {
@@ -99,11 +158,12 @@ public class CancellingTest extends AppCompatActivity {
 
         boolean saving = intent.getBooleanExtra("Saving", false);
         boolean finished = intent.getBooleanExtra("finished", false);
+        boolean exportMode = finished && showExportIfAvailable();
         if (saving) {
             dataNotSaved.setText("If this is a mistake, you can always delete the test");
             cancellingTest.setText("Saving Test");
         }
-        if (finished) {
+        if (finished && !exportMode) {
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 // Set result to indicate cancellation
                 Intent resultIntent = new Intent();

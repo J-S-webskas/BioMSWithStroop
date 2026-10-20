@@ -29,6 +29,8 @@ public class SwayMetrics implements Serializable {
     public boolean valid = false;       // false when the trial had too few samples to measure
     public float validFraction = 0f;    // real samples / uniform grid points (1.0 = no interpolation)
     public float effectiveDurationS = 0f; // resampled grid span (s) — denominator of mean velocity
+    public int despikedFrames = 0;      // samples where the Hampel despiker replaced a value (either axis)
+    public int interpolatedFrames = 0;  // grid points interpolated across a dropout gap
     public List<Float> trajX = new ArrayList<>();  // filtered COM trajectory
     public List<Float> trajZ = new ArrayList<>();
 }

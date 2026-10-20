@@ -234,6 +234,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         isCountdownActive = false;
                         // Tell RecordFragment that test has started
                         RecordFragment.setTestStarted(true);
+                        PoseLandmarkerHelper.resetDroppedFrameCount();
                         if ("DualTask".equals(assessmentType)) {
                             onDualTaskStarted();
                         }
@@ -313,6 +314,15 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 }
             });
         }
+    }
+
+    /** The horizontal FOV (degrees) actually used for this phone's COM
+     *  scale conversion — calculated from the camera characteristics, or
+     *  the 60° default when the device does not report them. */
+    public double getCurrentFovDegrees() {
+        return poseLandmarkerHelper != null
+                ? poseLandmarkerHelper.getFovDegrees()
+                : PoseLandmarkerHelper.DEFAULT_FOV_H_DEGREES;
     }
 
     @Override

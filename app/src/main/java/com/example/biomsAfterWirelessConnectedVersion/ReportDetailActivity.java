@@ -136,7 +136,7 @@ public class ReportDetailActivity extends AppCompatActivity {
     }
 
     private void displayReportDetails() {
-        date.setText(reportDate);
+        date.setText(reportDate + "  ·  " + AnonymousIdManager.getId(this));
 
         // SD & CV section
 //        ARJRightSD.setText(String.format("%f", ARJSDRightValue));
