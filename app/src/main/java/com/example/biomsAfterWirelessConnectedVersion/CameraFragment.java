@@ -37,9 +37,14 @@ import androidx.annotation.Nullable;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.FocusMeteringAction;
+import androidx.camera.core.FocusMeteringResult;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
+import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.Preview;
+import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
+import androidx.camera.view.PreviewView;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -234,6 +239,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         isCountdownActive = false;
                         // Tell RecordFragment that test has started
                         RecordFragment.setTestStarted(true);
+                        lockFocusForTest();
                         if ("DualTask".equals(assessmentType)) {
                             onDualTaskStarted();
                         }
@@ -317,6 +323,9 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
     @Override
     public void onDestroyView() {
+        // Preview must never inherit a test's focus lock: whatever path
+        // leaves the test screen, the lock ends here.
+        releaseFocusLock();
         _fragmentCameraBinding = null;
         super.onDestroyView();
 
@@ -603,7 +612,56 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         }
     }
 
+    /**
+     * Locks focus, exposure and white balance at the center of the frame for
+     * the duration of a test — the iPhone-style AE/AF lock. Without it,
+     * continuous autofocus keeps re-hunting as the patient sways or steps
+     * closer, which pulses the image in and out and shifts the tracked
+     * landmarks. The metering action never auto-cancels, so the lock holds
+     * until releaseFocusLock() runs when the test ends.
+     */
+    public void lockFocusForTest() {
+        if (camera == null || getFragmentCameraBinding() == null) return;
+        try {
+            PreviewView viewFinder = getFragmentCameraBinding().viewFinder;
+            if (viewFinder.getWidth() <= 0 || viewFinder.getHeight() <= 0) return;
+            SurfaceOrientedMeteringPointFactory factory =
+                    new SurfaceOrientedMeteringPointFactory(viewFinder.getWidth(), viewFinder.getHeight());
+            MeteringPoint center = factory.createPoint(
+                    viewFinder.getWidth() / 2f, viewFinder.getHeight() / 2f);
+            FocusMeteringAction action = new FocusMeteringAction.Builder(center,
+                    FocusMeteringAction.FLAG_AF | FocusMeteringAction.FLAG_AE | FocusMeteringAction.FLAG_AWB)
+                    .disableAutoCancel()
+                    .build();
+            ListenableFuture<FocusMeteringResult> result =
+                    camera.getCameraControl().startFocusAndMetering(action);
+            result.addListener(() -> {
+                try {
+                    FocusMeteringResult r = result.get();
+                    Log.d(TAG, "Focus locked for test, focus successful: "
+                            + (r != null && r.isFocusSuccessful()));
+                } catch (Exception e) {
+                    Log.e(TAG, "Focus lock failed", e);
+                }
+            }, ContextCompat.getMainExecutor(requireContext()));
+        } catch (Exception e) {
+            Log.e(TAG, "Could not lock focus", e);
+        }
+    }
+
+    /** Releases the test focus lock, returning to continuous autofocus. */
+    public void releaseFocusLock() {
+        if (camera == null) return;
+        try {
+            camera.getCameraControl().cancelFocusAndMetering();
+            Log.d(TAG, "Focus lock released");
+        } catch (Exception e) {
+            Log.e(TAG, "Could not release focus lock", e);
+        }
+    }
+
     public void stopCamera() {
+        releaseFocusLock();
         stopVoiceStroop();
         // Stop accepting new frames
         if (imageAnalyzer != null) {
