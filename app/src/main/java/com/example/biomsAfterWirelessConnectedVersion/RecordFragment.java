@@ -55,15 +55,14 @@ public class RecordFragment extends Fragment {
     private AssessmentData currentAssessment = new AssessmentData(username);
     private Calendar baselineTestDate;
     private static Map<String, ArrayDeque<Float>> angleHistories = new HashMap<>();
-    private static  List<Point2D> COMHistories = new ArrayList<>();
+    private static List<COMSample> COMHistories = new ArrayList<>();
     private static Map<String, ArrayDeque<Float>> BalanceHistories = new HashMap<>();
 
-    public static void addCOMPerFrame(double comXFinal, double comZFinal) {
+    public static void addCOMPerFrame(double comXFinal, double comZFinal, long timestampMs) {
         if (COMHistories == null) {
             COMHistories = new ArrayList<>();
         }
-        Point2D point = new Point2D(comXFinal, comZFinal);
-        COMHistories.add(point);
+        COMHistories.add(new COMSample(comXFinal, comZFinal, timestampMs));
     }
 
     public void setContext(Context context) {
@@ -599,7 +598,7 @@ public class RecordFragment extends Fragment {
         currentAssessment = trialAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
-        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories, frameRate);
+        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories);
         float swayArea = metrics.swayAreaMm2;
         Map<String, Float> ARJScores = new HashMap<>();
 
@@ -628,6 +627,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.getSensoryAtaxia().setComTrajX(metrics.trajX);
         currentAssessment.getSensoryAtaxia().setComTrajZ(metrics.trajZ);
         currentAssessment.getSensoryAtaxia().setComFrameRate(metrics.frameRate);
+        currentAssessment.getSensoryAtaxia().setSwayMetricsValid(metrics.valid);
         currentAssessment.getSensoryAtaxia().setARJ(ARJScores);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.SENSORY_ATAXIA_COMPLETED);
         currentAssessment.setSensoryAtaxiaTestDate(new Date());
@@ -651,7 +651,7 @@ public class RecordFragment extends Fragment {
         currentAssessment = todayAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
-        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories, frameRate);
+        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories);
         float swayArea = metrics.swayAreaMm2;
         Map<String, Float> ARJScores = new HashMap<>();
 
@@ -678,6 +678,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.getDualTask().setComTrajX(metrics.trajX);
         currentAssessment.getDualTask().setComTrajZ(metrics.trajZ);
         currentAssessment.getDualTask().setComFrameRate(metrics.frameRate);
+        currentAssessment.getDualTask().setSwayMetricsValid(metrics.valid);
         currentAssessment.getDualTask().setARJ(ARJScores);
 
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.DUAL_TASK_COMPLETED);
@@ -702,7 +703,7 @@ public class RecordFragment extends Fragment {
         currentAssessment = trialAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
-        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories, frameRate);
+        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories);
         float swayArea = metrics.swayAreaMm2;
         currentAssessment.getBaseline().setBalanceScore(swayArea);
         currentAssessment.getBaseline().setSwayPathLength(metrics.pathLengthMm);
@@ -712,6 +713,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.getBaseline().setComTrajX(metrics.trajX);
         currentAssessment.getBaseline().setComTrajZ(metrics.trajZ);
         currentAssessment.getBaseline().setComFrameRate(metrics.frameRate);
+        currentAssessment.getBaseline().setSwayMetricsValid(metrics.valid);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.SWAY_AREA_BALANCE_COMPLETED);
         currentAssessment.setSwayAreaAndBalanceTestDate(new Date());
 
