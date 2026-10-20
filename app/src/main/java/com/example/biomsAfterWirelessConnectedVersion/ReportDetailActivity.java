@@ -32,14 +32,11 @@ import android.print.pdf.PrintedPdfDocument;
 public class ReportDetailActivity extends AppCompatActivity {
 
     TextView date, ARJTodayRight, ARJTodayLeft, ARJTrendLeft, ARJTrendRight,
-            balanceToday, balanceTrend,
-            swayVelocityToday, swayPathLengthToday, swayRmsAPToday, swayRmsMLToday,
-            speedToday, speedTrend,
-            enduranceToday, enduranceTrend,
-            sensoryAtaxiaARJLeftToday, sensoryAtaxiaARJRightToday, sensoryAtaxiaBalanceToday, sensoryAtaxiaTrend,
-            sensoryAtaxiaSwayVelocityToday, sensoryAtaxiaSwayPathLengthToday, sensoryAtaxiaSwayRmsAPToday, sensoryAtaxiaSwayRmsMLToday,
-            dualTaskARJLeftToday, dualTaskARJRightToday, dualTaskBalanceToday, dualTaskTrend,
-            dualTaskSwayVelocityToday, dualTaskSwayPathLengthToday, dualTaskSwayRmsAPToday, dualTaskSwayRmsMLToday,
+            balanceTrend,
+            speedTrend,
+            enduranceTrend,
+            sensoryAtaxiaARJLeftToday, sensoryAtaxiaARJRightToday, sensoryAtaxiaTrend,
+            dualTaskARJLeftToday, dualTaskARJRightToday, dualTaskTrend,
             dtcARJLeftSA, dtcARJRightSA, dtcARJLeftDT, dtcARJRightDT, dtcBalanceDT, dtcBalanceSA,
             dtcSwayVelocityDT, dtcSwayPathDT, dtcSwayVelocitySA, dtcSwayPathSA,
             ARJRightSD, ARJRightCV, ARJLeftSD, ARJLeftCV, BalanceSD, BalanceCV, WSSD, WSCV, EnduranceSD, EnduranceCV,
@@ -166,7 +163,6 @@ public class ReportDetailActivity extends AppCompatActivity {
         dtcSwayPathSA.setText(String.format("%f %%", DTCSwayPathSA));
 
         // Speed section
-        speedToday.setText(String.format("%f m/s", speedValue));
 //        speedTrend.setText(String.format("%f", speedTrendValue));
 
         // ARJ section
@@ -176,31 +172,15 @@ public class ReportDetailActivity extends AppCompatActivity {
 //        ARJTrendLeft.setText(String.format("%.2f", arjTrendLeftValue));
 
         // Balance section
-        balanceToday.setText(String.format("%f mm²", balanceValue));
 //        balanceTrend.setText(String.format("%f", balanceTrendValue));
 
-        swayVelocityToday.setText(String.format("%f mm/s", swayVelocityValue));
-        swayPathLengthToday.setText(String.format("%f mm", swayPathLengthValue));
-        swayRmsAPToday.setText(String.format("%f mm", swayRmsAPValue));
-        swayRmsMLToday.setText(String.format("%f mm", swayRmsMLValue));
 
         // Endurance section
-        enduranceToday.setText(String.format("%f s", enduranceValue));
 //        enduranceTrend.setText(String.format("%f", enduranceTrendValue));
 
         // Sensory Ataxia section
-        sensoryAtaxiaBalanceToday.setText(String.format("%f mm²", sensoryAtaxiaBalanceValue));
-        sensoryAtaxiaSwayVelocityToday.setText(String.format("%f mm/s", sensoryAtaxiaSwayVelocityValue));
-        sensoryAtaxiaSwayPathLengthToday.setText(String.format("%f mm", sensoryAtaxiaSwayPathLengthValue));
-        sensoryAtaxiaSwayRmsAPToday.setText(String.format("%f mm", sensoryAtaxiaSwayRmsAPValue));
-        sensoryAtaxiaSwayRmsMLToday.setText(String.format("%f mm", sensoryAtaxiaSwayRmsMLValue));
 
         // Dual Task section
-        dualTaskBalanceToday.setText(String.format("%f mm²", dualTaskBalanceValue));
-        dualTaskSwayVelocityToday.setText(String.format("%f mm/s", dualTaskSwayVelocityValue));
-        dualTaskSwayPathLengthToday.setText(String.format("%f mm", dualTaskSwayPathLengthValue));
-        dualTaskSwayRmsAPToday.setText(String.format("%f mm", dualTaskSwayRmsAPValue));
-        dualTaskSwayRmsMLToday.setText(String.format("%f mm", dualTaskSwayRmsMLValue));
 
         // Trials display
         if (reportModel != null) {
@@ -266,13 +246,16 @@ public class ReportDetailActivity extends AppCompatActivity {
         StringBuilder sb = new StringBuilder();
         double sum = 0;
         for (int i = 0; i < trials.size(); i++) {
-            sb.append("T").append(i + 1).append(": ")
-                    .append(String.format(Locale.US, "%.2f", trials.get(i)))
-                    .append(" ").append(unit);
-            sum += trials.get(i);
-            if (i < trials.size() - 1) {
-                sb.append("\n");
+            // Trials flow horizontally and wrap as whole units (non-breaking
+            // spaces inside a trial) so the cell expands right before it
+            // ever grows taller.
+            if (i > 0) {
+                sb.append("   ");
             }
+            sb.append("T").append(i + 1).append(":\u00A0")
+                    .append(String.format(Locale.US, "%.2f", trials.get(i)))
+                    .append("\u00A0").append(unit);
+            sum += trials.get(i);
         }
         if (trials.size() >= 2) {
             sb.append("\n").append("Avg: ")
@@ -363,23 +346,6 @@ public class ReportDetailActivity extends AppCompatActivity {
     }
     private void initializeViews() {
         date = findViewById(R.id.date);
-        balanceToday = findViewById(R.id.BalanceToday);
-        swayVelocityToday = findViewById(R.id.swayVelocityToday);
-        swayPathLengthToday = findViewById(R.id.swayPathLengthToday);
-        swayRmsAPToday = findViewById(R.id.swayRmsAPToday);
-        swayRmsMLToday = findViewById(R.id.swayRmsMLToday);
-        speedToday = findViewById(R.id.WSToday);
-        enduranceToday = findViewById(R.id.EnduranceToday);
-        sensoryAtaxiaBalanceToday = findViewById(R.id.sensoryAtaxiaBalanceToday);
-        sensoryAtaxiaSwayVelocityToday = findViewById(R.id.saSwayVelocityToday);
-        sensoryAtaxiaSwayPathLengthToday = findViewById(R.id.saSwayPathLengthToday);
-        sensoryAtaxiaSwayRmsAPToday = findViewById(R.id.saSwayRmsAPToday);
-        sensoryAtaxiaSwayRmsMLToday = findViewById(R.id.saSwayRmsMLToday);
-        dualTaskBalanceToday = findViewById(R.id.dualTaskBalanceToday);
-        dualTaskSwayVelocityToday = findViewById(R.id.dtSwayVelocityToday);
-        dualTaskSwayPathLengthToday = findViewById(R.id.dtSwayPathLengthToday);
-        dualTaskSwayRmsAPToday = findViewById(R.id.dtSwayRmsAPToday);
-        dualTaskSwayRmsMLToday = findViewById(R.id.dtSwayRmsMLToday);
         shareReportButton = findViewById(R.id.shareReportButton);
         shareReportButton = findViewById(R.id.shareReportButton);
         // SD & CV

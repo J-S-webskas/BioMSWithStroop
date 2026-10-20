@@ -232,7 +232,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/trendTitle4"
-        android:text="Table of measurement: latest &amp; all trials"
+        android:text="Table of measurement: all trials"
         android:textSize="20sp"
         android:fontFamily="@font/profile_pro_bold"
         android:paddingStart="20dp"
@@ -244,7 +244,7 @@
     <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:columnCount="3"
+        android:columnCount="2"
         android:rowCount="8"
         android:layout_marginStart="16dp">
 
@@ -259,19 +259,10 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:text="Latest Value"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
-
-        <TextView
             android:text="All Trials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro_medi"
             android:textSize="19sp"/>
@@ -286,19 +277,10 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/BalanceToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/BalanceTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -313,19 +295,10 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/swayPathLengthToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/swayPathLengthTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -340,19 +313,10 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/swayVelocityToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/swayVelocityTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -367,19 +331,10 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/swayRmsAPToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/swayRmsAPTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -394,19 +349,10 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/swayRmsMLToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/swayRmsMLTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -421,19 +367,10 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/WSToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/WSTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -448,19 +385,10 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/EnduranceToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/EnduranceTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -484,22 +412,13 @@
     <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:columnCount="4"
+        android:columnCount="3"
         android:rowCount="6"
         android:layout_marginStart="16dp">
 
 
         <TextView
             android:text="Metrics"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
-
-        <TextView
-            android:text="Latest Value"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -520,7 +439,7 @@
             android:text="All Trials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro_medi"
             android:textSize="19sp"/>
@@ -535,15 +454,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/dualTaskBalanceToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/BalanceDTDTCToday"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -556,7 +466,7 @@
             android:id="@+id/DualTaskBalanceTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -571,15 +481,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/dtSwayPathLengthToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/dtcSwayPathDT"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -592,7 +493,7 @@
             android:id="@+id/dtSwayPathLengthTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -607,15 +508,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/dtSwayVelocityToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/dtcSwayVelocityDT"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -628,7 +520,7 @@
             android:id="@+id/dtSwayVelocityTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -643,15 +535,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/dtSwayRmsAPToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -663,7 +546,7 @@
             android:id="@+id/dtSwayRmsAPTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -678,15 +561,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/dtSwayRmsMLToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -698,7 +572,7 @@
             android:id="@+id/dtSwayRmsMLTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -722,22 +596,13 @@
     <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:columnCount="4"
+        android:columnCount="3"
         android:rowCount="6"
         android:layout_marginStart="16dp">
 
 
         <TextView
             android:text="Metrics"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="19sp"/>
-
-        <TextView
-            android:text="Latest Value"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -758,7 +623,7 @@
             android:text="All Trials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro_medi"
             android:textSize="19sp"/>
@@ -773,15 +638,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/sensoryAtaxiaBalanceToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/BalanceSADTCToday"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -794,7 +650,7 @@
             android:id="@+id/SensoryAtaxiaBalanceTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -809,15 +665,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/saSwayPathLengthToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/dtcSwayPathSA"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -830,7 +677,7 @@
             android:id="@+id/saSwayPathLengthTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -845,15 +692,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/saSwayVelocityToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:id="@+id/dtcSwayVelocitySA"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -866,7 +704,7 @@
             android:id="@+id/saSwayVelocityTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -881,15 +719,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/saSwayRmsAPToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -901,7 +730,7 @@
             android:id="@+id/saSwayRmsAPTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
@@ -916,15 +745,6 @@
             android:textSize="19sp"/>
 
         <TextView
-            android:id="@+id/saSwayRmsMLToday"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:padding="8dp"
-            android:fontFamily="@font/profile_pro"
-            android:textSize="20sp"/>
-
-        <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -936,7 +756,7 @@
             android:id="@+id/saSwayRmsMLTrials"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_columnWeight="2"
             android:padding="8dp"
             android:fontFamily="@font/profile_pro"
             android:textSize="20sp"/>
