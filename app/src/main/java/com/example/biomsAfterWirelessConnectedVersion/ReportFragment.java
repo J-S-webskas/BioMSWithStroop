@@ -87,26 +87,41 @@ public class ReportFragment extends Fragment {
             Intent intent = new Intent(requireContext(), ReportDetailActivity.class);
 
             // Pass the report data
-            // Today
-            intent.putExtra("date", report.getDate());  // Convert Date to long
+            intent.putExtra("date", report.getDate());
             intent.putExtra("speed", report.getSpeedToday());
             intent.putExtra("arjRight", report.getArjRightKneeToday());
             intent.putExtra("arjLeft", report.getArjLeftKneeToday());
             intent.putExtra("balance", report.getBalanceToday());
+            intent.putExtra("swayVelocity", report.getSwayVelocityToday());
+            intent.putExtra("swayPathLength", report.getSwayPathLengthToday());
+            intent.putExtra("swayRmsAP", report.getSwayRmsAPToday());
+            intent.putExtra("swayRmsML", report.getSwayRmsMLToday());
             intent.putExtra("endurance", report.getEnduranceToday());
             intent.putExtra("sensoryAtaxiaARJLeft", report.getSensoryAtaxiaARJLeftToday());
             intent.putExtra("sensoryAtaxiaARJRight", report.getSensoryAtaxiaARJRightToday());
             intent.putExtra("sensoryAtaxiaBalance", report.getSensoryAtaxiaBalanceToday());
+            intent.putExtra("sensoryAtaxiaSwayVelocity", report.getSensoryAtaxiaSwayVelocityToday());
+            intent.putExtra("sensoryAtaxiaSwayPathLength", report.getSensoryAtaxiaSwayPathLengthToday());
+            intent.putExtra("sensoryAtaxiaSwayRmsAP", report.getSensoryAtaxiaSwayRmsAPToday());
+            intent.putExtra("sensoryAtaxiaSwayRmsML", report.getSensoryAtaxiaSwayRmsMLToday());
             intent.putExtra("dualTaskARJLeft", report.getDualTaskARJLeftToday());
             intent.putExtra("dualTaskARJRight", report.getDualTaskARJRightToday());
             intent.putExtra("dualTaskBalance", report.getDualTaskBalanceToday());
+            intent.putExtra("dualTaskSwayVelocity", report.getDualTaskSwayVelocityToday());
+            intent.putExtra("dualTaskSwayPathLength", report.getDualTaskSwayPathLengthToday());
+            intent.putExtra("dualTaskSwayRmsAP", report.getDualTaskSwayRmsAPToday());
+            intent.putExtra("dualTaskSwayRmsML", report.getDualTaskSwayRmsMLToday());
             // DTC
             intent.putExtra("dualTaskARJLeftDTC", report.getDualTaskDTCARJLeft());
             intent.putExtra("dualTaskARJRightDTC", report.getDualTaskDTCARJRight());
             intent.putExtra("dualTaskBalanceDTC", report.getDualTaskDTCBalance());
+            intent.putExtra("dualTaskSwayVelocityDTC", report.getDualTaskDTCSwayVelocity());
+            intent.putExtra("dualTaskSwayPathLengthDTC", report.getDualTaskDTCSwayPathLength());
             intent.putExtra("sensoryAtaxiaARJLeftDTC", report.getSensoryAtaxiaDTCARJLeft());
             intent.putExtra("sensoryAtaxiaARJRightDTC", report.getSensoryAtaxiaDTCARJRight());
             intent.putExtra("sensoryAtaxiaBalanceDTC", report.getSensoryAtaxiaDTCBalance());
+            intent.putExtra("sensoryAtaxiaSwayVelocityDTC", report.getSensoryAtaxiaDTCSwayVelocity());
+            intent.putExtra("sensoryAtaxiaSwayPathLengthDTC", report.getSensoryAtaxiaDTCSwayPathLength());
             // SD & CV
             intent.putExtra("ARJLeftSD", report.getARJLeftSD());
             intent.putExtra("ARJRightSD", report.getARJRightSD());
@@ -118,6 +133,9 @@ public class ReportFragment extends Fragment {
             intent.putExtra("BalanceCV", report.getBalanceCV());
             intent.putExtra("EnduranceCV", report.getEnduranceCV());
             intent.putExtra("WalkingCV", report.getSpeedCV());
+
+            // Trials
+            intent.putExtra("reportModel", report);
 
             startActivity(intent);
         });
@@ -136,6 +154,11 @@ public class ReportFragment extends Fragment {
             return;
         }
 
+        // DataStorageManager loads assessments sorted newest first. Sort chronologically (oldest first) so T1 is earliest trial.
+        List<AssessmentData> chronologicalAssessments = new ArrayList<>(allAssessment);
+        java.util.Collections.sort(chronologicalAssessments, (a1, a2) ->
+                a1.getTimestamp().compareTo(a2.getTimestamp()));
+
         // Filter assessments for the selected date
         SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
         String targetDateString = sdf.format(targetDate);
@@ -146,12 +169,24 @@ public class ReportFragment extends Fragment {
         Float bestBalance = null;
         Float bestWalkingSpeed = null;
         Float bestEndurance = null;
+        Float bestSwayVelocity = null;
+        Float bestSwayPathLength = null;
+        Float bestSwayRmsAP = null;
+        Float bestSwayRmsML = null;
 //        Float bestDTARJLeft = null;
 //        Float bestDTARJRight = null;
         Float bestDTBalance = null;
+        Float bestDTSwayVelocity = null;
+        Float bestDTSwayPathLength = null;
+        Float bestDTSwayRmsAP = null;
+        Float bestDTSwayRmsML = null;
 //        Float bestSAARJLeft = null;
 //        Float bestSAARJRight = null;
         Float bestSABalance = null;
+        Float bestSASwayVelocity = null;
+        Float bestSASwayPathLength = null;
+        Float bestSASwayRmsAP = null;
+        Float bestSASwayRmsML = null;
 
         long latestTimestamp = 0;
         long latestDTTimestamp = 0;
@@ -170,87 +205,88 @@ public class ReportFragment extends Fragment {
         float balanceToday = 0;
         float speedToday = 0;
         float enduranceToday = 0;
+        float swayVelocityToday = 0;
+        float swayPathLengthToday = 0;
+        float swayRmsAPToday = 0;
+        float swayRmsMLToday = 0;
 //        float SAARJLeftKneeToday = 0;
 //        float SAARJRightKneeToday = 0;
         float SAbalanceToday = 0;
+        float SASwayVelocityToday = 0;
+        float SASwayPathLengthToday = 0;
+        float SASwayRmsAPToday = 0;
+        float SASwayRmsMLToday = 0;
 //        float DTARJLeftKneeToday = 0;
 //        float DTARJRightKneeToday = 0;
         float DTbalanceToday = 0;
+        float DTswayVelocityToday = 0;
+        float DTswayPathLengthToday = 0;
+        float DTswayRmsAPToday = 0;
+        float DTswayRmsMLToday = 0;
 //        float DTARJLeftKneeDTC = 0;
 //        float DTARJRightKneeDTC = 0;
         float DTBalanceDTC = 0;
+        float DTVelocityDTC = 0;
+        float DTPathDTC = 0;
 //        float SAARJLeftKneeDTC = 0;
 //        float SAARJRightKneeDTC = 0;
         float SABalanceDTC = 0;
+        float SAVelocityDTC = 0;
+        float SAPathDTC = 0;
 
         boolean hasDataForDate = false;
 
-        for (AssessmentData assessment : allAssessment) {
+        ArrayList<Float> balanceTrials = new ArrayList<>();
+        ArrayList<Float> speedTrials = new ArrayList<>();
+        ArrayList<Float> enduranceTrials = new ArrayList<>();
+        ArrayList<Float> dtBalanceTrials = new ArrayList<>();
+        ArrayList<Float> dtDTCTrials = new ArrayList<>();
+        ArrayList<Float> saBalanceTrials = new ArrayList<>();
+        ArrayList<Float> saDTCTrials = new ArrayList<>();
+
+        for (AssessmentData assessment : chronologicalAssessments) {
             String currentDate = sdf.format(assessment.getTimestamp());
             long currentTimestamp = assessment.getTimestamp().getTime();
-
-            // Collect all data for SD/CV
-//            Float arjLeftSDCV = assessment.getBaseline().getARJ().get("left_knee");
-//            if (arjLeftSDCV != null && arjLeftSDCV != 0) {
-//                allARJLeftValues.add(arjLeftSDCV);
-//            }
-
-//            Float arjRightSDCV = assessment.getBaseline().getARJ().get("right_knee");
-//            if (arjRightSDCV != null && arjRightSDCV != 0) {
-//                allARJRightValues.add(arjRightSDCV);
-//            }
-
-            float balanceSDCV = assessment.getBaseline().getBalanceScore();
-            if (assessment.getSwayAreaAndBalanceTestDate() != null) {
-                allBalanceValues.add(balanceSDCV);
-            }
-
-            float walkingSpeedSDCV = assessment.getBaseline().getWalkingSpeed();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
-                allSpeedValues.add(walkingSpeedSDCV);
-            }
-
-            float enduranceSDCV = assessment.getBaseline().getEnduranceScore();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
-                allEnduranceValues.add(enduranceSDCV);
-            }
 
             // Process only data from the selected date
             if (!currentDate.equals(targetDateString)) continue;
 
             hasDataForDate = true;
 
-            // Baseline data
-//            Float arjLeft = assessment.getBaseline().getARJ().get("left_knee");
-//            if (arjLeft != null && arjLeft != 0) {
-//                if (bestARJLeft == null || currentTimestamp > latestTimestamp) {
-//                    bestARJLeft = arjLeft;
-//                }
-//            }
-//
-//            Float arjRight = assessment.getBaseline().getARJ().get("right_knee");
-//            if (arjRight != null && arjRight != 0) {
-//                if (bestARJRight == null || currentTimestamp > latestTimestamp) {
-//                    bestARJRight = arjRight;
-//                }
-//            }
-
             float balance = assessment.getBaseline().getBalanceScore();
-            if (assessment.getSwayAreaAndBalanceTestDate() != null) {
+            if (assessment.getSwayAreaAndBalanceTestDate() != null || balance > 0) {
+                if (balance > 0) {
+                    balanceTrials.add(balance);
+                    allBalanceValues.add(balance);
+                }
                 if (bestBalance == null || currentTimestamp > latestTimestamp) {
                     bestBalance = balance;
+                }
+                if (bestSwayVelocity == null || currentTimestamp > latestTimestamp) {
+                    bestSwayVelocity = assessment.getBaseline().getSwayMeanVelocity();
+                    bestSwayPathLength = assessment.getBaseline().getSwayPathLength();
+                    bestSwayRmsAP = assessment.getBaseline().getSwayRmsAP();
+                    bestSwayRmsML = assessment.getBaseline().getSwayRmsML();
                 }
             }
 
             float walkingSpeed = assessment.getBaseline().getWalkingSpeed();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
+            if (assessment.getWSAndEnduranceTestDate() != null || walkingSpeed > 0) {
+                if (walkingSpeed > 0) {
+                    speedTrials.add(walkingSpeed);
+                    allSpeedValues.add(walkingSpeed);
+                }
                 if (bestWalkingSpeed == null || currentTimestamp > latestTimestamp) {
                     bestWalkingSpeed = walkingSpeed;
                 }
             }
 
             float endurance = assessment.getBaseline().getEnduranceScore();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
+            if (assessment.getWSAndEnduranceTestDate() != null || endurance > 0) {
+                if (endurance > 0) {
+                    enduranceTrials.add(endurance);
+                    allEnduranceValues.add(endurance);
+                }
                 if (bestEndurance == null || currentTimestamp > latestTimestamp) {
                     bestEndurance = endurance;
                 }
@@ -263,24 +299,17 @@ public class ReportFragment extends Fragment {
             // Dual Task data
             DualTaskAssessment dualTask = assessment.getDualTask();
             if (dualTask != null) {
-//                Float dtArjLeft = dualTask.getARJ().get("left_knee");
-//                if (dtArjLeft != null && dtArjLeft != 0) {
-//                    if (bestDTARJLeft == null || currentTimestamp > latestDTTimestamp) {
-//                        bestDTARJLeft = dtArjLeft;
-//                    }
-//                }
-//
-//                Float dtArjRight = dualTask.getARJ().get("right_knee");
-//                if (dtArjRight != null && dtArjRight != 0) {
-//                    if (bestDTARJRight == null || currentTimestamp > latestDTTimestamp) {
-//                        bestDTARJRight = dtArjRight;
-//                    }
-//                }
-
                 float dtBalance = dualTask.getBalanceScore();
-                if (assessment.getDualTaskTestDate() != null) {
+                if (assessment.getDualTaskTestDate() != null || dtBalance > 0) {
+                    if (dtBalance > 0) dtBalanceTrials.add(dtBalance);
                     if (bestDTBalance == null || currentTimestamp > latestDTTimestamp) {
                         bestDTBalance = dtBalance;
+                    }
+                    if (bestDTSwayVelocity == null || currentTimestamp > latestDTTimestamp) {
+                        bestDTSwayVelocity = dualTask.getSwayMeanVelocity();
+                        bestDTSwayPathLength = dualTask.getSwayPathLength();
+                        bestDTSwayRmsAP = dualTask.getSwayRmsAP();
+                        bestDTSwayRmsML = dualTask.getSwayRmsML();
                     }
                 }
                 if (currentTimestamp > latestDTTimestamp) {
@@ -291,24 +320,17 @@ public class ReportFragment extends Fragment {
             // Sensory Ataxia data
             SensoryAtaxiaAssessment sensory = assessment.getSensoryAtaxia();
             if (sensory != null) {
-                Float saArjLeft = sensory.getARJ().get("left_knee");
-//                if (saArjLeft != null && saArjLeft != 0) {
-//                    if (bestSAARJLeft == null || currentTimestamp > latestSATimestamp) {
-//                        bestSAARJLeft = saArjLeft;
-//                    }
-//                }
-//
-//                Float saArjRight = sensory.getARJ().get("right_knee");
-//                if (saArjRight != null && saArjRight != 0) {
-//                    if (bestSAARJRight == null || currentTimestamp > latestSATimestamp) {
-//                        bestSAARJRight = saArjRight;
-//                    }
-//                }
-
                 float saBalance = sensory.getBalanceScore();
-                if (assessment.getSensoryAtaxiaTestDate() != null) {
+                if (assessment.getSensoryAtaxiaTestDate() != null || saBalance > 0) {
+                    if (saBalance > 0) saBalanceTrials.add(saBalance);
                     if (bestSABalance == null || currentTimestamp > latestSATimestamp) {
                         bestSABalance = saBalance;
+                    }
+                    if (bestSASwayVelocity == null || currentTimestamp > latestSATimestamp) {
+                        bestSASwayVelocity = sensory.getSwayMeanVelocity();
+                        bestSASwayPathLength = sensory.getSwayPathLength();
+                        bestSASwayRmsAP = sensory.getSwayRmsAP();
+                        bestSASwayRmsML = sensory.getSwayRmsML();
                     }
                 }
                 if (currentTimestamp > latestSATimestamp) {
@@ -317,12 +339,15 @@ public class ReportFragment extends Fragment {
             }
 
             TestComparisons comparisons = assessment.getComparisons();
-//            DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
-//            DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
-            DTBalanceDTC = comparisons.getDualTaskBalanceChange();
-//            SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
-//            SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
-            SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
+            if (comparisons != null) {
+                float dtcDT = comparisons.getDualTaskBalanceChange();
+                if (dtcDT != 0) dtDTCTrials.add(dtcDT);
+                float dtcSA = comparisons.getSensoryAtaxiaBalanceChange();
+                if (dtcSA != 0) saDTCTrials.add(dtcSA);
+
+                if (dtcDT != 0) DTBalanceDTC = dtcDT;
+                if (dtcSA != 0) SABalanceDTC = dtcSA;
+            }
         }
 
         if (!hasDataForDate) {
@@ -331,62 +356,47 @@ public class ReportFragment extends Fragment {
         }
 
         // Use best values for the selected date
-//        ARJLeftKneeToday = bestARJLeft != null ? bestARJLeft : 0f;
-//        ARJRightKneeToday = bestARJRight != null ? bestARJRight : 0f;
         balanceToday = bestBalance != null ? bestBalance : 0f;
         speedToday = bestWalkingSpeed != null ? bestWalkingSpeed : 0f;
         enduranceToday = bestEndurance != null ? bestEndurance : 0f;
-//        DTARJLeftKneeToday = bestDTARJLeft != null ? bestDTARJLeft : 0f;
-//        DTARJRightKneeToday = bestDTARJRight != null ? bestDTARJRight : 0f;
         DTbalanceToday = bestDTBalance != null ? bestDTBalance : 0f;
-//        SAARJLeftKneeToday = bestSAARJLeft != null ? bestSAARJLeft : 0f;
-//        SAARJRightKneeToday = bestSAARJRight != null ? bestSAARJRight : 0f;
         SAbalanceToday = bestSABalance != null ? bestSABalance : 0f;
 
-        // Calculate SD and CV
-//        float ARJRightKneeSD = standardDeviation(allARJRightValues);
-//        float ARJLeftKneeSD = standardDeviation(allARJLeftValues);
+        // Calculate SD and CV across trials
         float BalanceSD = standardDeviation(allBalanceValues);
         float EnduranceSD = standardDeviation(allEnduranceValues);
         float WSSD = standardDeviation(allSpeedValues);
 
-//        float ARJLeftKneeCV = (ARJLeftKneeSD / getMean(allARJLeftValues)) * 100;
-//        float ARJRightKneeCV = (ARJRightKneeSD / getMean(allARJRightValues)) * 100;
         float BalanceCV = (BalanceSD / getMean(allBalanceValues)) * 100;
         float WSCV = (WSSD / getMean(allSpeedValues)) * 100;
         float EnduranceCV = (EnduranceSD / getMean(allEnduranceValues)) * 100;
 
         // Create new Report
         ReportModel newReport = new ReportModel();
-//        newReport.setArjLeftKneeToday(ARJLeftKneeToday);
-//        newReport.setArjRightKneeToday(ARJRightKneeToday);
         newReport.setBalanceToday(balanceToday);
         newReport.setSpeedToday(speedToday);
         newReport.setEnduranceToday(enduranceToday);
-//        newReport.setSensoryAtaxiaARJLeftToday(SAARJLeftKneeToday);
-//        newReport.setSensoryAtaxiaARJRightToday(SAARJRightKneeToday);
         newReport.setSensoryAtaxiaBalanceToday(SAbalanceToday);
-//        newReport.setDualTaskARJLeftToday(DTARJLeftKneeToday);
-//        newReport.setDualTaskARJRightToday(DTARJRightKneeToday);
         newReport.setDualTaskBalanceToday(DTbalanceToday);
         // DTC
-//        newReport.setDualTaskDTCARJLeft(DTARJLeftKneeDTC);
-//        newReport.setDualTaskDTCARJRight(DTARJRightKneeDTC);
         newReport.setDualTaskDTCBalance(DTBalanceDTC);
-//        newReport.setSensoryAtaxiaDTCARJLeft(SAARJLeftKneeDTC);
-//        newReport.setSensoryAtaxiaDTCARJRight(SAARJRightKneeDTC);
         newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
         // SD & CV
-//        newReport.setARJLeftSD(ARJLeftKneeSD);
-//        newReport.setARJRightSD(ARJRightKneeSD);
         newReport.setBalanceSD(BalanceSD);
         newReport.setEnduranceSD(EnduranceSD);
         newReport.setSpeedSD(WSSD);
-//        newReport.setARJLeftCV(ARJLeftKneeCV);
-//        newReport.setARJRightCV(ARJRightKneeCV);
         newReport.setBalanceCV(BalanceCV);
         newReport.setEnduranceCV(EnduranceCV);
         newReport.setSpeedCV(WSCV);
+
+        // Set Trial Lists
+        newReport.setBalanceTrials(balanceTrials);
+        newReport.setSpeedTrials(speedTrials);
+        newReport.setEnduranceTrials(enduranceTrials);
+        newReport.setDualTaskBalanceTrials(dtBalanceTrials);
+        newReport.setDualTaskDTCTrials(dtDTCTrials);
+        newReport.setSensoryAtaxiaBalanceTrials(saBalanceTrials);
+        newReport.setSensoryAtaxiaDTCTrials(saDTCTrials);
 
         newReport.setTimeStamp(targetDate);
 
@@ -438,328 +448,6 @@ public class ReportFragment extends Fragment {
         datePicker.show();
     }
 
-    private void createNewReport() throws IOException {
-
-        float ARJLeftKneeSD = 0;
-        float ARJRightKneeSD = 0;
-        float BalanceSD = 0;
-        float WSSD = 0;
-        float EnduranceSD = 0;
-
-        float ARJLeftKneeCV = 0;
-        float ARJRightKneeCV = 0;
-        float BalanceCV = 0;
-        float WSCV = 0;
-        float EnduranceCV = 0;
-
-        // 1. Get data from storage
-        // today's result: data storage manager loadAllAssessment
-        List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(requireContext());
-
-        if (allAssessment.isEmpty()) {
-            Toast.makeText(requireContext(), "Finish a recording to create data!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        AssessmentData newest = allAssessment.get(0);
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-//        String newestDateStr = sdf.format(newest.getTimestamp());
-        String todayStr = sdf.format(new Date());
-
-        // Track most recent values per metric (same as HomeFragment)
-        Float bestARJLeft = null;
-        Float bestARJRight = null;
-        Float bestBalance = null;
-        Float bestWalkingSpeed = null;
-        Float bestEndurance = null;
-
-        long latestTimestamp = 0;
-
-        float ARJRightKneeToday = 0;
-        float ARJLeftKneeToday = 0;
-        float balanceToday = 0;
-        float speedToday = 0;
-        float enduranceToday = 0;
-
-        float SAARJLeftKneeToday = 0;
-        float SAARJRightKneeToday = 0;
-        float SAbalanceToday = 0;
-
-        float DTARJLeftKneeToday = 0;
-        float DTARJRightKneeToday = 0;
-        float DTbalanceToday = 0;
-
-        float DTARJLeftKneeDTC = 0;
-        float DTARJRightKneeDTC = 0;
-        float DTBalanceDTC = 0;
-        float SAARJLeftKneeDTC = 0;
-        float SAARJRightKneeDTC = 0;
-        float SABalanceDTC = 0;
-
-        // Track best Dual Task values (most recent)
-        Float bestDTARJLeft = null;
-        Float bestDTARJRight = null;
-        Float bestDTBalance = null;
-        Float bestSAARJLeft = null;
-        Float bestSAARJRight = null;
-        Float bestSABalance = null;
-
-        long latestDTTimestamp = 0;
-        long latestSATimestamp = 0;
-
-        int sumARJRight = 0, sumARJLeft = 0, sumBalance = 0, sumWS = 0, sumEndurance = 0;
-        ArrayList<Float> setARJRight = new ArrayList<>();
-        ArrayList<Float> setARJLeft = new ArrayList<>();
-        ArrayList<Float> setBalance = new ArrayList<>();
-        ArrayList<Float> setWS = new ArrayList<>();
-        ArrayList<Float> setEndurance = new ArrayList<>();
-
-        // SD and Cv values
-        ArrayList<Float> allARJLeftValues = new ArrayList<>();
-        ArrayList<Float> allARJRightValues = new ArrayList<>();
-        ArrayList<Float> allBalanceValues = new ArrayList<>();
-        ArrayList<Float> allSpeedValues = new ArrayList<>();
-        ArrayList<Float> allEnduranceValues = new ArrayList<>();
-
-        for (AssessmentData assessment : allAssessment) {
-            String currentDate = sdf.format(assessment.getTimestamp());
-
-            Float arjLeftSDCV = assessment.getBaseline().getARJ().get("left_knee");
-            if (arjLeftSDCV != null && arjLeftSDCV != 0) {
-                allARJLeftValues.add(arjLeftSDCV);
-            }
-
-            Float arjRightSDCV = assessment.getBaseline().getARJ().get("right_knee");
-            if (arjRightSDCV != null && arjRightSDCV != 0) {
-                allARJRightValues.add(arjRightSDCV);
-            }
-
-            float balanceSDCV = assessment.getBaseline().getBalanceScore();
-            if (assessment.getSwayAreaAndBalanceTestDate() != null) {
-                allBalanceValues.add(balanceSDCV);
-            }
-
-            float walkingSpeedSDCV = assessment.getBaseline().getWalkingSpeed();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
-                allSpeedValues.add(walkingSpeedSDCV);
-            }
-
-            float enduranceSDCV = assessment.getBaseline().getEnduranceScore();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
-                allEnduranceValues.add(enduranceSDCV);
-            }
-
-            if (!currentDate.equals(todayStr)) continue;
-
-            long currentTimestamp = assessment.getTimestamp().getTime();
-
-            // Just like HomeFragment - directly access getBaseline()
-            Float arjLeft = assessment.getBaseline().getARJ().get("left_knee");
-            if (arjLeft != null && arjLeft != 0) {
-                if (bestARJLeft == null || currentTimestamp > latestTimestamp) {
-                    bestARJLeft = arjLeft;
-                }
-                setARJLeft.add(arjLeft);
-            }
-
-            Float arjRight = assessment.getBaseline().getARJ().get("right_knee");
-            if (arjRight != null && arjRight != 0) {
-                if (bestARJRight == null || currentTimestamp > latestTimestamp) {
-                    bestARJRight = arjRight;
-                }
-                setARJRight.add(arjRight);
-            }
-
-            float balance = assessment.getBaseline().getBalanceScore();
-            if (assessment.getSwayAreaAndBalanceTestDate() != null) {
-                if (bestBalance == null || currentTimestamp > latestTimestamp) {
-                    bestBalance = balance;
-                }
-                setBalance.add(balance);
-            }
-
-            float walkingSpeed = assessment.getBaseline().getWalkingSpeed();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
-                if (bestWalkingSpeed == null || currentTimestamp > latestTimestamp) {
-                    bestWalkingSpeed = walkingSpeed;
-                }
-                setWS.add(walkingSpeed);
-            }
-
-            float endurance = assessment.getBaseline().getEnduranceScore();
-            if (assessment.getWSAndEnduranceTestDate() != null) {
-                if (bestEndurance == null || currentTimestamp > latestTimestamp) {
-                    bestEndurance = endurance;
-                }
-                setEndurance.add(endurance);
-            }
-
-            if (currentTimestamp > latestTimestamp) {
-                latestTimestamp = currentTimestamp;
-            }
-
-            DualTaskAssessment dualTask = assessment.getDualTask();
-            if (dualTask != null) {
-                Float dtArjLeft = dualTask.getARJ().get("left_knee");
-                if (dtArjLeft != null && dtArjLeft != 0) {
-                    if (bestDTARJLeft == null || currentTimestamp > latestDTTimestamp) {
-                        bestDTARJLeft = dtArjLeft;
-                    }
-                }
-
-                Float dtArjRight = dualTask.getARJ().get("right_knee");
-                if (dtArjRight != null && dtArjRight != 0) {
-                    if (bestDTARJRight == null || currentTimestamp > latestDTTimestamp) {
-                        bestDTARJRight = dtArjRight;
-                    }
-                }
-
-                float dtBalance = dualTask.getBalanceScore();
-                if (assessment.getDualTaskTestDate() != null) {
-                    if (bestDTBalance == null || currentTimestamp > latestDTTimestamp) {
-                        bestDTBalance = dtBalance;
-                    }
-                }
-                if (currentTimestamp > latestDTTimestamp) {
-                    latestDTTimestamp = currentTimestamp;
-                }
-            }
-
-            // === DTC (Dual Task Cost) from Comparisons ===
-            TestComparisons comparisons = assessment.getComparisons();
-            if (comparisons != null) {
-                DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
-                DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
-                DTBalanceDTC = comparisons.getDualTaskBalanceChange();
-
-                SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
-                SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
-                SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
-            }
-
-            SensoryAtaxiaAssessment sensory = assessment.getSensoryAtaxia();
-            if (sensory != null) {
-                // Similar logic for sensory data
-                Float saArjLeft = sensory.getARJ().get("left_knee");
-                if (saArjLeft != null && saArjLeft != 0) {
-                    if (bestSAARJLeft == null || currentTimestamp > latestSATimestamp) {
-                        bestSAARJLeft = saArjLeft;
-                    }
-                }
-
-                // Add for right and balance similarly
-            }
-
-            // === DTC DATA FROM COMPARISONS ===
-            if (comparisons != null) {
-                // For DTC, you usually want the most recent values
-                if (currentTimestamp > latestTimestamp) {
-                    DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
-                    DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
-                    DTBalanceDTC = comparisons.getDualTaskBalanceChange();
-
-                    SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
-                    SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
-                    SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
-                }
-            }
-
-            if (currentTimestamp > latestTimestamp) {
-                latestTimestamp = currentTimestamp;
-            }
-        }
-
-        // Use best values
-        ARJLeftKneeToday = bestARJLeft != null ? bestARJLeft : 0f;
-        ARJRightKneeToday = bestARJRight != null ? bestARJRight : 0f;
-        balanceToday = bestBalance != null ? bestBalance : 0f;
-        speedToday = bestWalkingSpeed != null ? bestWalkingSpeed : 0f;
-        enduranceToday = bestEndurance != null ? bestEndurance : 0f;
-
-        // Set Dual Task values
-        DTARJLeftKneeToday = bestDTARJLeft != null ? bestDTARJLeft : 0f;
-        DTARJRightKneeToday = bestDTARJRight != null ? bestDTARJRight : 0f;
-        DTbalanceToday = bestDTBalance != null ? bestDTBalance : 0f;
-
-        // Set Sensory Ataxia values
-        SAARJLeftKneeToday = bestSAARJLeft != null ? bestSAARJLeft : 0f;
-        SAARJRightKneeToday = bestSAARJRight != null ? bestSAARJRight : 0f;
-        SAbalanceToday = bestSABalance != null ? bestSABalance : 0f;
-
-        // Calculating ARJ and balance
-        // STANDARD DEVIATION (SD)
-        ARJRightKneeSD = standardDeviation(allARJRightValues);
-        ARJLeftKneeSD = standardDeviation(allARJLeftValues);
-        BalanceSD = standardDeviation(allBalanceValues);
-        EnduranceSD = standardDeviation(allEnduranceValues);
-        WSSD = standardDeviation(allSpeedValues);
-
-        // COEFFICIENT OF VARIATION (CV)
-        ARJLeftKneeCV = (ARJLeftKneeSD / getMean(allARJLeftValues)) * 100;
-        ARJRightKneeCV = (ARJRightKneeSD / getMean(allARJRightValues)) * 100;
-        BalanceCV = (BalanceSD / getMean(allBalanceValues)) * 100;
-        WSCV = (WSSD / getMean(allSpeedValues)) * 100;
-        EnduranceCV = (EnduranceSD / getMean(allEnduranceValues)) * 100;
-
-        // 2. Create a new Report object with the data
-        ReportModel newReport = new ReportModel();
-        newReport.setArjLeftKneeToday(ARJLeftKneeToday);
-        newReport.setArjRightKneeToday(ARJRightKneeToday);
-        newReport.setBalanceToday(balanceToday);
-        newReport.setSpeedToday(speedToday);
-        newReport.setEnduranceToday(enduranceToday);
-        newReport.setSensoryAtaxiaARJLeftToday(SAARJLeftKneeToday);
-        newReport.setSensoryAtaxiaARJRightToday(SAARJRightKneeToday);
-        newReport.setSensoryAtaxiaBalanceToday(SAbalanceToday);
-        newReport.setDualTaskARJLeftToday(DTARJLeftKneeToday);
-        newReport.setDualTaskARJRightToday(DTARJRightKneeToday);
-        newReport.setDualTaskBalanceToday(DTbalanceToday);
-        // DTC
-        newReport.setDualTaskDTCARJLeft(DTARJLeftKneeDTC);
-        newReport.setDualTaskDTCARJRight(DTARJRightKneeDTC);
-        newReport.setDualTaskDTCBalance(DTBalanceDTC);
-        newReport.setSensoryAtaxiaDTCARJLeft(SAARJLeftKneeDTC);
-        newReport.setSensoryAtaxiaDTCARJRight(SAARJRightKneeDTC);
-        newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
-        // SD & CV
-        newReport.setARJLeftSD(ARJLeftKneeSD);
-        newReport.setARJRightSD(ARJRightKneeSD);
-        newReport.setBalanceSD(BalanceSD);
-        newReport.setEnduranceSD(EnduranceSD);
-        newReport.setSpeedSD(WSSD);
-        newReport.setARJLeftCV(ARJLeftKneeCV);
-        newReport.setARJRightCV(ARJRightKneeCV);
-        newReport.setBalanceCV(BalanceCV);
-        newReport.setEnduranceCV(EnduranceCV);
-        newReport.setSpeedCV(WSCV);
-
-        Date now = new Date();
-        newReport.setTimeStamp(now);
-
-        // TODO: SAVE DATA TO DATA STORAGE MANAGER
-        // Preview
-        String preview = String.format(Locale.US,
-                "Speed: %f m/s | Sway Area: %f mm² | ARJ: %f m/s³| Endurance: %f s",
-                speedToday, balanceToday, ARJRightKneeToday, enduranceToday);
-        newReport.setPreview(preview);
-
-        Date date = new Date(); // current date
-//        SimpleDateFormat sdf1 = new SimpleDateFormat("MMM dd yyyy", Locale.getDefault());
-        SimpleDateFormat sdf1 = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
-        String formattedDate = sdf1.format(date); // "Oct 24 2025"
-        newReport.setDate(formattedDate);
-
-        // Save report
-        DataStorageManager.saveReport(requireContext(), newReport);
-
-        // Reload all reports to refresh the list
-        loadAllReports();
-
-        // Scroll to the new item
-        recyclerView.scrollToPosition(0);
-
-        Toast.makeText(requireContext(), "Report created successfully!", Toast.LENGTH_SHORT).show();
-    }
-
     private List<ReportModel> loadAllReports() {
 
         // Try to load assessments from storage
@@ -789,21 +477,20 @@ public class ReportFragment extends Fragment {
             return 0f;
         }
 
-        // Step 1: Calculate mean
         float sum = 0;
         for (float value : set) {
             sum += value;
         }
         float mean = sum / set.size();
 
-        // Step 2: Calculate sum of squared differences
+        // Calculate sum of squared differences
         float sumSquaredDiff = 0;
         for (float value : set) {
             float diff = value - mean;
             sumSquaredDiff += diff * diff;
         }
 
-        // Step 3: Variance and standard deviation
+        // Variance and standard deviation
         float variance = sumSquaredDiff / set.size(); // Population variance
         return (float) Math.sqrt(variance);
     }
@@ -813,7 +500,7 @@ public class ReportFragment extends Fragment {
 
         DatePickerDialog datePicker = new DatePickerDialog(requireContext(),
                 (view, year, month, dayOfMonth) -> {
-                    // ✅ Use the SAME format as stored in reports
+                    // Use the SAME format as stored in reports
                     Calendar selectedCal = Calendar.getInstance();
                     selectedCal.set(year, month, dayOfMonth);
                     String selectedDate = new SimpleDateFormat("MMMM dd, yyyy", Locale.US).format(selectedCal.getTime());

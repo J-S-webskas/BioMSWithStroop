@@ -168,25 +168,137 @@ public class AssessmentFragment extends Fragment {
 
         builder.setAdapter(adapter, (dialog, which) -> {
             String assessmentType = types[which];
-            showDeleteConfirmationDialog(selectedDate, assessmentType);
+            showTrialPickerForDeletion(selectedDate, assessmentType);
         });
 
         builder.show();
     }
 
-    private void showDeleteConfirmationDialog(String dateStr, String assessmentType) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+    private void showTrialPickerForDeletion(String dateStr, String assessmentType) {
+        java.util.List<AssessmentData> allAssessments = DataStorageManager.loadAllAssessments(requireContext());
 
-        // Get default dialog padding from theme
+        // Sort chronologically (oldest first) so index 0 = T1
+        java.util.List<AssessmentData> chronologicalAssessments = new java.util.ArrayList<>(allAssessments);
+        java.util.Collections.sort(chronologicalAssessments, (a1, a2) -> {
+            if (a1.getTimestamp() == null || a2.getTimestamp() == null) return 0;
+            return a1.getTimestamp().compareTo(a2.getTimestamp());
+        });
+
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        java.util.List<AssessmentData> matchingTrials = new java.util.ArrayList<>();
+
+        for (AssessmentData assessment : chronologicalAssessments) {
+            if (assessment.getTimestamp() == null) continue;
+            String aDate = sdf.format(assessment.getTimestamp());
+            if (!aDate.equals(dateStr)) continue;
+
+            boolean matches = false;
+            switch (assessmentType) {
+                case "Sway area and balance":
+                case "ARJ and balance":
+                    if (assessment.getSwayAreaAndBalanceTestDate() != null ||
+                            (assessment.getBaseline() != null && assessment.getBaseline().getBalanceScore() > 0)) {
+                        matches = true;
+                    }
+                    break;
+                case "Dual Task":
+                    if (assessment.getDualTaskTestDate() != null ||
+                            (assessment.getDualTask() != null && assessment.getDualTask().getBalanceScore() > 0)) {
+                        matches = true;
+                    }
+                    break;
+                case "Sensory Ataxia":
+                    if (assessment.getSensoryAtaxiaTestDate() != null ||
+                            (assessment.getSensoryAtaxia() != null && assessment.getSensoryAtaxia().getBalanceScore() > 0)) {
+                        matches = true;
+                    }
+                    break;
+                case "Speed and endurance":
+                    if (assessment.getWSAndEnduranceTestDate() != null ||
+                            (assessment.getBaseline() != null && (assessment.getBaseline().getWalkingSpeed() > 0 || assessment.getBaseline().getEnduranceScore() > 0))) {
+                        matches = true;
+                    }
+                    break;
+            }
+
+            if (matches) {
+                matchingTrials.add(assessment);
+            }
+        }
+
+        if (matchingTrials.isEmpty()) {
+            android.widget.Toast.makeText(requireContext(), "No " + assessmentType + " trials found for " + dateStr, android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Build list of trial labels T1, T2, etc. with value
+        String[] trialLabels = new String[matchingTrials.size()];
+        for (int i = 0; i < matchingTrials.size(); i++) {
+            AssessmentData trial = matchingTrials.get(i);
+            String valStr = "";
+            switch (assessmentType) {
+                case "Sway area and balance":
+                case "ARJ and balance":
+                    valStr = String.format(Locale.US, "%.2f mm²", trial.getBaseline().getBalanceScore());
+                    break;
+                case "Dual Task":
+                    valStr = String.format(Locale.US, "%.2f mm²", trial.getDualTask().getBalanceScore());
+                    break;
+                case "Sensory Ataxia":
+                    valStr = String.format(Locale.US, "%.2f mm²", trial.getSensoryAtaxia().getBalanceScore());
+                    break;
+                case "Speed and endurance":
+                    valStr = String.format(Locale.US, "%.2f m/s, %.2f s", trial.getBaseline().getWalkingSpeed(), trial.getBaseline().getEnduranceScore());
+                    break;
+            }
+            trialLabels[i] = "T" + (i + 1) + ": " + valStr;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         TypedValue outValue = new TypedValue();
-        requireContext().getTheme().resolveAttribute(
-                android.R.attr.dialogPreferredPadding,
-                outValue,
-                true
-        );
+        requireContext().getTheme().resolveAttribute(android.R.attr.dialogPreferredPadding, outValue, true);
         int defaultPadding = (int) outValue.getDimension(requireContext().getResources().getDisplayMetrics());
 
-        // Custom title with your font
+        TextView titleView = new TextView(requireContext());
+        titleView.setText("Select trial to delete for " + dateStr);
+        titleView.setTextSize(20);
+        titleView.setTypeface(ResourcesCompat.getFont(requireContext(), R.font.profile_pro_bold));
+        titleView.setPadding(defaultPadding, defaultPadding, defaultPadding, defaultPadding / 2);
+        titleView.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black));
+        builder.setCustomTitle(titleView);
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                requireContext(),
+                android.R.layout.simple_list_item_1,
+                trialLabels
+        ) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                TextView textView = (TextView) view;
+                textView.setTypeface(ResourcesCompat.getFont(getContext(), R.font.profile_pro));
+                textView.setTextSize(18);
+                return view;
+            }
+        };
+
+        builder.setAdapter(adapter, (dialog, which) -> {
+            AssessmentData targetTrial = matchingTrials.get(which);
+            String trialName = trialLabels[which];
+            showDeleteConfirmationDialog(targetTrial, trialName, dateStr);
+        });
+
+        builder.show();
+    }
+
+    private void showDeleteConfirmationDialog(AssessmentData targetTrial, String trialLabel, String dateStr) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+
+        TypedValue outValue = new TypedValue();
+        requireContext().getTheme().resolveAttribute(android.R.attr.dialogPreferredPadding, outValue, true);
+        int defaultPadding = (int) outValue.getDimension(requireContext().getResources().getDisplayMetrics());
+
         TextView titleView = new TextView(requireContext());
         titleView.setText("Confirm Deletion");
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
@@ -195,18 +307,21 @@ public class AssessmentFragment extends Fragment {
         titleView.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black));
         builder.setCustomTitle(titleView);
 
-        // Custom message with your font
         TextView messageView = new TextView(requireContext());
-        messageView.setText("Delete " + assessmentType + " report for " + dateStr + "?");
+        messageView.setText("Delete " + trialLabel + " recorded on " + dateStr + "?");
         messageView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
         messageView.setTypeface(ResourcesCompat.getFont(requireContext(), R.font.profile_pro));
         messageView.setPadding(defaultPadding, 0, defaultPadding, defaultPadding);
         messageView.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black));
         builder.setView(messageView);
 
-        // Buttons with your font
         builder.setPositiveButton("Delete", (dialog, which) -> {
-            DataStorageManager.deleteAssessmentByDate(requireContext(), dateStr, assessmentType);
+            boolean deleted = DataStorageManager.deleteAssessmentFile(requireContext(), targetTrial.getSessionId());
+            if (deleted) {
+                android.widget.Toast.makeText(requireContext(), trialLabel + " deleted successfully", android.widget.Toast.LENGTH_SHORT).show();
+            } else {
+                android.widget.Toast.makeText(requireContext(), "Failed to delete trial", android.widget.Toast.LENGTH_SHORT).show();
+            }
         });
 
         builder.setNegativeButton("Cancel", (dialog, which) -> {
@@ -215,7 +330,6 @@ public class AssessmentFragment extends Fragment {
 
         AlertDialog dialog = builder.show();
 
-        // Apply font to buttons after dialog is shown
         Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
         Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
 

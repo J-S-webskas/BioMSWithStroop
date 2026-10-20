@@ -3,6 +3,8 @@ package com.example.biomsAfterWirelessConnectedVersion;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.UUID;
+import java.util.List;
+import java.util.ArrayList;
 
 public class ReportModel implements Serializable {
     private Date timestamp;
@@ -26,6 +28,11 @@ public class ReportModel implements Serializable {
     // Balance section
     private String balanceTitle;
     private float balanceToday;
+    // Extended sway metrics (baseline): mm/s, mm, mm, mm
+    private float swayVelocityToday;
+    private float swayPathLengthToday;
+    private float swayRmsAPToday;
+    private float swayRmsMLToday;
     private String balanceTrend;
     private float balanceSD;
     private float balanceCV;
@@ -66,6 +73,12 @@ public class ReportModel implements Serializable {
     private float sensoryAtaxiaARJLeftToday;
     private float sensoryAtaxiaARJRightToday;
     private float sensoryAtaxiaBalanceToday;
+    private float sensoryAtaxiaSwayVelocityToday;
+    private float sensoryAtaxiaSwayPathLengthToday;
+    private float sensoryAtaxiaSwayRmsAPToday;
+    private float sensoryAtaxiaSwayRmsMLToday;
+    private float sensoryAtaxiaDTCSwayVelocity;
+    private float sensoryAtaxiaDTCSwayPathLength;
     private float sensoryAtaxiaDTCARJLeft;
     private float sensoryAtaxiaDTCARJRight;
     private float sensoryAtaxiaDTCBalance;
@@ -117,12 +130,48 @@ public class ReportModel implements Serializable {
     private float dualTaskARJLeftToday;
     private float dualTaskARJRightToday;
     private float dualTaskBalanceToday;
+    private float dualTaskSwayVelocityToday;
+    private float dualTaskSwayPathLengthToday;
+    private float dualTaskSwayRmsAPToday;
+    private float dualTaskSwayRmsMLToday;
+    private float dualTaskDTCSwayVelocity;
+    private float dualTaskDTCSwayPathLength;
     private float dualTaskDTCARJLeft;
     private float dualTaskDTCARJRight;
     private float dualTaskDTCBalance;
     private String dualTaskTrend;
     private String currentValueBaseline;
     private String reportId;
+
+    // Trial Lists
+    private List<Float> balanceTrials = new ArrayList<>();
+    private List<Float> speedTrials = new ArrayList<>();
+    private List<Float> enduranceTrials = new ArrayList<>();
+    private List<Float> dualTaskBalanceTrials = new ArrayList<>();
+    private List<Float> dualTaskDTCTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaBalanceTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaDTCTrials = new ArrayList<>();
+
+    public List<Float> getBalanceTrials() { return balanceTrials; }
+    public void setBalanceTrials(List<Float> trials) { this.balanceTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSpeedTrials() { return speedTrials; }
+    public void setSpeedTrials(List<Float> trials) { this.speedTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getEnduranceTrials() { return enduranceTrials; }
+    public void setEnduranceTrials(List<Float> trials) { this.enduranceTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskBalanceTrials() { return dualTaskBalanceTrials; }
+    public void setDualTaskBalanceTrials(List<Float> trials) { this.dualTaskBalanceTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskDTCTrials() { return dualTaskDTCTrials; }
+    public void setDualTaskDTCTrials(List<Float> trials) { this.dualTaskDTCTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaBalanceTrials() { return sensoryAtaxiaBalanceTrials; }
+    public void setSensoryAtaxiaBalanceTrials(List<Float> trials) { this.sensoryAtaxiaBalanceTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaDTCTrials() { return sensoryAtaxiaDTCTrials; }
+    public void setSensoryAtaxiaDTCTrials(List<Float> trials) { this.sensoryAtaxiaDTCTrials = trials != null ? trials : new ArrayList<>(); }
 
     public float getDualTaskDTCARJLeft() {
         return dualTaskDTCARJLeft;
@@ -299,6 +348,18 @@ public class ReportModel implements Serializable {
         this.balanceToday = balanceToday;
     }
 
+    public float getSwayVelocityToday() { return swayVelocityToday; }
+    public void setSwayVelocityToday(float v) { this.swayVelocityToday = v; }
+
+    public float getSwayPathLengthToday() { return swayPathLengthToday; }
+    public void setSwayPathLengthToday(float v) { this.swayPathLengthToday = v; }
+
+    public float getSwayRmsAPToday() { return swayRmsAPToday; }
+    public void setSwayRmsAPToday(float v) { this.swayRmsAPToday = v; }
+
+    public float getSwayRmsMLToday() { return swayRmsMLToday; }
+    public void setSwayRmsMLToday(float v) { this.swayRmsMLToday = v; }
+
     public String getBalanceTrend() {
         return balanceTrend;
     }
@@ -370,6 +431,24 @@ public class ReportModel implements Serializable {
        return sensoryAtaxiaBalanceToday;
     }
 
+    public float getSensoryAtaxiaSwayVelocityToday() { return sensoryAtaxiaSwayVelocityToday; }
+    public void setSensoryAtaxiaSwayVelocityToday(float v) { this.sensoryAtaxiaSwayVelocityToday = v; }
+
+    public float getSensoryAtaxiaSwayPathLengthToday() { return sensoryAtaxiaSwayPathLengthToday; }
+    public void setSensoryAtaxiaSwayPathLengthToday(float v) { this.sensoryAtaxiaSwayPathLengthToday = v; }
+
+    public float getSensoryAtaxiaSwayRmsAPToday() { return sensoryAtaxiaSwayRmsAPToday; }
+    public void setSensoryAtaxiaSwayRmsAPToday(float v) { this.sensoryAtaxiaSwayRmsAPToday = v; }
+
+    public float getSensoryAtaxiaSwayRmsMLToday() { return sensoryAtaxiaSwayRmsMLToday; }
+    public void setSensoryAtaxiaSwayRmsMLToday(float v) { this.sensoryAtaxiaSwayRmsMLToday = v; }
+
+    public float getSensoryAtaxiaDTCSwayVelocity() { return sensoryAtaxiaDTCSwayVelocity; }
+    public void setSensoryAtaxiaDTCSwayVelocity(float v) { this.sensoryAtaxiaDTCSwayVelocity = v; }
+
+    public float getSensoryAtaxiaDTCSwayPathLength() { return sensoryAtaxiaDTCSwayPathLength; }
+    public void setSensoryAtaxiaDTCSwayPathLength(float v) { this.sensoryAtaxiaDTCSwayPathLength = v; }
+
     public String getSensoryAtaxiaTrend() {
         return sensoryAtaxiaTrend;
     }
@@ -394,6 +473,24 @@ public class ReportModel implements Serializable {
     public void setDualTaskBalanceToday(float dualTaskToday) {
         this.dualTaskBalanceToday = dualTaskToday;
     }
+
+    public float getDualTaskSwayVelocityToday() { return dualTaskSwayVelocityToday; }
+    public void setDualTaskSwayVelocityToday(float v) { this.dualTaskSwayVelocityToday = v; }
+
+    public float getDualTaskSwayPathLengthToday() { return dualTaskSwayPathLengthToday; }
+    public void setDualTaskSwayPathLengthToday(float v) { this.dualTaskSwayPathLengthToday = v; }
+
+    public float getDualTaskSwayRmsAPToday() { return dualTaskSwayRmsAPToday; }
+    public void setDualTaskSwayRmsAPToday(float v) { this.dualTaskSwayRmsAPToday = v; }
+
+    public float getDualTaskSwayRmsMLToday() { return dualTaskSwayRmsMLToday; }
+    public void setDualTaskSwayRmsMLToday(float v) { this.dualTaskSwayRmsMLToday = v; }
+
+    public float getDualTaskDTCSwayVelocity() { return dualTaskDTCSwayVelocity; }
+    public void setDualTaskDTCSwayVelocity(float v) { this.dualTaskDTCSwayVelocity = v; }
+
+    public float getDualTaskDTCSwayPathLength() { return dualTaskDTCSwayPathLength; }
+    public void setDualTaskDTCSwayPathLength(float v) { this.dualTaskDTCSwayPathLength = v; }
 
     public String getDualTaskTrend() {
         return dualTaskTrend;

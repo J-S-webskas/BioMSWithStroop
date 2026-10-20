@@ -269,50 +269,14 @@ public class RecordFragment extends Fragment {
             stopCurrentTestAndDiscardData();
             return;
         }
-        List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(requireContext());
-        if (!allAssessment.isEmpty()) {
-            AssessmentData newest = allAssessment.get(0);
-            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-            String todayStr = sdf.format(new Date());
-            boolean arjDoneToday = false;
-            boolean wsDoneToday = false;
-            boolean dualTaskDoneToday = false;
-            boolean sensoryDoneToday = false;
-
-            for (AssessmentData assessment : allAssessment) {
-                String assessmentDate = sdf.format(assessment.getTimestamp());
-                // Only check today's assessments
-                if (assessmentDate.equals(todayStr)) {
-                    if (assessment.getStatus() != null) {
-                        switch (assessment.getStatus()) {
-                            case SWAY_AREA_BALANCE_COMPLETED:
-                                arjDoneToday = true;
-                                break;
-                            case WS_ENDURANCE_COMPLETED:
-                                wsDoneToday = true;
-                                break;
-                            case DUAL_TASK_COMPLETED:
-                                dualTaskDoneToday = true;
-                                break;
-                            case SENSORY_ATAXIA_COMPLETED:
-                                sensoryDoneToday = true;
-                                break;
-                        }
-                    }
-                }
-            }
-            if (wsDoneToday) {
-                Toast.makeText(requireContext(), "Speed & endurance was already completed for today. Record again tomorrow!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-        }
         /// CALL Speed
         Bundle bundle = getArguments();
-        String distance = bundle.getString("meterType");
+        String distance = bundle != null ? bundle.getString("meterType") : "0";
         Intent intent = new Intent(requireContext(), WSAndEndurance.class);
         intent.putExtra("meterType", distance);
         startActivityForResult(intent, SPEED_TEST_REQUEST);
     }
+
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
@@ -320,7 +284,7 @@ public class RecordFragment extends Fragment {
             Activity activity = (Activity) context;
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
-        // ✅ This is where you get data FROM HowWillYouTime
+        // This is where you get data FROM HowWillYouTime
         Bundle bundle = getArguments();
         if (bundle != null) {
             meterType = bundle.getFloat("meterType", 0);
@@ -379,37 +343,7 @@ public class RecordFragment extends Fragment {
             return;
         }
         clearAllAccumulators();
-        List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(context);
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-        String todayStr = sdf.format(new Date());
-        boolean arjDoneToday = false;
-        boolean wsDoneToday = false;
-        boolean dualTaskDoneToday = false;
-        boolean sensoryDoneToday = false;
 
-        for (AssessmentData assessment : allAssessment) {
-            String assessmentDate = sdf.format(assessment.getTimestamp());
-            // Only check today's assessments
-            if (assessmentDate.equals(todayStr)) {
-                // Check INDIVIDUAL test dates instead of combined status
-                if (assessment.getSwayAreaAndBalanceTestDate() != null) {
-                    arjDoneToday = true;
-                }
-                if (assessment.getWSAndEnduranceTestDate() != null) {
-                    wsDoneToday = true;
-                }
-                if (assessment.getDualTaskTestDate() != null) {
-                    dualTaskDoneToday = true;
-                }
-                if (assessment.getSensoryAtaxiaTestDate() != null) {
-                    sensoryDoneToday = true;
-                }
-            }
-        }
-        if (arjDoneToday) {
-            Toast.makeText(context, "ARJ & balance was already completed for today. Record again tomorrow!", Toast.LENGTH_LONG).show();
-            return;
-        }
         // Check if camera permission is granted
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -489,45 +423,21 @@ public class RecordFragment extends Fragment {
         }
         clearAllAccumulators();
         List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(context);
-        if (allAssessment.isEmpty()) {
-            Toast.makeText(context, "Record sway area and balance test first!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-        String todayStr = sdf.format(new Date());
-        boolean swabDoneToday = false;
-        boolean wsDoneToday = false;
-        boolean dualTaskDoneToday = false;
-        boolean sensoryDoneToday = false;
 
+        boolean hasSwabEver = false;
         for (AssessmentData assessment : allAssessment) {
-            String assessmentDate = sdf.format(assessment.getTimestamp());
-            // Only check today's assessments
-            if (assessmentDate.equals(todayStr)) {
-                // Check INDIVIDUAL test dates instead of combined status
-                if (assessment.getSwayAreaAndBalanceTestDate() != null) {
-                    swabDoneToday = true;
-                }
-                if (assessment.getWSAndEnduranceTestDate() != null) {
-                    wsDoneToday = true;
-                }
-                if (assessment.getDualTaskTestDate() != null) {
-                    dualTaskDoneToday = true;
-                }
-                if (assessment.getSensoryAtaxiaTestDate() != null) {
-                    sensoryDoneToday = true;
-                }
+            if (assessment.getSwayAreaAndBalanceTestDate() != null ||
+                    (assessment.getBaseline() != null && assessment.getBaseline().getBalanceScore() > 0)) {
+                hasSwabEver = true;
+                break;
             }
         }
 
-        if (!swabDoneToday) {
+        if (!hasSwabEver) {
             Toast.makeText(context, "Record sway area and balance test first!", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (sensoryDoneToday) {
-            Toast.makeText(context, "Sensory ataxia test was already completed for today. Record again tomorrow!", Toast.LENGTH_SHORT).show();
-            return;
-        }
+
         setNavigationVisible(false);
         blockTouchEvents(true, context);  // Before adding CameraFragment
 
@@ -600,45 +510,20 @@ public class RecordFragment extends Fragment {
             return;
         }
         List<AssessmentData> allAssessment = DataStorageManager.loadAllAssessments(context);
-        if (allAssessment.isEmpty()) {
-            Toast.makeText(context, "Record sway area and balance test first!", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-        String todayStr = sdf.format(new Date());
-        boolean arjDoneToday = false;
-        boolean wsDoneToday = false;
-        boolean dualTaskDoneToday = false;
-        boolean sensoryDoneToday = false;
-
+        boolean hasSwabEver = false;
         for (AssessmentData assessment : allAssessment) {
-            String assessmentDate = sdf.format(assessment.getTimestamp());
-            // Only check today's assessments
-            if (assessmentDate.equals(todayStr)) {
-                // Check INDIVIDUAL test dates instead of combined status
-                if (assessment.getSwayAreaAndBalanceTestDate() != null) {
-                    arjDoneToday = true;
-                }
-                if (assessment.getWSAndEnduranceTestDate() != null) {
-                    wsDoneToday = true;
-                }
-                if (assessment.getDualTaskTestDate() != null) {
-                    dualTaskDoneToday = true;
-                }
-                if (assessment.getSensoryAtaxiaTestDate() != null) {
-                    sensoryDoneToday = true;
-                }
+            if (assessment.getSwayAreaAndBalanceTestDate() != null ||
+                    (assessment.getBaseline() != null && assessment.getBaseline().getBalanceScore() > 0)) {
+                hasSwabEver = true;
+                break;
             }
         }
-        if (!arjDoneToday) {
+        if (!hasSwabEver) {
             Toast.makeText(context, "Record sway area and balance first!", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (dualTaskDoneToday) {
-            Toast.makeText(context, "Dual task test was already completed for today. Record again tomorrow!", Toast.LENGTH_LONG).show();
-            return;
-        }
+
         setNavigationVisible(false);
         blockTouchEvents(true, context);
 
@@ -698,41 +583,51 @@ public class RecordFragment extends Fragment {
         frameRate = fps;
     }
 
-    private void saveSensoryAtaxiaResults() throws IOException {
 
-        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
-        currentAssessment = todayAssessment;
+    private float getLatestBaselineBalance() {
+        List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
+        for (AssessmentData a : all) {
+            if (a.getBaseline() != null && a.getBaseline().getBalanceScore() > 0) {
+                return a.getBaseline().getBalanceScore();
+            }
+        }
+        return 0f;
+    }
+
+    private void saveSensoryAtaxiaResults() throws IOException {
+        AssessmentData trialAssessment = new AssessmentData(username);
+        currentAssessment = trialAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
-        float swayArea = bc.getSwayArea(COMHistories, requireContext());
+        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories, frameRate);
+        float swayArea = metrics.swayAreaMm2;
         Map<String, Float> ARJScores = new HashMap<>();
 
-//        for (String joint : Arrays.asList("left_knee", "right_knee")) {
-//            float arj = AverageRectifiedJerk.calculateAverageRectifiedJerk(
-//                    angleHistories.get(joint), frameRate);
-//            ARJScores.put(joint, arj);
-//        }
-        // Dual Task Cost (DTC): (Sensory Task Performance - Baseline Performance) / Baseline Performance × 100
-        float baselineBalance = currentAssessment.getBaseline().getBalanceScore();
+        float baselineBalance = getLatestBaselineBalance();
         if (baselineBalance > 0) {
             float balanceChange = ((swayArea - baselineBalance) / baselineBalance) * 100f;
             currentAssessment.getComparisons().setSensoryAtaxiaBalanceChange(balanceChange);
-        } else {
-            Log.d("DTC_DEBUG", "baselineBalance <= 0, skipping DTC calculation");
         }
 
-//        Float baselineARJLeftObj = currentAssessment.getBaseline().getARJ().get("left_knee");
-//        Float baselineARJRightObj = currentAssessment.getBaseline().getARJ().get("right_knee");
-//        float baselineARJLeft = baselineARJLeftObj != null ? baselineARJLeftObj : 0f;
-//        float baselineARJRight = baselineARJRightObj != null ? baselineARJRightObj : 0f;
-//        if (baselineARJLeft > 0 && baselineARJRight > 0) {
-//            float ARJLeftChange = ((ARJScores.get("left_knee") - baselineARJLeft) / baselineARJLeft) * 100f;
-//            float ARJRightChange = ((ARJScores.get("right_knee") - baselineARJRight) / baselineARJRight) * 100f;
-//            currentAssessment.getComparisons().setSensoryAtaxiaARJLeftKneeChange(ARJLeftChange);
-//            currentAssessment.getComparisons().setSensoryAtaxiaARJRightKneeChange(ARJRightChange);
-//        }
+        float baselineVel = currentAssessment.getBaseline().getSwayMeanVelocity();
+        if (baselineVel > 0) {
+            float vChange = ((metrics.meanVelocityMmS - baselineVel) / baselineVel) * 100f;
+            currentAssessment.getComparisons().setSensoryAtaxiaVelocityChange(vChange);
+        }
+        float baselinePath = currentAssessment.getBaseline().getSwayPathLength();
+        if (baselinePath > 0) {
+            float pChange = ((metrics.pathLengthMm - baselinePath) / baselinePath) * 100f;
+            currentAssessment.getComparisons().setSensoryAtaxiaPathLengthChange(pChange);
+        }
 
         currentAssessment.getSensoryAtaxia().setBalanceScore(swayArea);
+        currentAssessment.getSensoryAtaxia().setSwayPathLength(metrics.pathLengthMm);
+        currentAssessment.getSensoryAtaxia().setSwayMeanVelocity(metrics.meanVelocityMmS);
+        currentAssessment.getSensoryAtaxia().setSwayRmsAP(metrics.rmsAPMm);
+        currentAssessment.getSensoryAtaxia().setSwayRmsML(metrics.rmsMLMm);
+        currentAssessment.getSensoryAtaxia().setComTrajX(metrics.trajX);
+        currentAssessment.getSensoryAtaxia().setComTrajZ(metrics.trajZ);
+        currentAssessment.getSensoryAtaxia().setComFrameRate(metrics.frameRate);
         currentAssessment.getSensoryAtaxia().setARJ(ARJScores);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.SENSORY_ATAXIA_COMPLETED);
         currentAssessment.setSensoryAtaxiaTestDate(new Date());
@@ -747,44 +642,42 @@ public class RecordFragment extends Fragment {
         startActivity(intent);
 
         Toast.makeText(requireContext(),
-                "Sensory Ataxia test saved. Next test available tomorrow.",
+                "Sensory Ataxia test trial saved.",
                 Toast.LENGTH_LONG).show();
     }
 
     private void saveDualTaskResults() throws IOException {
-
         AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
         currentAssessment = todayAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
-        float swayArea = bc.getSwayArea(COMHistories, requireContext());
+        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories, frameRate);
+        float swayArea = metrics.swayAreaMm2;
         Map<String, Float> ARJScores = new HashMap<>();
 
-//        for (String joint : Arrays.asList("left_knee", "right_knee")) {
-//            float arj = AverageRectifiedJerk.calculateAverageRectifiedJerk(
-//                    angleHistories.get(joint), frameRate);
-//            ARJScores.put(joint, arj);
-//        }
-
-        // Dual Task Cost (DC)
-//        Float baselineARJLeftObj = currentAssessment.getBaseline().getARJ().get("left_knee");
-//        Float baselineARJRightObj = currentAssessment.getBaseline().getARJ().get("right_knee");
-//        float baselineARJLeft = baselineARJLeftObj != null ? baselineARJLeftObj : 0f;
-//        float baselineARJRight = baselineARJRightObj != null ? baselineARJRightObj : 0f;
-//        if (baselineARJLeft > 0 && baselineARJRight > 0) {
-//            float ARJLeftChange = ((ARJScores.get("left_knee") - baselineARJLeft) / baselineARJLeft) * 100f;
-//            float ARJRightChange = ((ARJScores.get("right_knee") - baselineARJRight) / baselineARJRight) * 100f;
-//            currentAssessment.getComparisons().setDualTaskARJLeftKneeChange(ARJLeftChange);
-//            currentAssessment.getComparisons().setDualTaskARJRightKneeChange(ARJRightChange);
-//            Log.d("DTC_DEBUG", "  ✅ ARJ Left DTC = ((" + ARJScores.get("left_knee") + " - " + baselineARJLeft + ") / " + baselineARJLeft + ") * 100 = " + ARJLeftChange + "%");
-//        }
-
-        float baselineBalance = currentAssessment.getBaseline().getBalanceScore();
+        float baselineBalance = getLatestBaselineBalance();
         if (baselineBalance > 0) {
             float balanceChange = ((swayArea - baselineBalance) / baselineBalance) * 100f;
             currentAssessment.getComparisons().setDualTaskBalanceChange(balanceChange);
         }
+        float baselineVel = currentAssessment.getBaseline().getSwayMeanVelocity();
+        if (baselineVel > 0) {
+            float vChange = ((metrics.meanVelocityMmS - baselineVel) / baselineVel) * 100f;
+            currentAssessment.getComparisons().setDualTaskVelocityChange(vChange);
+        }
+        float baselinePath = currentAssessment.getBaseline().getSwayPathLength();
+        if (baselinePath > 0) {
+            float pChange = ((metrics.pathLengthMm - baselinePath) / baselinePath) * 100f;
+            currentAssessment.getComparisons().setDualTaskPathLengthChange(pChange);
+        }
         currentAssessment.getDualTask().setBalanceScore(swayArea);
+        currentAssessment.getDualTask().setSwayPathLength(metrics.pathLengthMm);
+        currentAssessment.getDualTask().setSwayMeanVelocity(metrics.meanVelocityMmS);
+        currentAssessment.getDualTask().setSwayRmsAP(metrics.rmsAPMm);
+        currentAssessment.getDualTask().setSwayRmsML(metrics.rmsMLMm);
+        currentAssessment.getDualTask().setComTrajX(metrics.trajX);
+        currentAssessment.getDualTask().setComTrajZ(metrics.trajZ);
+        currentAssessment.getDualTask().setComFrameRate(metrics.frameRate);
         currentAssessment.getDualTask().setARJ(ARJScores);
 
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.DUAL_TASK_COMPLETED);
@@ -800,28 +693,25 @@ public class RecordFragment extends Fragment {
         startActivity(intent);
 
         Toast.makeText(requireContext(),
-                "Dual task test saved. Next test available tomorrow.",
+                "Dual task test trial saved.",
                 Toast.LENGTH_LONG).show();
     }
 
     private void saveSwayAreaAndBalanceResults() throws IOException {
-        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
-        currentAssessment = todayAssessment;
+        AssessmentData trialAssessment = new AssessmentData(username);
+        currentAssessment = trialAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
-        float swayArea = bc.getSwayArea(COMHistories, requireContext());
-//        Map<String, Float> ARJScores = new HashMap<>();
-//        for (String joint : Arrays.asList("left_knee", "right_knee")) {
-//            float arj = AverageRectifiedJerk.calculateAverageRectifiedJerk(
-//                    angleHistories.get(joint), frameRate);
-//
-//            ARJScores.put(joint, arj);
-//        }
-//        Toast.makeText(requireContext(),
-//                COMHistories.size() + " data collected for COM",
-//                Toast.LENGTH_LONG).show();
+        SwayMetrics metrics = bc.computeSwayMetrics(COMHistories, frameRate);
+        float swayArea = metrics.swayAreaMm2;
         currentAssessment.getBaseline().setBalanceScore(swayArea);
-//        currentAssessment.getBaseline().setARJ(ARJScores);
+        currentAssessment.getBaseline().setSwayPathLength(metrics.pathLengthMm);
+        currentAssessment.getBaseline().setSwayMeanVelocity(metrics.meanVelocityMmS);
+        currentAssessment.getBaseline().setSwayRmsAP(metrics.rmsAPMm);
+        currentAssessment.getBaseline().setSwayRmsML(metrics.rmsMLMm);
+        currentAssessment.getBaseline().setComTrajX(metrics.trajX);
+        currentAssessment.getBaseline().setComTrajZ(metrics.trajZ);
+        currentAssessment.getBaseline().setComFrameRate(metrics.frameRate);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.SWAY_AREA_BALANCE_COMPLETED);
         currentAssessment.setSwayAreaAndBalanceTestDate(new Date());
 
@@ -833,7 +723,7 @@ public class RecordFragment extends Fragment {
         BalanceHistories.clear();
 
         Toast.makeText(requireContext(),
-                "Sway area and balance test saved. Next test available tomorrow.",
+                "Sway area and balance test trial saved.",
                 Toast.LENGTH_LONG).show();
         Intent intent = new Intent(getActivity(), CancellingTest.class);
         intent.putExtra("finished", true);
@@ -841,8 +731,8 @@ public class RecordFragment extends Fragment {
     }
 
     private void saveWSAndEnduranceResults(float speed, float endurance) throws IOException {
-        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
-        currentAssessment = todayAssessment;
+        AssessmentData trialAssessment = new AssessmentData(username);
+        currentAssessment = trialAssessment;
         currentAssessment.getBaseline().setWalkingSpeed(speed);
         currentAssessment.getBaseline().setEnduranceScore(endurance);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.WS_ENDURANCE_COMPLETED);
@@ -854,7 +744,7 @@ public class RecordFragment extends Fragment {
         BalanceHistories.clear();
 
         Toast.makeText(requireContext(),
-                "Speed and endurance test saved. Next test available tomorrow.",
+                "Speed and endurance test trial saved.",
                 Toast.LENGTH_LONG).show();
         if (getActivity() != null && isAdded()) {
             Intent intent = new Intent(getActivity(), CancellingTest.class);
@@ -915,6 +805,8 @@ public class RecordFragment extends Fragment {
         if (assessment == null || assessment.getBaseline() == null) return;
 
         float newBaselineBalance = assessment.getBaseline().getBalanceScore();
+        float newBaselineVel = assessment.getBaseline().getSwayMeanVelocity();
+        float newBaselinePath = assessment.getBaseline().getSwayPathLength();
 //        Float newBaselineARJLeft = assessment.getBaseline().getARJ().get("left_knee");
 //        Float newBaselineARJRight = assessment.getBaseline().getARJ().get("right_knee");
 
@@ -924,6 +816,15 @@ public class RecordFragment extends Fragment {
             if (newBaselineBalance > 0 && dt.getBalanceScore() > 0) {
                 float dtBalanceChange = ((dt.getBalanceScore() - newBaselineBalance) / newBaselineBalance) * 100f;
                 assessment.getComparisons().setDualTaskBalanceChange(dtBalanceChange);
+            }
+
+            if (newBaselineVel > 0 && dt.getSwayMeanVelocity() > 0) {
+                float dtVelChange = ((dt.getSwayMeanVelocity() - newBaselineVel) / newBaselineVel) * 100f;
+                assessment.getComparisons().setDualTaskVelocityChange(dtVelChange);
+            }
+            if (newBaselinePath > 0 && dt.getSwayPathLength() > 0) {
+                float dtPathChange = ((dt.getSwayPathLength() - newBaselinePath) / newBaselinePath) * 100f;
+                assessment.getComparisons().setDualTaskPathLengthChange(dtPathChange);
             }
 
 //            if (newBaselineARJLeft != null && newBaselineARJLeft > 0 && dt.getARJ().get("left_knee") != null) {
@@ -945,6 +846,15 @@ public class RecordFragment extends Fragment {
             if (newBaselineBalance > 0 && sa.getBalanceScore() > 0) {
                 float saBalanceChange = ((sa.getBalanceScore() - newBaselineBalance) / newBaselineBalance) * 100f;
                 assessment.getComparisons().setSensoryAtaxiaBalanceChange(saBalanceChange);
+            }
+
+            if (newBaselineVel > 0 && sa.getSwayMeanVelocity() > 0) {
+                float saVelChange = ((sa.getSwayMeanVelocity() - newBaselineVel) / newBaselineVel) * 100f;
+                assessment.getComparisons().setSensoryAtaxiaVelocityChange(saVelChange);
+            }
+            if (newBaselinePath > 0 && sa.getSwayPathLength() > 0) {
+                float saPathChange = ((sa.getSwayPathLength() - newBaselinePath) / newBaselinePath) * 100f;
+                assessment.getComparisons().setSensoryAtaxiaPathLengthChange(saPathChange);
             }
 
 //            if (newBaselineARJLeft != null && newBaselineARJLeft > 0 && sa.getARJ().get("left_knee") != null) {

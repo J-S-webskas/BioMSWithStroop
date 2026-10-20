@@ -1,25 +1,73 @@
 package com.example.biomsAfterWirelessConnectedVersion;
 
 import android.content.Context;
-import android.widget.Toast;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeSet;
 
 public class BalanceCalculator {
 
-    private float swayArea = 0;
-
-    // Calculates 95% confidence ellipse area (sway area) with low-pass Butterworth filtering
-    private void calculateSwayArea(List<Point2D> COMHistories, Context context) {
+    public SwayMetrics computeSwayMetrics(List<Point2D> COMHistories, float frameRate) {
+        SwayMetrics m = new SwayMetrics();
         if (COMHistories == null || COMHistories.size() < 3) {
-            swayArea = 0;
-            return;
+            return m;
         }
 
-    // 1. Separate X and Z trajectories for filtering
+        List<Point2D> filtered = getFilteredCOM(COMHistories);
+        int n = filtered.size();
+        m.sampleCount = n;
+        m.frameRate = frameRate;
+
+        // 1. Sway area: 95% confidence ellipse (mm^2)
+        m.swayAreaMm2 = ellipseArea(filtered);
+
+        // 2. Path length: total trajectory distance (m -> mm)
+        double path = 0.0;
+        for (int i = 1; i < n; i++) {
+            double dx = filtered.get(i).getX() - filtered.get(i - 1).getX();
+            double dz = filtered.get(i).getZ() - filtered.get(i - 1).getZ();
+            path += Math.sqrt(dx * dx + dz * dz);
+        }
+        m.pathLengthMm = (float) (path * 1000.0);
+
+        // 3. Mean velocity (mm/s)
+        if (frameRate > 0) {
+            double durationS = n / (double) frameRate;
+            if (durationS > 0) {
+                m.meanVelocityMmS = (float) (m.pathLengthMm / durationS);
+            }
+        }
+
+        // 4. RMS displacement about the mean, per axis (m -> mm).
+        //    Also captures the filtered trajectory for export.
+        double meanX = 0, meanZ = 0;
+        for (Point2D p : filtered) {
+            meanX += p.getX();
+            meanZ += p.getZ();
+            m.trajX.add((float) p.getX());
+            m.trajZ.add((float) p.getZ());
+        }
+        meanX /= n;
+        meanZ /= n;
+        double sx = 0, sz = 0;
+        for (Point2D p : filtered) {
+            double dx = p.getX() - meanX;
+            double dz = p.getZ() - meanZ;
+            sx += dx * dx;
+            sz += dz * dz;
+        }
+        m.rmsMLMm = (float) (Math.sqrt(sx / n) * 1000.0);  // x: mediolateral
+        m.rmsAPMm = (float) (Math.sqrt(sz / n) * 1000.0);  // z: anteroposterior
+
+        return m;
+    }
+
+    public float getSwayArea(List<Point2D> COMHistories, Context context) {
+        return computeSwayMetrics(COMHistories, 30f).swayAreaMm2;
+    }
+
+    private List<Point2D> getFilteredCOM(List<Point2D> COMHistories) {
+        // 1. Separate X and Z trajectories for filtering
         List<Float> rawX = new ArrayList<>(COMHistories.size());
         List<Float> rawZ = new ArrayList<>(COMHistories.size());
         for (Point2D p : COMHistories) {
@@ -37,7 +85,11 @@ public class BalanceCalculator {
         for (int i = 0; i < filteredX.size(); i++) {
             filteredCOM.add(new Point2D(filteredX.get(i), filteredZ.get(i)));
         }
+        return filteredCOM;
+    }
 
+    // 95% confidence ellipse area from covariance eigenvalues (mm^2).
+    private float ellipseArea(List<Point2D> filteredCOM) {
         Point2D point = getMean(filteredCOM);
         float meanX = (float) point.getX();
         float meanZ = (float) point.getZ();
@@ -67,7 +119,7 @@ public class BalanceCalculator {
         float chiSquare = 5.991f;
         float area = (float) (Math.PI * chiSquare * Math.sqrt(Math.abs(lambda1 * lambda2)));
 
-        swayArea = area * 1000000f;  // Convert m² to mm²
+        return area * 1000000f;  // Convert m² to mm²
     }
 
     private float[] calculateEigenvalues2x2(float[][] matrix) {
@@ -96,11 +148,6 @@ public class BalanceCalculator {
         }
 
         return new float[]{lambda1, lambda2};
-    }
-
-    public float getSwayArea(List<Point2D> COMHistories, Context context) {
-        calculateSwayArea(COMHistories, context);
-        return swayArea;
     }
 
     private Point2D getMean(List<Point2D> COMHistories) {

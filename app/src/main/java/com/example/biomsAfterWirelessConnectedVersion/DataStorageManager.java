@@ -273,7 +273,7 @@ public class DataStorageManager {
         switch (assessmentType) {
             case "ARJ and balance":
                 // Clear Baseline data
-                targetAssessment.getBaseline().setBalanceScore(0f);
+                targetAssessment.getBaseline().clearSwayMetrics();
                 targetAssessment.getBaseline().setARJ(new HashMap<>());
                 targetAssessment.getBaseline().setWalkingSpeed(0f);
                 targetAssessment.getBaseline().setEnduranceScore(0f);
@@ -291,8 +291,8 @@ public class DataStorageManager {
                 break;
 
             case "Dual Task":
-                // ✅ Clear ONLY Dual Task data
-                targetAssessment.getDualTask().setBalanceScore(0f);
+                // Clear ONLY Dual Task data
+                targetAssessment.getDualTask().clearSwayMetrics();
                 targetAssessment.getDualTask().setARJ(new HashMap<>());
                 targetAssessment.setDualTaskTestDate(null);
 
@@ -305,8 +305,8 @@ public class DataStorageManager {
                 break;
 
             case "Sensory Ataxia":
-                // ✅ Clear ONLY Sensory Ataxia data
-                targetAssessment.getSensoryAtaxia().setBalanceScore(0f);
+                // Clear ONLY Sensory Ataxia data
+                targetAssessment.getSensoryAtaxia().clearSwayMetrics();
                 targetAssessment.getSensoryAtaxia().setARJ(new HashMap<>());
                 targetAssessment.setSensoryAtaxiaTestDate(null);
 
@@ -319,7 +319,7 @@ public class DataStorageManager {
                 break;
 
             case "Speed and endurance":
-                // ✅ Clear ONLY Speed data
+                // Clear ONLY Speed data
                 targetAssessment.getBaseline().setWalkingSpeed(0f);
                 targetAssessment.getBaseline().setEnduranceScore(0f);
                 targetAssessment.setWSAndEnduranceTestDate(null);
@@ -424,14 +424,14 @@ public class DataStorageManager {
             return "Not Found"; // Fixed: return a default value
         }
     }
-    private static boolean deleteAssessmentFile(Context context, String sessionId) {
+    public static boolean deleteAssessmentFile(Context context, String sessionId) {
         String filename = "assessment_" + sessionId + FILE_EXTENSION;
         File file = new File(context.getFilesDir(), filename);
 
         if (file.exists()) {
             boolean deleted = file.delete();
             if (deleted) {
-                Log.d(TAG, "Deleted empty assessment file: " + filename);
+                Log.d(TAG, "Deleted assessment file: " + filename);
             } else {
                 Log.e(TAG, "Failed to delete assessment file: " + filename);
             }
@@ -464,7 +464,7 @@ public class DataStorageManager {
         // Clear only the selected test type data
         switch (assessmentType) {
             case "Sway area and balance":
-                targetAssessment.getBaseline().setBalanceScore(0f);
+                targetAssessment.getBaseline().clearSwayMetrics();
                 targetAssessment.getBaseline().setARJ(new HashMap<>());
                 targetAssessment.setSwayAreaAndBalanceTestDate(null);
 
@@ -481,7 +481,7 @@ public class DataStorageManager {
                 break;
 
             case "Dual Task":
-                targetAssessment.getDualTask().setBalanceScore(0f);
+                targetAssessment.getDualTask().clearSwayMetrics();
                 targetAssessment.getDualTask().setARJ(new HashMap<>());
                 targetAssessment.setDualTaskTestDate(null);
 
@@ -494,7 +494,7 @@ public class DataStorageManager {
                 break;
 
             case "Sensory Ataxia":
-                targetAssessment.getSensoryAtaxia().setBalanceScore(0f);
+                targetAssessment.getSensoryAtaxia().clearSwayMetrics();
                 targetAssessment.getSensoryAtaxia().setARJ(new HashMap<>());
                 targetAssessment.setSensoryAtaxiaTestDate(null);
 

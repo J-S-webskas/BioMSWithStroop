@@ -64,62 +64,30 @@ public class ChooseTestActivity extends AppCompatActivity {
         TextView WSCompleted = findViewById(R.id.WSCompleted);
         TextView WSText = findViewById(R.id.WSText);
 
-        boolean SACompleted = testCompleted("SensoryAtaxia");
         boolean swabCompleted = testCompleted("SwayAreaAndBalance");
-        boolean DTCompleted = testCompleted("DualTask");
-        boolean wsCompleted = testCompleted("WSAndEndurance");
 
-        // If SA and balance is not recorded, return
+        // If Sway Area & balance was never recorded, disable Dual Task and Sensory Ataxia
         if (!swabCompleted) {
             dualTaskRecordARJ.setVisibility(VISIBLE);
             dualTaskText.setTextColor(Color.GRAY);
             sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
             sensoryAtaxiaText.setTextColor(Color.GRAY);
-        }
-        if (SACompleted) {
-            sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
-            sensoryAtaxiaRecordARJ.setText("Completed. Next test is tomorrow");
-            sensoryAtaxiaText.setTextColor(Color.GRAY);
-        }
-        if (DTCompleted) {
-            dualTaskRecordARJ.setVisibility(VISIBLE);
-            dualTaskRecordARJ.setText("Completed. Next test is tomorrow");
-            dualTaskText.setTextColor(Color.GRAY);
-        }
-        if (swabCompleted) {
-            ARJCompleted.setVisibility(VISIBLE);
-            ARJText.setTextColor(Color.GRAY);
-        }
-        if (wsCompleted) {
-            WSCompleted.setVisibility(VISIBLE);
-            WSText.setTextColor(Color.GRAY);
+            dualTaskRecordARJ.setText("Record Sway Area and Balance first");
+            sensoryAtaxiaRecordARJ.setText("Record Sway Area and Balance first");
         }
 
         SwayAreaAndBalance.setOnClickListener(v -> {
-            // If ARJ and balance is not recorded, return
-            if (swabCompleted) {
-                ARJCompleted.setVisibility(VISIBLE);
-                ARJText.setTextColor(Color.GRAY);
-                return;
-            }
             assessmentType = "SwayAreaAndBalance";
-            // Navigate to how to record
             Intent intent = new Intent(this, HowWillYouRecord.class);
             intent.putExtra("assessmentType", assessmentType);
             startActivity(intent);
         });
 
         DualTask.setOnClickListener(v -> {
-            // If sawb and balance is not recorded, return
             if (!swabCompleted) {
                 dualTaskRecordARJ.setVisibility(VISIBLE);
                 dualTaskText.setTextColor(Color.GRAY);
-                return;
-            }
-            if (DTCompleted) {
-                dualTaskRecordARJ.setVisibility(VISIBLE);
-                dualTaskRecordARJ.setText("Completed. Next test is tomorrow");
-                dualTaskText.setTextColor(Color.GRAY);
+                dualTaskRecordARJ.setText("Record Sway Area and Balance first");
                 return;
             }
             assessmentType = "DualTask";
@@ -131,40 +99,23 @@ public class ChooseTestActivity extends AppCompatActivity {
 
 
         sensoryAtaxia.setOnClickListener(v -> {
-            // If ARJ and balance is not recorded, return
             if (!swabCompleted) {
                 sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
                 sensoryAtaxiaText.setTextColor(Color.GRAY);
-                return;
-            }
-            if (SACompleted) {
-                sensoryAtaxiaRecordARJ.setVisibility(VISIBLE);
-                sensoryAtaxiaRecordARJ.setText("Completed. Next test is tomorrow");
-                sensoryAtaxiaText.setTextColor(Color.GRAY);
+                sensoryAtaxiaRecordARJ.setText("Record Sway Area and Balance first");
                 return;
             }
             assessmentType = "SensoryAtaxia";
             Intent intent = new Intent(this, HowWillYouRecord.class);
             intent.putExtra("assessmentType", assessmentType);
             startActivity(intent);
-            // Handle Sensory Ataxia
-            // If ARJ and balance is not recorded, return
-            // Other-wise, call camera
-            // Set test = sa
         });
 
         speedAndEndurance.setOnClickListener(v -> {
-            // If ARJ and balance is not recorded, return
-            if (wsCompleted) {
-                WSCompleted.setVisibility(VISIBLE);
-                WSText.setTextColor(Color.GRAY);
-                return;
-            }
             assessmentType = "SpeedAndEndurance";
             Intent intent = new Intent(this, HowWillYouTime.class);
             intent.putExtra("assessmentType", assessmentType);
             startActivity(intent);
-            // Handle Speed and Endurance
         });
 
         back.setOnClickListener(v -> {
@@ -214,5 +165,4 @@ public class ChooseTestActivity extends AppCompatActivity {
         }
         return false;
     }
-
 }
