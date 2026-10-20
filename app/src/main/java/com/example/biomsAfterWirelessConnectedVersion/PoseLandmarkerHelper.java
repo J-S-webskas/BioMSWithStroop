@@ -68,9 +68,6 @@ public class PoseLandmarkerHelper {
     private String cachedSex = null;
     private boolean isFirstRun = true;
     private PoseLandmarker poseLandmarker;
-
-    private double[] filteredCHip = null;
-    private static final double ALPHA = 0.25;
     public static final double DEFAULT_FOV_H_DEGREES = 60.0;
     private double fovHDegrees = DEFAULT_FOV_H_DEGREES;
     private boolean wasTestStarted = false;
@@ -90,9 +87,6 @@ public class PoseLandmarkerHelper {
         return fovHDegrees;
     }
 
-    public void resetFilter() {
-        filteredCHip = null;
-    }
     public PoseLandmarkerHelper(Context context) {
         this(DEFAULT_POSE_DETECTION_CONFIDENCE,
                 DEFAULT_POSE_TRACKING_CONFIDENCE,
@@ -134,7 +128,6 @@ public class PoseLandmarkerHelper {
             poseLandmarker.close();
         }
         poseLandmarker = null;
-        filteredCHip = null;
     }
 
     private void updateCacheIfNeeded(Context context) {
@@ -469,9 +462,6 @@ public class PoseLandmarkerHelper {
 
                         hasValidPose = true;
                         boolean currentlyStarted = RecordFragment.isTestStarted();
-                        if (currentlyStarted && !wasTestStarted) {
-                            filteredCHip = null; // Clean reset at start of trial
-                        }
                         wasTestStarted = currentlyStarted;
 
                         if (currentlyStarted) {
@@ -484,7 +474,7 @@ public class PoseLandmarkerHelper {
                         if (RecordFragment.isTestStarted()) {
                             // pass the COM x and y to record fragment:
                             if (comX_final != 0 && comZ_final != 0) {
-                                RecordFragment.addCOMPerFrame(comX_final, comZ_final);
+                                RecordFragment.addCOMPerFrame(comX_final, comZ_final, currentTimestamp);
                             }
                             RecordFragment.addAnglePerFrame("right_knee", right_knee);
                             RecordFragment.addAnglePerFrame("left_knee", left_knee);
@@ -494,7 +484,6 @@ public class PoseLandmarkerHelper {
                     }
                 }
                 if (!hasValidPose) {
-                    filteredCHip = null;
                     if (RecordFragment.isTestStarted()) {
                         RecordFragment.setHasValidPose(false);
                     }
@@ -594,16 +583,14 @@ public class PoseLandmarkerHelper {
         double Y_hip = D_torso_meters * (hip_mid_px_y - cy) / d_torso_pixels;
 
         double[] rawCHip = new double[]{X_hip, Y_hip, Z_hip};
-
-        if (filteredCHip == null) {
-            filteredCHip = rawCHip;
-        } else {
-            filteredCHip[0] = ALPHA * rawCHip[0] + (1 - ALPHA) * filteredCHip[0];
-            filteredCHip[1] = ALPHA * rawCHip[1] + (1 - ALPHA) * filteredCHip[1];
-            filteredCHip[2] = ALPHA * rawCHip[2] + (1 - ALPHA) * filteredCHip[2];
-        }
-
-        return filteredCHip;
+        // No smoothing here, by design. This used to EMA-smooth (alpha=0.25)
+        // ONLY the hip anchor while the segmental COM offset was added raw —
+        // two halves of one signal filtered differently, and the EMA state
+        // reset on every pose dropout, injecting a step into the recorded
+        // series. All smoothing now happens once, deliberately, in
+        // BalanceCalculator (despike -> uniform resample -> zero-phase
+        // low-pass) where it can be described in the methods section.
+        return rawCHip;
     }
 
     private List<Double> calculateCOMForMale(double totalMass, List<Landmark> worldLandmarks) {

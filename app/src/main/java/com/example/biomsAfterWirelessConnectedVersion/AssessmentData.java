@@ -242,7 +242,8 @@ class BaselineAssessment implements Serializable {
     private float swayRmsML;        // mm (x axis, frontal camera)
     private List<Float> comTrajX;   // filtered COM trajectory, meters
     private List<Float> comTrajZ;
-    private float comFrameRate;     // fps used for velocity
+    private float comFrameRate;     // mean true sampling rate of the raw trial (fps)
+    private boolean swayMetricsValid; // false = too few samples; sway zeros then mean "no measurement"
 
 
     private Map<String, Float> ARJ = new HashMap<>();
@@ -280,6 +281,8 @@ class BaselineAssessment implements Serializable {
 
     public float getComFrameRate() { return comFrameRate; }
     public void setComFrameRate(float v) { this.comFrameRate = v; }
+    public boolean isSwayMetricsValid() { return swayMetricsValid; }
+    public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
 
     /** Reset all sway fields (used when this test's data is deleted). */
     public void clearSwayMetrics() {
@@ -291,6 +294,7 @@ class BaselineAssessment implements Serializable {
         comTrajX = null;
         comTrajZ = null;
         comFrameRate = 0f;
+        swayMetricsValid = false;
     }
 }
 
@@ -309,7 +313,8 @@ class DualTaskAssessment implements Serializable {
     private float swayRmsML;        // mm (x axis, frontal camera)
     private List<Float> comTrajX;   // filtered COM trajectory, meters
     private List<Float> comTrajZ;
-    private float comFrameRate;     // fps used for velocity
+    private float comFrameRate;     // mean true sampling rate of the raw trial (fps)
+    private boolean swayMetricsValid; // false = too few samples; sway zeros then mean "no measurement"
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
 
@@ -345,6 +350,8 @@ class DualTaskAssessment implements Serializable {
 
     public float getComFrameRate() { return comFrameRate; }
     public void setComFrameRate(float v) { this.comFrameRate = v; }
+    public boolean isSwayMetricsValid() { return swayMetricsValid; }
+    public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
 
     /** Reset all sway fields (used when this test's data is deleted). */
     public void clearSwayMetrics() {
@@ -356,6 +363,7 @@ class DualTaskAssessment implements Serializable {
         comTrajX = null;
         comTrajZ = null;
         comFrameRate = 0f;
+        swayMetricsValid = false;
     }
 }
 
@@ -375,7 +383,8 @@ class SensoryAtaxiaAssessment implements Serializable {
     private float swayRmsML;        // mm (x axis, frontal camera)
     private List<Float> comTrajX;   // filtered COM trajectory, meters
     private List<Float> comTrajZ;
-    private float comFrameRate;     // fps used for velocity
+    private float comFrameRate;     // mean true sampling rate of the raw trial (fps)
+    private boolean swayMetricsValid; // false = too few samples; sway zeros then mean "no measurement"
 
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
@@ -413,6 +422,8 @@ class SensoryAtaxiaAssessment implements Serializable {
 
     public float getComFrameRate() { return comFrameRate; }
     public void setComFrameRate(float v) { this.comFrameRate = v; }
+    public boolean isSwayMetricsValid() { return swayMetricsValid; }
+    public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
 
     /** Reset all sway fields (used when this test's data is deleted). */
     public void clearSwayMetrics() {
@@ -424,6 +435,7 @@ class SensoryAtaxiaAssessment implements Serializable {
         comTrajX = null;
         comTrajZ = null;
         comFrameRate = 0f;
+        swayMetricsValid = false;
     }
 }
 

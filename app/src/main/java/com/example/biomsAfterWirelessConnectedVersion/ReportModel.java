@@ -173,6 +173,72 @@ public class ReportModel implements Serializable {
     public List<Float> getSensoryAtaxiaDTCTrials() { return sensoryAtaxiaDTCTrials; }
     public void setSensoryAtaxiaDTCTrials(List<Float> trials) { this.sensoryAtaxiaDTCTrials = trials != null ? trials : new ArrayList<>(); }
 
+    // Trial Lists — sway metric family (chronological: T1 = earliest trial of the day)
+    private List<Float> swayPathLengthTrials = new ArrayList<>();
+    private List<Float> swayVelocityTrials = new ArrayList<>();
+    private List<Float> swayRmsAPTrials = new ArrayList<>();
+    private List<Float> swayRmsMLTrials = new ArrayList<>();
+    private List<Float> dualTaskSwayPathLengthTrials = new ArrayList<>();
+    private List<Float> dualTaskSwayVelocityTrials = new ArrayList<>();
+    private List<Float> dualTaskSwayRmsAPTrials = new ArrayList<>();
+    private List<Float> dualTaskSwayRmsMLTrials = new ArrayList<>();
+    private List<Float> dualTaskVelocityDTCTrials = new ArrayList<>();
+    private List<Float> dualTaskPathLengthDTCTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaSwayPathLengthTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaSwayVelocityTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaSwayRmsAPTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaSwayRmsMLTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaVelocityDTCTrials = new ArrayList<>();
+    private List<Float> sensoryAtaxiaPathLengthDTCTrials = new ArrayList<>();
+
+    public List<Float> getSwayPathLengthTrials() { return swayPathLengthTrials; }
+    public void setSwayPathLengthTrials(List<Float> trials) { this.swayPathLengthTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSwayVelocityTrials() { return swayVelocityTrials; }
+    public void setSwayVelocityTrials(List<Float> trials) { this.swayVelocityTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSwayRmsAPTrials() { return swayRmsAPTrials; }
+    public void setSwayRmsAPTrials(List<Float> trials) { this.swayRmsAPTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSwayRmsMLTrials() { return swayRmsMLTrials; }
+    public void setSwayRmsMLTrials(List<Float> trials) { this.swayRmsMLTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskSwayPathLengthTrials() { return dualTaskSwayPathLengthTrials; }
+    public void setDualTaskSwayPathLengthTrials(List<Float> trials) { this.dualTaskSwayPathLengthTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskSwayVelocityTrials() { return dualTaskSwayVelocityTrials; }
+    public void setDualTaskSwayVelocityTrials(List<Float> trials) { this.dualTaskSwayVelocityTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskSwayRmsAPTrials() { return dualTaskSwayRmsAPTrials; }
+    public void setDualTaskSwayRmsAPTrials(List<Float> trials) { this.dualTaskSwayRmsAPTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskSwayRmsMLTrials() { return dualTaskSwayRmsMLTrials; }
+    public void setDualTaskSwayRmsMLTrials(List<Float> trials) { this.dualTaskSwayRmsMLTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskVelocityDTCTrials() { return dualTaskVelocityDTCTrials; }
+    public void setDualTaskVelocityDTCTrials(List<Float> trials) { this.dualTaskVelocityDTCTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getDualTaskPathLengthDTCTrials() { return dualTaskPathLengthDTCTrials; }
+    public void setDualTaskPathLengthDTCTrials(List<Float> trials) { this.dualTaskPathLengthDTCTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaSwayPathLengthTrials() { return sensoryAtaxiaSwayPathLengthTrials; }
+    public void setSensoryAtaxiaSwayPathLengthTrials(List<Float> trials) { this.sensoryAtaxiaSwayPathLengthTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaSwayVelocityTrials() { return sensoryAtaxiaSwayVelocityTrials; }
+    public void setSensoryAtaxiaSwayVelocityTrials(List<Float> trials) { this.sensoryAtaxiaSwayVelocityTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaSwayRmsAPTrials() { return sensoryAtaxiaSwayRmsAPTrials; }
+    public void setSensoryAtaxiaSwayRmsAPTrials(List<Float> trials) { this.sensoryAtaxiaSwayRmsAPTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaSwayRmsMLTrials() { return sensoryAtaxiaSwayRmsMLTrials; }
+    public void setSensoryAtaxiaSwayRmsMLTrials(List<Float> trials) { this.sensoryAtaxiaSwayRmsMLTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaVelocityDTCTrials() { return sensoryAtaxiaVelocityDTCTrials; }
+    public void setSensoryAtaxiaVelocityDTCTrials(List<Float> trials) { this.sensoryAtaxiaVelocityDTCTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getSensoryAtaxiaPathLengthDTCTrials() { return sensoryAtaxiaPathLengthDTCTrials; }
+    public void setSensoryAtaxiaPathLengthDTCTrials(List<Float> trials) { this.sensoryAtaxiaPathLengthDTCTrials = trials != null ? trials : new ArrayList<>(); }
+
     public float getDualTaskDTCARJLeft() {
         return dualTaskDTCARJLeft;
     }
@@ -428,7 +494,7 @@ public class ReportModel implements Serializable {
     }
 
     public float getSensoryAtaxiaBalanceToday() {
-       return sensoryAtaxiaBalanceToday;
+        return sensoryAtaxiaBalanceToday;
     }
 
     public float getSensoryAtaxiaSwayVelocityToday() { return sensoryAtaxiaSwayVelocityToday; }

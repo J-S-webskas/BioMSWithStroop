@@ -1,27 +1,88 @@
 package com.example.biomsAfterWirelessConnectedVersion;
 
-import android.content.Context;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class BalanceCalculator {
 
-    public SwayMetrics computeSwayMetrics(List<Point2D> COMHistories, float frameRate) {
+    /** Low-pass cutoff (Hz). Real COM sway power sits below ~2 Hz; the
+     *  force-plate literature low-passes at 5–10 Hz. */
+    private static final float LOWPASS_CUTOFF_HZ = 6.0f;
+
+    /** Every trial is resampled onto a uniform grid at this rate before
+     *  filtering, so the filter's design rate is always exactly true. */
+    private static final float GRID_RATE_HZ = 30.0f;
+
+    /** Despike: a sample >5 cm from its 5-sample rolling median is a pose
+     *  glitch, not physiology (sway cannot move that far in one frame). */
+    private static final int DESPIKE_RADIUS = 2;
+    private static final float DESPIKE_THRESHOLD_M = 0.05f;
+
+    /** Minimum evidence for a measurement: at least 10 real frames spanning
+     *  at least 1 second of uniform grid. Below that the trial is flagged
+     *  invalid instead of reporting zeros that look like perfect balance. */
+    private static final int MIN_REAL_SAMPLES = 10;
+    private static final int MIN_GRID_POINTS = 30;
+
+    /**
+     * Full sway pipeline:
+     *   raw samples -> despike -> resample to uniform 30 Hz grid
+     *   -> zero-phase 6 Hz Butterworth -> metrics.
+     *
+     * The metrics are computed on the uniformly sampled, zero-phase filtered
+     * series, so path length and velocity are no longer inflated by camera
+     * jitter or warped by dropped frames.
+     */
+    public SwayMetrics computeSwayMetrics(List<COMSample> samples) {
         SwayMetrics m = new SwayMetrics();
-        if (COMHistories == null || COMHistories.size() < 3) {
+        if (samples == null || samples.size() < MIN_REAL_SAMPLES) {
+            m.valid = false;
+            m.sampleCount = samples == null ? 0 : samples.size();
             return m;
         }
 
-        List<Point2D> filtered = getFilteredCOM(COMHistories);
-        int n = filtered.size();
-        m.sampleCount = n;
-        m.frameRate = frameRate;
+        // 1. Despike each axis on the raw (still timestamped) series.
+        List<Float> rawX = new ArrayList<>(samples.size());
+        List<Float> rawZ = new ArrayList<>(samples.size());
+        for (COMSample s : samples) {
+            rawX.add((float) s.x);
+            rawZ.add((float) s.z);
+        }
+        List<Float> cleanX = SwaySignalCleaner.despike(rawX, DESPIKE_RADIUS, DESPIKE_THRESHOLD_M);
+        List<Float> cleanZ = SwaySignalCleaner.despike(rawZ, DESPIKE_RADIUS, DESPIKE_THRESHOLD_M);
+        List<COMSample> despiked = new ArrayList<>(samples.size());
+        for (int i = 0; i < samples.size(); i++) {
+            despiked.add(new COMSample(cleanX.get(i), cleanZ.get(i), samples.get(i).timestampMs));
+        }
 
-        // 1. Sway area: 95% confidence ellipse (mm^2)
+        // 2. Resample onto a uniform grid using the frame timestamps.
+        SwaySignalCleaner.UniformSeries u = SwaySignalCleaner.resampleUniform(despiked, GRID_RATE_HZ);
+        if (u.x.size() < MIN_GRID_POINTS) {
+            m.valid = false;
+            m.sampleCount = samples.size();
+            return m;
+        }
+
+        // 3. Zero-phase low-pass at the grid's exact rate (no phase lag,
+        //    doubled-order jitter rejection — the posturography standard).
+        ButterworthFilter filter = new ButterworthFilter(LOWPASS_CUTOFF_HZ, GRID_RATE_HZ);
+        List<Float> fx = filter.filterZeroPhase(u.x);
+        List<Float> fz = filter.filterZeroPhase(u.z);
+
+        List<Point2D> filtered = new ArrayList<>(fx.size());
+        for (int i = 0; i < fx.size(); i++) {
+            filtered.add(new Point2D(fx.get(i), fz.get(i)));
+        }
+
+        // 4. Metrics on the cleaned series.
+        int n = filtered.size();
+        m.valid = true;
+        m.sampleCount = n;
+        m.frameRate = u.meanRawRateHz;
+        m.validFraction = u.validFraction;
+        m.effectiveDurationS = u.durationS;
         m.swayAreaMm2 = ellipseArea(filtered);
 
-        // 2. Path length: total trajectory distance (m -> mm)
         double path = 0.0;
         for (int i = 1; i < n; i++) {
             double dx = filtered.get(i).getX() - filtered.get(i - 1).getX();
@@ -29,17 +90,10 @@ public class BalanceCalculator {
             path += Math.sqrt(dx * dx + dz * dz);
         }
         m.pathLengthMm = (float) (path * 1000.0);
-
-        // 3. Mean velocity (mm/s)
-        if (frameRate > 0) {
-            double durationS = n / (double) frameRate;
-            if (durationS > 0) {
-                m.meanVelocityMmS = (float) (m.pathLengthMm / durationS);
-            }
+        if (u.durationS > 0) {
+            m.meanVelocityMmS = (float) (m.pathLengthMm / u.durationS);
         }
 
-        // 4. RMS displacement about the mean, per axis (m -> mm).
-        //    Also captures the filtered trajectory for export.
         double meanX = 0, meanZ = 0;
         for (Point2D p : filtered) {
             meanX += p.getX();
@@ -60,32 +114,6 @@ public class BalanceCalculator {
         m.rmsAPMm = (float) (Math.sqrt(sz / n) * 1000.0);  // z: anteroposterior
 
         return m;
-    }
-
-    public float getSwayArea(List<Point2D> COMHistories, Context context) {
-        return computeSwayMetrics(COMHistories, 30f).swayAreaMm2;
-    }
-
-    private List<Point2D> getFilteredCOM(List<Point2D> COMHistories) {
-        // 1. Separate X and Z trajectories for filtering
-        List<Float> rawX = new ArrayList<>(COMHistories.size());
-        List<Float> rawZ = new ArrayList<>(COMHistories.size());
-        for (Point2D p : COMHistories) {
-            rawX.add((float) p.getX());
-            rawZ.add((float) p.getZ());
-        }
-
-        // 2. Apply low-pass Butterworth filter (6.0 Hz cutoff for body sway) to reduce pose estimation noise
-        ButterworthFilter filter = new ButterworthFilter(6.0f, 30.0f);
-        List<Float> filteredX = filter.filter(rawX);
-        List<Float> filteredZ = filter.filter(rawZ);
-
-        // 3. Reconstruct filtered Point2D list
-        List<Point2D> filteredCOM = new ArrayList<>(COMHistories.size());
-        for (int i = 0; i < filteredX.size(); i++) {
-            filteredCOM.add(new Point2D(filteredX.get(i), filteredZ.get(i)));
-        }
-        return filteredCOM;
     }
 
     // 95% confidence ellipse area from covariance eigenvalues (mm^2).

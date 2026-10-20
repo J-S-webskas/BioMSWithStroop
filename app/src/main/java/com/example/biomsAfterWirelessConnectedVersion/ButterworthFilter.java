@@ -35,8 +35,32 @@ public class ButterworthFilter {
     }
 
     /**
-     * Filters a single 1D time series (e.g., joint angles over time).
+     * Zero-phase (forward-backward) low-pass filtering.
+     *
+     * Applies the forward filter, reverses the series, applies the filter a
+     * second time, and reverses back. The result is equivalent to a
+     * doubled-order Butterworth (4th order here) with NO phase lag — unlike
+     * the forward-only {@link #filter(List)}, which shifts the series in time
+     * and lets substantially more high-frequency jitter through (a 2nd-order
+     * forward filter passes ~24% of 12 Hz energy at a 6 Hz cutoff; the
+     * forward-backward pass squares that attenuation to ~6%). This is the
+     * standard in posturography processing (equivalent to scipy filtfilt).
+     *
+     * Use this for every metric derived from a recorded trial.
      */
+    public List<Float> filterZeroPhase(List<Float> input) {
+        List<Float> forward = filter(input);
+        List<Float> reversed = new ArrayList<>(forward.size());
+        for (int i = forward.size() - 1; i >= 0; i--) {
+            reversed.add(forward.get(i));
+        }
+        List<Float> backward = filter(reversed);
+        List<Float> out = new ArrayList<>(backward.size());
+        for (int i = backward.size() - 1; i >= 0; i--) {
+            out.add(backward.get(i));
+        }
+        return out;
+    }
     public List<Float> filter(List<Float> input) {
         if (input == null || input.size() < 3) {
             return input != null ? new ArrayList<>(input) : new ArrayList<>();
