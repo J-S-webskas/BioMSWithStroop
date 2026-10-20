@@ -390,6 +390,10 @@ public class ReportFragment extends Fragment {
 
                 if (dtcDT != 0) DTBalanceDTC = dtcDT;
                 if (dtcSA != 0) SABalanceDTC = dtcSA;
+                if (dtcVelDT != 0) DTVelocityDTC = dtcVelDT;
+                if (dtcPathDT != 0) DTPathDTC = dtcPathDT;
+                if (dtcVelSA != 0) SAVelocityDTC = dtcVelSA;
+                if (dtcPathSA != 0) SAPathDTC = dtcPathSA;
             }
         }
 
@@ -402,8 +406,20 @@ public class ReportFragment extends Fragment {
         balanceToday = bestBalance != null ? bestBalance : 0f;
         speedToday = bestWalkingSpeed != null ? bestWalkingSpeed : 0f;
         enduranceToday = bestEndurance != null ? bestEndurance : 0f;
+        swayVelocityToday = bestSwayVelocity != null ? bestSwayVelocity : 0f;
+        swayPathLengthToday = bestSwayPathLength != null ? bestSwayPathLength : 0f;
+        swayRmsAPToday = bestSwayRmsAP != null ? bestSwayRmsAP : 0f;
+        swayRmsMLToday = bestSwayRmsML != null ? bestSwayRmsML : 0f;
         DTbalanceToday = bestDTBalance != null ? bestDTBalance : 0f;
+        DTswayVelocityToday = bestDTSwayVelocity != null ? bestDTSwayVelocity : 0f;
+        DTswayPathLengthToday = bestDTSwayPathLength != null ? bestDTSwayPathLength : 0f;
+        DTswayRmsAPToday = bestDTSwayRmsAP != null ? bestDTSwayRmsAP : 0f;
+        DTswayRmsMLToday = bestDTSwayRmsML != null ? bestDTSwayRmsML : 0f;
         SAbalanceToday = bestSABalance != null ? bestSABalance : 0f;
+        SASwayVelocityToday = bestSASwayVelocity != null ? bestSASwayVelocity : 0f;
+        SASwayPathLengthToday = bestSASwayPathLength != null ? bestSASwayPathLength : 0f;
+        SASwayRmsAPToday = bestSASwayRmsAP != null ? bestSASwayRmsAP : 0f;
+        SASwayRmsMLToday = bestSASwayRmsML != null ? bestSASwayRmsML : 0f;
 
         // Calculate SD and CV across trials
         float BalanceSD = standardDeviation(allBalanceValues);
@@ -417,13 +433,29 @@ public class ReportFragment extends Fragment {
         // Create new Report
         ReportModel newReport = new ReportModel();
         newReport.setBalanceToday(balanceToday);
+        newReport.setSwayVelocityToday(swayVelocityToday);
+        newReport.setSwayPathLengthToday(swayPathLengthToday);
+        newReport.setSwayRmsAPToday(swayRmsAPToday);
+        newReport.setSwayRmsMLToday(swayRmsMLToday);
         newReport.setSpeedToday(speedToday);
         newReport.setEnduranceToday(enduranceToday);
         newReport.setSensoryAtaxiaBalanceToday(SAbalanceToday);
+        newReport.setSensoryAtaxiaSwayVelocityToday(SASwayVelocityToday);
+        newReport.setSensoryAtaxiaSwayPathLengthToday(SASwayPathLengthToday);
+        newReport.setSensoryAtaxiaSwayRmsAPToday(SASwayRmsAPToday);
+        newReport.setSensoryAtaxiaSwayRmsMLToday(SASwayRmsMLToday);
         newReport.setDualTaskBalanceToday(DTbalanceToday);
+        newReport.setDualTaskSwayVelocityToday(DTswayVelocityToday);
+        newReport.setDualTaskSwayPathLengthToday(DTswayPathLengthToday);
+        newReport.setDualTaskSwayRmsAPToday(DTswayRmsAPToday);
+        newReport.setDualTaskSwayRmsMLToday(DTswayRmsMLToday);
         // DTC
         newReport.setDualTaskDTCBalance(DTBalanceDTC);
+        newReport.setDualTaskDTCSwayVelocity(DTVelocityDTC);
+        newReport.setDualTaskDTCSwayPathLength(DTPathDTC);
         newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
+        newReport.setSensoryAtaxiaDTCSwayVelocity(SAVelocityDTC);
+        newReport.setSensoryAtaxiaDTCSwayPathLength(SAPathDTC);
         // SD & CV
         newReport.setBalanceSD(BalanceSD);
         newReport.setEnduranceSD(EnduranceSD);
