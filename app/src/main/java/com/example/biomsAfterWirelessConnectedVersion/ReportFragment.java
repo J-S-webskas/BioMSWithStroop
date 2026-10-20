@@ -240,6 +240,7 @@ public class ReportFragment extends Fragment {
         ArrayList<Float> speedTrials = new ArrayList<>();
         ArrayList<Float> enduranceTrials = new ArrayList<>();
         ArrayList<Float> dtBalanceTrials = new ArrayList<>();
+        ArrayList<ReportModel.StroopTrialData> dtStroopTrials = new ArrayList<>();
         ArrayList<Float> dtDTCTrials = new ArrayList<>();
         ArrayList<Float> saBalanceTrials = new ArrayList<>();
         ArrayList<Float> saDTCTrials = new ArrayList<>();
@@ -322,6 +323,14 @@ public class ReportFragment extends Fragment {
             // Dual Task data
             DualTaskAssessment dualTask = assessment.getDualTask();
             if (dualTask != null) {
+                if (dualTask.getStroopTotalTrials() > 0) {
+                    dtStroopTrials.add(new ReportModel.StroopTrialData(
+                            dualTask.getStroopTotalTrials(),
+                            dualTask.getStroopCorrectCount(),
+                            dualTask.getStroopAccuracyPercent(),
+                            dualTask.getStroopAvgReactionMs(),
+                            dualTask.getStroopAnswers()));
+                }
                 float dtBalance = dualTask.getBalanceScore();
                 if (assessment.getDualTaskTestDate() != null || dtBalance > 0) {
                     if (dtBalance > 0) dtBalanceTrials.add(dtBalance);
@@ -437,6 +446,7 @@ public class ReportFragment extends Fragment {
         newReport.setSpeedTrials(speedTrials);
         newReport.setEnduranceTrials(enduranceTrials);
         newReport.setDualTaskBalanceTrials(dtBalanceTrials);
+        newReport.setDualTaskStroopTrials(dtStroopTrials);
         newReport.setDualTaskDTCTrials(dtDTCTrials);
         newReport.setSensoryAtaxiaBalanceTrials(saBalanceTrials);
         newReport.setSensoryAtaxiaDTCTrials(saDTCTrials);

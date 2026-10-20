@@ -359,6 +359,33 @@ public class ReportDetailActivity extends AppCompatActivity {
         wsTrialsTextView = findViewById(R.id.WSTrials);
         enduranceTrialsTextView = findViewById(R.id.EnduranceTrials);
         dualTaskBalanceTrialsTextView = findViewById(R.id.DualTaskBalanceTrials);
+
+        // Stroop Test section (results of the voice test recorded during
+        // Dual Task, showcased separately from the sway table)
+        TextView stroopSummary = findViewById(R.id.stroopSummary);
+        Button btnViewStroopResults = findViewById(R.id.btnViewStroopResults);
+        if (reportModel != null && btnViewStroopResults != null) {
+            java.util.List<ReportModel.StroopTrialData> stroopTrials =
+                    reportModel.getDualTaskStroopTrials();
+            if (stroopTrials == null || stroopTrials.isEmpty()) {
+                btnViewStroopResults.setEnabled(false);
+            } else {
+                ReportModel.StroopTrialData latest = stroopTrials.get(stroopTrials.size() - 1);
+                if (stroopSummary != null) {
+                    stroopSummary.setText(String.format(Locale.US,
+                            "Latest trial: %d/%d correct · %.0f%% · avg %.0f ms (%d trial%s)",
+                            latest.correctCount, latest.totalTrials, latest.accuracyPercent,
+                            latest.avgReactionMs, stroopTrials.size(),
+                            stroopTrials.size() == 1 ? "" : "s"));
+                }
+                btnViewStroopResults.setOnClickListener(v -> {
+                    Intent intent = new Intent(ReportDetailActivity.this, StroopResultsActivity.class);
+                    intent.putExtra("stroopTrials", new java.util.ArrayList<>(stroopTrials));
+                    intent.putExtra("date", reportModel.getDate());
+                    startActivity(intent);
+                });
+            }
+        }
         sensoryAtaxiaBalanceTrialsTextView = findViewById(R.id.SensoryAtaxiaBalanceTrials);
         swayPathLengthTrialsTextView = findViewById(R.id.swayPathLengthTrials);
         swayVelocityTrialsTextView = findViewById(R.id.swayVelocityTrials);

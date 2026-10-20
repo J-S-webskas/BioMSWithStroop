@@ -164,6 +164,34 @@ public class ReportModel implements Serializable {
     public List<Float> getDualTaskBalanceTrials() { return dualTaskBalanceTrials; }
     public void setDualTaskBalanceTrials(List<Float> trials) { this.dualTaskBalanceTrials = trials != null ? trials : new ArrayList<>(); }
 
+    // Stroop voice-test results per dual-task trial (chronological), shown
+    // as their own "Stroop Test" showcase in the report — separate from the
+    // dual-task sway table.
+    public static class StroopTrialData implements Serializable {
+        public int totalTrials;
+        public int correctCount;
+        public float accuracyPercent;
+        public float avgReactionMs;
+        public List<StroopAnswerRecord> answers = new ArrayList<>();
+
+        public StroopTrialData() {
+        }
+
+        public StroopTrialData(int totalTrials, int correctCount, float accuracyPercent,
+                               float avgReactionMs, List<StroopAnswerRecord> answers) {
+            this.totalTrials = totalTrials;
+            this.correctCount = correctCount;
+            this.accuracyPercent = accuracyPercent;
+            this.avgReactionMs = avgReactionMs;
+            this.answers = answers != null ? answers : new ArrayList<>();
+        }
+    }
+
+    private List<StroopTrialData> dualTaskStroopTrials = new ArrayList<>();
+
+    public List<StroopTrialData> getDualTaskStroopTrials() { return dualTaskStroopTrials; }
+    public void setDualTaskStroopTrials(List<StroopTrialData> trials) { this.dualTaskStroopTrials = trials != null ? trials : new ArrayList<>(); }
+
     public List<Float> getDualTaskDTCTrials() { return dualTaskDTCTrials; }
     public void setDualTaskDTCTrials(List<Float> trials) { this.dualTaskDTCTrials = trials != null ? trials : new ArrayList<>(); }
 

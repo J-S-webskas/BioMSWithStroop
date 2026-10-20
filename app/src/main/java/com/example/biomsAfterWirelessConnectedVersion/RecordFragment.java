@@ -681,6 +681,36 @@ public class RecordFragment extends Fragment {
         currentAssessment.getDualTask().setSwayMetricsValid(metrics.valid);
         currentAssessment.getDualTask().setARJ(ARJScores);
 
+        // Persist the Stroop voice results recorded during this trial.
+        // stopVoiceStroop()'s result used to be discarded entirely, so no
+        // Stroop data ever reached storage or reports. The camera is still
+        // running at this point (it is stopped right after this save), so
+        // stop the voice test here and store what it recorded.
+        try {
+            Fragment stroopFragment = getActivity() != null
+                    ? getActivity().getSupportFragmentManager().findFragmentById(R.id.fragment_container)
+                    : null;
+            if (stroopFragment instanceof CameraFragment) {
+                StroopVoiceManager.VoiceStroopResult stroop =
+                        ((CameraFragment) stroopFragment).stopVoiceStroop();
+                if (stroop != null && stroop.totalTrials > 0) {
+                    DualTaskAssessment dt = currentAssessment.getDualTask();
+                    dt.setStroopTotalTrials(stroop.totalTrials);
+                    dt.setStroopCorrectCount(stroop.correctCount);
+                    dt.setStroopAccuracyPercent(stroop.accuracyPercent);
+                    dt.setStroopAvgReactionMs(stroop.avgReactionTimeMs);
+                    List<StroopAnswerRecord> records = new ArrayList<>();
+                    for (StroopVoiceManager.StroopAnswer a : stroop.answers) {
+                        records.add(new StroopAnswerRecord(a.wordText, a.inkColorName,
+                                a.spokenText, a.correct, a.reactionTimeMs));
+                    }
+                    dt.setStroopAnswers(records);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("RecordFragment", "Could not capture Stroop results", e);
+        }
+
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.DUAL_TASK_COMPLETED);
         currentAssessment.setDualTaskTestDate(new Date());
 
