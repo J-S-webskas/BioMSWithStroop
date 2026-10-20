@@ -1,6 +1,7 @@
 package com.example.biomsAfterWirelessConnectedVersion;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -353,6 +354,26 @@ class DualTaskAssessment implements Serializable {
     public boolean isSwayMetricsValid() { return swayMetricsValid; }
     public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
 
+    // Stroop voice test recorded during this dual-task trial. Until now the
+    // result of CameraFragment.stopVoiceStroop() was discarded; it is now
+    // persisted so reports can present the Stroop test as its own result.
+    private int stroopTotalTrials;
+    private int stroopCorrectCount;
+    private float stroopAccuracyPercent;
+    private float stroopAvgReactionMs;
+    private List<StroopAnswerRecord> stroopAnswers = new ArrayList<>();
+
+    public int getStroopTotalTrials() { return stroopTotalTrials; }
+    public void setStroopTotalTrials(int v) { this.stroopTotalTrials = v; }
+    public int getStroopCorrectCount() { return stroopCorrectCount; }
+    public void setStroopCorrectCount(int v) { this.stroopCorrectCount = v; }
+    public float getStroopAccuracyPercent() { return stroopAccuracyPercent; }
+    public void setStroopAccuracyPercent(float v) { this.stroopAccuracyPercent = v; }
+    public float getStroopAvgReactionMs() { return stroopAvgReactionMs; }
+    public void setStroopAvgReactionMs(float v) { this.stroopAvgReactionMs = v; }
+    public List<StroopAnswerRecord> getStroopAnswers() { return stroopAnswers; }
+    public void setStroopAnswers(List<StroopAnswerRecord> v) { this.stroopAnswers = v != null ? v : new ArrayList<>(); }
+
     /** Reset all sway fields (used when this test's data is deleted). */
     public void clearSwayMetrics() {
         balanceScore = 0f;
@@ -364,6 +385,11 @@ class DualTaskAssessment implements Serializable {
         comTrajZ = null;
         comFrameRate = 0f;
         swayMetricsValid = false;
+        stroopTotalTrials = 0;
+        stroopCorrectCount = 0;
+        stroopAccuracyPercent = 0f;
+        stroopAvgReactionMs = 0f;
+        stroopAnswers = new ArrayList<>();
     }
 }
 
@@ -562,4 +588,38 @@ class TestComparisons implements Serializable {
     public Map<String, Float> getAsymmetryScores() {
         return asymmetryScores;
     }
+}
+
+/** One judged Stroop answer, stored with the dual-task trial that recorded
+ *  it (the storage form of StroopVoiceManager.StroopAnswer). */
+class StroopAnswerRecord implements Serializable {
+
+    private String wordText;
+    private String inkColor;
+    private String spokenText;
+    private boolean correct;
+    private long reactionTimeMs;
+
+    public StroopAnswerRecord() {
+    }
+
+    public StroopAnswerRecord(String wordText, String inkColor, String spokenText,
+                              boolean correct, long reactionTimeMs) {
+        this.wordText = wordText;
+        this.inkColor = inkColor;
+        this.spokenText = spokenText;
+        this.correct = correct;
+        this.reactionTimeMs = reactionTimeMs;
+    }
+
+    public String getWordText() { return wordText; }
+    public void setWordText(String v) { this.wordText = v; }
+    public String getInkColor() { return inkColor; }
+    public void setInkColor(String v) { this.inkColor = v; }
+    public String getSpokenText() { return spokenText; }
+    public void setSpokenText(String v) { this.spokenText = v; }
+    public boolean isCorrect() { return correct; }
+    public void setCorrect(boolean v) { this.correct = v; }
+    public long getReactionTimeMs() { return reactionTimeMs; }
+    public void setReactionTimeMs(long v) { this.reactionTimeMs = v; }
 }

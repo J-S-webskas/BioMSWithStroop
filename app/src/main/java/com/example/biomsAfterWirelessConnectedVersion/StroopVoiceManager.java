@@ -36,17 +36,44 @@ public class StroopVoiceManager implements RecognitionListener {
         }
     }
 
+    /** One judged answer, kept so a report can show the test trial by trial
+     *  instead of only the aggregate score. */
+    public static class StroopAnswer implements java.io.Serializable {
+        public final String wordText;     // the word that was printed
+        public final String inkColorName; // the ink color (the correct answer)
+        public final String spokenText;   // the color the user was heard saying
+        public final boolean correct;
+        public final long reactionTimeMs;
+
+        public StroopAnswer(String wordText, String inkColorName, String spokenText,
+                            boolean correct, long reactionTimeMs) {
+            this.wordText = wordText;
+            this.inkColorName = inkColorName;
+            this.spokenText = spokenText;
+            this.correct = correct;
+            this.reactionTimeMs = reactionTimeMs;
+        }
+    }
+
     public static class VoiceStroopResult {
         public final int totalTrials;
         public final int correctCount;
         public final float accuracyPercent;
         public final float avgReactionTimeMs;
+        /** Every judged answer, in order (empty if none were recorded). */
+        public final List<StroopAnswer> answers;
 
         public VoiceStroopResult(int totalTrials, int correctCount, float accuracyPercent, float avgReactionTimeMs) {
+            this(totalTrials, correctCount, accuracyPercent, avgReactionTimeMs, new ArrayList<>());
+        }
+
+        public VoiceStroopResult(int totalTrials, int correctCount, float accuracyPercent,
+                                 float avgReactionTimeMs, List<StroopAnswer> answers) {
             this.totalTrials = totalTrials;
             this.correctCount = correctCount;
             this.accuracyPercent = accuracyPercent;
             this.avgReactionTimeMs = avgReactionTimeMs;
+            this.answers = answers != null ? answers : new ArrayList<>();
         }
     }
 
@@ -75,6 +102,7 @@ public class StroopVoiceManager implements RecognitionListener {
     private int totalTrials = 0;
     private int correctCount = 0;
     private final List<Long> reactionTimes = new ArrayList<>();
+    private final List<StroopAnswer> answers = new ArrayList<>();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     public StroopVoiceManager(Context context, StroopVoiceListener listener) {
@@ -106,6 +134,7 @@ public class StroopVoiceManager implements RecognitionListener {
         totalTrials = 0;
         correctCount = 0;
         reactionTimes.clear();
+        answers.clear();
         lastTextIndex = -1;
         lastColorIndex = -1;
         isListeningActive = true;
@@ -268,6 +297,8 @@ public class StroopVoiceManager implements RecognitionListener {
                 correctCount++;
                 reactionTimes.add(rt);
             }
+            answers.add(new StroopAnswer(currentTrial.wordText, currentTrial.colorName,
+                    matchedColor, isCorrect, rt));
 
             if (listener != null) {
                 listener.onSpokenResult(matchedColor, isCorrect);
@@ -294,7 +325,8 @@ public class StroopVoiceManager implements RecognitionListener {
         for (long rt : reactionTimes) sumRt += rt;
         float avgRt = reactionTimes.isEmpty() ? 0f : (float) sumRt / reactionTimes.size();
 
-        return new VoiceStroopResult(totalTrials, correctCount, accuracy, avgRt);
+        return new VoiceStroopResult(totalTrials, correctCount, accuracy, avgRt,
+                new ArrayList<>(answers));
     }
 
     // Speechrecognizer callbacks
