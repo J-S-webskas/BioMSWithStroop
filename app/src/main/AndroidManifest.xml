@@ -15,6 +15,16 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
+    <!-- Android 11+ package visibility: without this declaration the system
+         hides the speech recognition service from the app, and
+         SpeechRecognizer.isRecognitionAvailable() returns false even on
+         phones that have a recognition service installed. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -55,6 +65,10 @@
             android:screenOrientation="portrait"/>
         <activity
             android:name=".ReportDetailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"/>
+        <activity
+            android:name=".StroopTestActivity"
             android:exported="false"
             android:screenOrientation="portrait"/>
         <activity

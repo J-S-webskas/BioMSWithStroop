@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/profile_pro_bold"
+        android:text="Stroop Color Word Test"
+        android:textSize="24sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/profile_pro"
+        android:text="Speak aloud the COLOR of the ink — not the word itself."
+        android:textSize="16sp" />
+
+    <!-- The Stroop word, shown in its ink color -->
+    <TextView
+        android:id="@+id/tvStroopWord"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:fontFamily="@font/profile_pro_bold"
+        android:gravity="center"
+        android:shadowColor="#000000"
+        android:shadowDx="3"
+        android:shadowDy="3"
+        android:shadowRadius="5"
+        android:text="—"
+        android:textSize="84sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvStroopStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/profile_pro"
+        android:gravity="center"
+        android:text="Tap Start, then say the ink color out loud."
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/tvStroopScore"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/profile_pro_medi"
+        android:gravity="center"
+        android:text="Score: 0 / 0"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/tvStroopResult"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/profile_pro"
+        android:gravity="center"
+        android:textSize="16sp"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/btnStroopStartStop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="32dp"
+        android:backgroundTint="#FB3737"
+        android:fontFamily="@font/profile_pro_medi"
+        android:text="Start Test"
+        android:textSize="18sp" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Accuracy disclaimer -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/profile_pro"
+        android:gravity="center"
+        android:text="Note: The Stroop word test is not 100% accurate. It relies on voice recognition, which can mishear a spoken color — especially from a few meters away or in a noisy room. Treat the score as an estimate, not an exact measurement."
+        android:textSize="14sp" />
+
+</LinearLayout>
