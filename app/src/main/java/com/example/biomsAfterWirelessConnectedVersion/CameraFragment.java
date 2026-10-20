@@ -41,6 +41,7 @@ import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -112,6 +113,20 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             stroopVoiceContainer.setVisibility(View.VISIBLE);
         }
 
+        // Without the mic permission the recognizer fails silently in a
+        // restart loop and the test "hears" nothing at all. It is requested
+        // on a different screen (MarkDistanceAndCamera), so gate on it here,
+        // where it actually matters.
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(),
+                    new String[]{Manifest.permission.RECORD_AUDIO}, 2001);
+            if (tvVoiceStatus != null) {
+                tvVoiceStatus.setText("Microphone permission needed — grant it, then restart the test");
+            }
+            return;
+        }
+
         stroopVoiceManager = new StroopVoiceManager(requireContext(), new StroopVoiceManager.StroopVoiceListener() {
             @Override
             public void onNewTrial(String wordText, int colorInt) {
@@ -131,6 +146,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             @Override
             public void onError(String errorMessage) {
                 Log.e("StroopVoice", errorMessage);
+                // Surface it: a log-only error made a missing/unavailable
+                // recognition service look like "the test hears nothing."
+                if (tvVoiceStatus != null) {
+                    tvVoiceStatus.setText(errorMessage);
+                }
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), errorMessage, Toast.LENGTH_LONG).show();
+                }
             }
         });
 
