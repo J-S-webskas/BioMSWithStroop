@@ -32,6 +32,19 @@
             android:textSize="18sp"
             android:backgroundTint="#FB3737"/>
 
+        <Button
+            android:id="@+id/openStroopTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/createNewReport"
+            app:layout_constraintTop_toBottomOf="@id/topBar"
+            android:layout_marginTop="20dp"
+            android:layout_marginStart="10dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:text="Stroop Test"
+            android:textSize="18sp"
+            android:backgroundTint="#FB3737"/>
+
         <TextView
             android:id="@+id/noData"
             android:layout_width="wrap_content"

@@ -79,6 +79,15 @@ public class ReportFragment extends Fragment {
             }
         });
 
+        Button btnStroopTest = view.findViewById(R.id.openStroopTest);
+        btnStroopTest.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                startActivity(new Intent(requireContext(), StroopTestActivity.class));
+            }
+        });
+
         // Connect adapter to RecyclerView
         adapter = new ReportAdapter(reportList);
         recyclerView.setAdapter(adapter);
