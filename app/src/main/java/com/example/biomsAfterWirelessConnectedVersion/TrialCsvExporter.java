@@ -168,6 +168,17 @@ public class TrialCsvExporter {
         sb.append("InterpolatedFramesCount,").append(metrics != null ? metrics.interpolatedFrames : 0).append('\n');
         sb.append("DespikedFramesCount,").append(metrics != null ? metrics.despikedFrames : 0).append('\n');
         sb.append("FOV_Used [deg],").append(String.format(Locale.US, "%.1f", fovDegrees)).append('\n');
+        if (metrics != null) {
+            sb.append("AnchorZ [m],").append(String.format(Locale.US, "%.3f", metrics.anchorZ)).append('\n');
+            sb.append("AnchorSource,").append(metrics.anchorSource != null ? metrics.anchorSource : "none").append('\n');
+            sb.append("CalibFramesUsed,").append(metrics.calibFramesUsed).append('\n');
+            sb.append("CalibLowConfidence,").append(metrics.calibLowConfidence).append('\n');
+            sb.append("AnchorDisagreement,").append(metrics.anchorDisagreement).append('\n');
+            sb.append("PhoneRotationMax [deg],").append(String.format(Locale.US, "%.2f", metrics.phoneRotationDeg)).append('\n');
+            sb.append("APRange [mm],").append(String.format(Locale.US, "%.1f", metrics.apRangeMm)).append('\n');
+            sb.append("MLRange [mm],").append(String.format(Locale.US, "%.1f", metrics.mlRangeMm)).append('\n');
+            sb.append("RangeFlag,").append(metrics.rangeFlag).append('\n');
+        }
         return sb.toString();
     }
 
@@ -191,6 +202,18 @@ public class TrialCsvExporter {
                 + "  DespikedFramesCount: frames where the Hampel filter replaced a\n"
                 + "    glitch value.\n"
                 + "  FOV_Used: horizontal field of view (degrees) calculated for this\n"
-                + "    phone and used for the distance/scale conversion.\n";
+                + "    phone and used for the distance/scale conversion.\n"
+                + "  AnchorZ / AnchorSource: the camera-distance anchor frozen at\n"
+                + "    test start, and how it was obtained (manual tape distance,\n"
+                + "    camera calibration median, or both in agreement).\n"
+                + "  CalibFramesUsed / CalibLowConfidence / AnchorDisagreement:\n"
+                + "    quality indicators for that calibration.\n"
+                + "  PhoneRotationMax: largest rotation of the phone itself during\n"
+                + "    the trial (gyroscope audit). Large values mean the camera\n"
+                + "    moved, and part of the measured sway may be camera motion.\n"
+                + "  APRange / MLRange / RangeFlag: total COM excursion. RangeFlag\n"
+                + "    means the excursion exceeded the base of support for the\n"
+                + "    stance protocol; treat the trial as invalid (it is flagged,\n"
+                + "    never deleted).\n";
     }
 }

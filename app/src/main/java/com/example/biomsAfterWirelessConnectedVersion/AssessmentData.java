@@ -244,6 +244,7 @@ class BaselineAssessment implements Serializable {
     private List<Float> comTrajZ;
     private float comFrameRate;     // mean true sampling rate of the raw trial (fps)
     private boolean swayMetricsValid; // false = too few samples; sway zeros then mean "no measurement"
+    private boolean swayRangeFlag; // plausibility gate: COM range exceeded the base-of-support bounds
 
 
     private Map<String, Float> ARJ = new HashMap<>();
@@ -284,6 +285,9 @@ class BaselineAssessment implements Serializable {
     public boolean isSwayMetricsValid() { return swayMetricsValid; }
     public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
 
+    public boolean isSwayRangeFlag() { return swayRangeFlag; }
+    public void setSwayRangeFlag(boolean v) { this.swayRangeFlag = v; }
+
     /** Reset all sway fields (used when this test's data is deleted). */
     public void clearSwayMetrics() {
         balanceScore = 0f;
@@ -295,6 +299,7 @@ class BaselineAssessment implements Serializable {
         comTrajZ = null;
         comFrameRate = 0f;
         swayMetricsValid = false;
+        swayRangeFlag = false;
     }
 }
 
@@ -315,6 +320,7 @@ class DualTaskAssessment implements Serializable {
     private List<Float> comTrajZ;
     private float comFrameRate;     // mean true sampling rate of the raw trial (fps)
     private boolean swayMetricsValid; // false = too few samples; sway zeros then mean "no measurement"
+    private boolean swayRangeFlag; // plausibility gate: COM range exceeded the base-of-support bounds
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
 
@@ -353,6 +359,9 @@ class DualTaskAssessment implements Serializable {
     public boolean isSwayMetricsValid() { return swayMetricsValid; }
     public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
 
+    public boolean isSwayRangeFlag() { return swayRangeFlag; }
+    public void setSwayRangeFlag(boolean v) { this.swayRangeFlag = v; }
+
     /** Reset all sway fields (used when this test's data is deleted). */
     public void clearSwayMetrics() {
         balanceScore = 0f;
@@ -364,6 +373,7 @@ class DualTaskAssessment implements Serializable {
         comTrajZ = null;
         comFrameRate = 0f;
         swayMetricsValid = false;
+        swayRangeFlag = false;
     }
 }
 
@@ -385,6 +395,7 @@ class SensoryAtaxiaAssessment implements Serializable {
     private List<Float> comTrajZ;
     private float comFrameRate;     // mean true sampling rate of the raw trial (fps)
     private boolean swayMetricsValid; // false = too few samples; sway zeros then mean "no measurement"
+    private boolean swayRangeFlag; // plausibility gate: COM range exceeded the base-of-support bounds
 
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
@@ -425,6 +436,9 @@ class SensoryAtaxiaAssessment implements Serializable {
     public boolean isSwayMetricsValid() { return swayMetricsValid; }
     public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
 
+    public boolean isSwayRangeFlag() { return swayRangeFlag; }
+    public void setSwayRangeFlag(boolean v) { this.swayRangeFlag = v; }
+
     /** Reset all sway fields (used when this test's data is deleted). */
     public void clearSwayMetrics() {
         balanceScore = 0f;
@@ -436,6 +450,7 @@ class SensoryAtaxiaAssessment implements Serializable {
         comTrajZ = null;
         comFrameRate = 0f;
         swayMetricsValid = false;
+        swayRangeFlag = false;
     }
 }
 
