@@ -238,6 +238,7 @@ public class RecordFragment extends Fragment {
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("finished", true);
         intent.putExtra("Saving", false);
+        intent.putExtra("cancelledMidway", true);
         startActivity(intent);
         setNavigationVisible(true);
     }
@@ -622,6 +623,17 @@ public class RecordFragment extends Fragment {
             for (Map.Entry<String, ArrayDeque<Float>> e : BalanceHistories.entrySet()) {
                 jointSeries.putIfAbsent(e.getKey(), new ArrayList<>(e.getValue()));
             }
+            // The camera distance the user recorded this trial with
+            // (entered + confirmed before the test); exported in the
+            // SystemLog and stored on the assessment.
+            try {
+                SharedPreferences setupPrefs = requireContext().getSharedPreferences(
+                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE);
+                metrics.cameraDistanceM = setupPrefs.getFloat(
+                        PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M, 0f);
+            } catch (Exception ignored) {
+                // Distance stays 0 = none entered.
+            }
             double fov = PoseLandmarkerHelper.DEFAULT_FOV_H_DEGREES;
             Fragment frag = getActivity() != null
                     ? getActivity().getSupportFragmentManager().findFragmentById(R.id.fragment_container)
@@ -690,6 +702,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.setSensoryAtaxiaTestDate(new Date());
 
         generateCsvExport("SensoryAtaxia", metrics);
+        currentAssessment.getSensoryAtaxia().setCameraDistanceM(metrics.cameraDistanceM);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();
@@ -775,6 +788,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.setDualTaskTestDate(new Date());
 
         generateCsvExport("DualTask", metrics);
+        currentAssessment.getDualTask().setCameraDistanceM(metrics.cameraDistanceM);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();
@@ -812,6 +826,7 @@ public class RecordFragment extends Fragment {
 
         recalculateComparisons(currentAssessment);
         generateCsvExport("Baseline", metrics);
+        currentAssessment.getBaseline().setCameraDistanceM(metrics.cameraDistanceM);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();

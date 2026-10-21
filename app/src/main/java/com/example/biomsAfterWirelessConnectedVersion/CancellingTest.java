@@ -68,6 +68,17 @@ public class CancellingTest extends AppCompatActivity {
         boolean saving = intent.getBooleanExtra("Saving", false);
         boolean finished = intent.getBooleanExtra("finished", false);
         boolean simplyNavigatingToMainPage = intent.getBooleanExtra("simplyNavigatingToMainPage", false);
+        boolean cancelledMidway = intent.getBooleanExtra("cancelledMidway", false);
+        if (cancelledMidway) {
+            // User cancelled mid-test. The discard path never saves, so
+            // there is nothing to export and no save to undo: show the
+            // message and navigate away after 1.5 seconds.
+            cancellingTest.setText("Test Cancelled.");
+            dataNotSaved.setText("Results not saved.");
+            exportActions.setVisibility(View.GONE);
+            postDelayedNavigate(intent, saving);
+            return;
+        }
         // A finished test with a CSV export package waits for the user:
         // they can tap "Export CSV" (or Continue) instead of being
         // auto-advanced past the button.
@@ -111,6 +122,22 @@ public class CancellingTest extends AppCompatActivity {
         dataNotSaved.setText("Your results are saved.\nExport the CSV data, or continue.");
         exportActions.setVisibility(View.VISIBLE);
         return true;
+    }
+
+    /** Auto-navigate back to MainActivity after 1.5 s — used by the
+     *  cancelled-midway path (nothing saved, nothing to export). */
+    private void postDelayedNavigate(Intent source, boolean saving) {
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("cancelled", true);
+            resultIntent.putExtra("Saving", saving);
+            setResult(RESULT_OK, resultIntent);
+            Intent intent1 = new Intent(this, MainActivity.class);
+            intent1.putExtra("navigate_to_assessment", true);
+            intent1.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent1);
+            finish();
+        }, 1500);
     }
 
     /** Shares the export zip (e.g. via Gmail) through the system share sheet. */
@@ -158,6 +185,14 @@ public class CancellingTest extends AppCompatActivity {
 
         boolean saving = intent.getBooleanExtra("Saving", false);
         boolean finished = intent.getBooleanExtra("finished", false);
+        boolean cancelledMidway = intent.getBooleanExtra("cancelledMidway", false);
+        if (cancelledMidway) {
+            cancellingTest.setText("Test Cancelled.");
+            dataNotSaved.setText("Results not saved.");
+            exportActions.setVisibility(View.GONE);
+            postDelayedNavigate(intent, saving);
+            return;
+        }
         boolean exportMode = finished && showExportIfAvailable();
         if (saving) {
             dataNotSaved.setText("If this is a mistake, you can always delete the test");

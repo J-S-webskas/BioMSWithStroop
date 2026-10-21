@@ -48,7 +48,7 @@
                 android:id="@+id/distanceBody"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mark a spot where you are in full view to the camera\n\nMeasure the distance from your feet to the camera and update the distance accordingly in the prompt that will pop up after you click the Next button in Start Test on Record page"
+                android:text="Mark a spot where you are in full view to the camera\n\nMeasure the distance from your feet to the camera and update the distance accordingly in the prompt that will pop up after you click the Next button in Start Test on Record page. Make sure the room is lit properly: bright, even light on you, and no strong light behind you shining into the camera."
                 app:layout_constraintTop_toBottomOf="@id/markDistance"
                 android:paddingStart="30dp"
                 android:paddingEnd="30dp"
