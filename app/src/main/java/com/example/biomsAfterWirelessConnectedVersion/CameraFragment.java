@@ -37,10 +37,16 @@ import androidx.annotation.Nullable;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.FocusMeteringAction;
+import androidx.camera.core.FocusMeteringResult;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
+import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.Preview;
+import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
 import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -112,6 +118,20 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             stroopVoiceContainer.setVisibility(View.VISIBLE);
         }
 
+        // Without the mic permission the recognizer fails silently in a
+        // restart loop and the test "hears" nothing at all. It is requested
+        // on a different screen (MarkDistanceAndCamera), so gate on it here,
+        // where it actually matters.
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(),
+                    new String[]{Manifest.permission.RECORD_AUDIO}, 2001);
+            if (tvVoiceStatus != null) {
+                tvVoiceStatus.setText("Microphone permission needed — grant it, then restart the test");
+            }
+            return;
+        }
+
         stroopVoiceManager = new StroopVoiceManager(requireContext(), new StroopVoiceManager.StroopVoiceListener() {
             @Override
             public void onNewTrial(String wordText, int colorInt) {
@@ -131,6 +151,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             @Override
             public void onError(String errorMessage) {
                 Log.e("StroopVoice", errorMessage);
+                // Surface it: a log-only error made a missing/unavailable
+                // recognition service look like "the test hears nothing."
+                if (tvVoiceStatus != null) {
+                    tvVoiceStatus.setText(errorMessage);
+                }
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), errorMessage, Toast.LENGTH_LONG).show();
+                }
             }
         });
 
@@ -234,6 +262,8 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         isCountdownActive = false;
                         // Tell RecordFragment that test has started
                         RecordFragment.setTestStarted(true);
+                        PoseLandmarkerHelper.resetDroppedFrameCount();
+                        lockFocusForTest();
                         if ("DualTask".equals(assessmentType)) {
                             onDualTaskStarted();
                         }
@@ -315,8 +345,20 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         }
     }
 
+    /** The horizontal FOV (degrees) actually used for this phone's COM
+     *  scale conversion — calculated from the camera characteristics, or
+     *  the 60° default when the device does not report them. */
+    public double getCurrentFovDegrees() {
+        return poseLandmarkerHelper != null
+                ? poseLandmarkerHelper.getFovDegrees()
+                : PoseLandmarkerHelper.DEFAULT_FOV_H_DEGREES;
+    }
+
     @Override
     public void onDestroyView() {
+        // Preview must never inherit a test's focus lock: whatever path
+        // leaves the test screen, the lock ends here.
+        releaseFocusLock();
         _fragmentCameraBinding = null;
         super.onDestroyView();
 
@@ -603,7 +645,56 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         }
     }
 
+    /**
+     * Locks focus, exposure and white balance at the center of the frame for
+     * the duration of a test — the iPhone-style AE/AF lock. Without it,
+     * continuous autofocus keeps re-hunting as the patient sways or steps
+     * closer, which pulses the image in and out and shifts the tracked
+     * landmarks. The metering action never auto-cancels, so the lock holds
+     * until releaseFocusLock() runs when the test ends.
+     */
+    public void lockFocusForTest() {
+        if (camera == null || getFragmentCameraBinding() == null) return;
+        try {
+            PreviewView viewFinder = getFragmentCameraBinding().viewFinder;
+            if (viewFinder.getWidth() <= 0 || viewFinder.getHeight() <= 0) return;
+            SurfaceOrientedMeteringPointFactory factory =
+                    new SurfaceOrientedMeteringPointFactory(viewFinder.getWidth(), viewFinder.getHeight());
+            MeteringPoint center = factory.createPoint(
+                    viewFinder.getWidth() / 2f, viewFinder.getHeight() / 2f);
+            FocusMeteringAction action = new FocusMeteringAction.Builder(center,
+                    FocusMeteringAction.FLAG_AF | FocusMeteringAction.FLAG_AE | FocusMeteringAction.FLAG_AWB)
+                    .disableAutoCancel()
+                    .build();
+            ListenableFuture<FocusMeteringResult> result =
+                    camera.getCameraControl().startFocusAndMetering(action);
+            result.addListener(() -> {
+                try {
+                    FocusMeteringResult r = result.get();
+                    Log.d(TAG, "Focus locked for test, focus successful: "
+                            + (r != null && r.isFocusSuccessful()));
+                } catch (Exception e) {
+                    Log.e(TAG, "Focus lock failed", e);
+                }
+            }, ContextCompat.getMainExecutor(requireContext()));
+        } catch (Exception e) {
+            Log.e(TAG, "Could not lock focus", e);
+        }
+    }
+
+    /** Releases the test focus lock, returning to continuous autofocus. */
+    public void releaseFocusLock() {
+        if (camera == null) return;
+        try {
+            camera.getCameraControl().cancelFocusAndMetering();
+            Log.d(TAG, "Focus lock released");
+        } catch (Exception e) {
+            Log.e(TAG, "Could not release focus lock", e);
+        }
+    }
+
     public void stopCamera() {
+        releaseFocusLock();
         stopVoiceStroop();
         // Stop accepting new frames
         if (imageAnalyzer != null) {

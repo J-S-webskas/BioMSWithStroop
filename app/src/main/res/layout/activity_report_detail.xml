@@ -38,7 +38,7 @@
                 android:id="@+id/shareReportButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Share"
+                android:text="Export Report"
                 android:textSize="18sp"
                 android:fontFamily="@font/profile_pro_medi"
                 android:backgroundTint="@color/design_default_color_secondary"/>
@@ -578,6 +578,41 @@
                 android:textSize="20sp"/>
 
         </GridLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/stroopTestTitle"
+            android:layout_marginTop="14dp"
+            android:text="Stroop Test \nVoice test recorded during Dual Task"
+            android:textSize="20sp"
+            android:fontFamily="@font/profile_pro_bold"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="20dp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/stroopSummary"
+            android:text="No Stroop results recorded"
+            android:textSize="16sp"
+            android:fontFamily="@font/profile_pro"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"/>
+
+        <Button
+            android:id="@+id/btnViewStroopResults"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="10dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:text="View Stroop Results"
+            android:textSize="18sp"
+            android:backgroundTint="#FB3737"/>
 
         <TextView
             android:layout_width="wrap_content"

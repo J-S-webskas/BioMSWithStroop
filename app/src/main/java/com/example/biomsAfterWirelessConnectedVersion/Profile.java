@@ -63,6 +63,11 @@ public class Profile extends AppCompatActivity {
 
         double mass = DataStorageManager.getMass(this);
         currentWeight.setText("" + mass);
+
+        // The anonymous ID that identifies this patient in reports and
+        // exported data — never their name.
+        TextView currentPatientId = findViewById(R.id.currentPatientId);
+        currentPatientId.setText(AnonymousIdManager.getId(this));
     }
 
     private void showWeightDialog() {

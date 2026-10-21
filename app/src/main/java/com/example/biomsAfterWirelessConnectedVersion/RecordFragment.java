@@ -593,6 +593,35 @@ public class RecordFragment extends Fragment {
         return 0f;
     }
 
+    /**
+     * Builds the CSV export package for the trial being saved (see
+     * TrialCsvExporter). Must run while the trial's in-memory series still
+     * exist — the history maps are cleared right after saving. Export
+     * problems must never break saving, so everything is guarded.
+     */
+    private void generateCsvExport(String conditionLabel, SwayMetrics metrics) {
+        try {
+            Map<String, List<Float>> jointSeries = new HashMap<>();
+            for (Map.Entry<String, ArrayDeque<Float>> e : angleHistories.entrySet()) {
+                jointSeries.put(e.getKey(), new ArrayList<>(e.getValue()));
+            }
+            for (Map.Entry<String, ArrayDeque<Float>> e : BalanceHistories.entrySet()) {
+                jointSeries.putIfAbsent(e.getKey(), new ArrayList<>(e.getValue()));
+            }
+            double fov = PoseLandmarkerHelper.DEFAULT_FOV_H_DEGREES;
+            Fragment frag = getActivity() != null
+                    ? getActivity().getSupportFragmentManager().findFragmentById(R.id.fragment_container)
+                    : null;
+            if (frag instanceof CameraFragment) {
+                fov = ((CameraFragment) frag).getCurrentFovDegrees();
+            }
+            TrialCsvExporter.exportTrial(requireContext(), conditionLabel, metrics,
+                    jointSeries, PoseLandmarkerHelper.getDroppedFrameCount(), fov);
+        } catch (Exception e) {
+            Log.e("RecordFragment", "CSV export failed", e);
+        }
+    }
+
     private void saveSensoryAtaxiaResults() throws IOException {
         AssessmentData trialAssessment = new AssessmentData(username);
         currentAssessment = trialAssessment;
@@ -632,6 +661,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.SENSORY_ATAXIA_COMPLETED);
         currentAssessment.setSensoryAtaxiaTestDate(new Date());
 
+        generateCsvExport("SensoryAtaxia", metrics);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();
@@ -681,9 +711,40 @@ public class RecordFragment extends Fragment {
         currentAssessment.getDualTask().setSwayMetricsValid(metrics.valid);
         currentAssessment.getDualTask().setARJ(ARJScores);
 
+        // Persist the Stroop voice results recorded during this trial.
+        // stopVoiceStroop()'s result used to be discarded entirely, so no
+        // Stroop data ever reached storage or reports. The camera is still
+        // running at this point (it is stopped right after this save), so
+        // stop the voice test here and store what it recorded.
+        try {
+            Fragment stroopFragment = getActivity() != null
+                    ? getActivity().getSupportFragmentManager().findFragmentById(R.id.fragment_container)
+                    : null;
+            if (stroopFragment instanceof CameraFragment) {
+                StroopVoiceManager.VoiceStroopResult stroop =
+                        ((CameraFragment) stroopFragment).stopVoiceStroop();
+                if (stroop != null && stroop.totalTrials > 0) {
+                    DualTaskAssessment dt = currentAssessment.getDualTask();
+                    dt.setStroopTotalTrials(stroop.totalTrials);
+                    dt.setStroopCorrectCount(stroop.correctCount);
+                    dt.setStroopAccuracyPercent(stroop.accuracyPercent);
+                    dt.setStroopAvgReactionMs(stroop.avgReactionTimeMs);
+                    List<StroopAnswerRecord> records = new ArrayList<>();
+                    for (StroopVoiceManager.StroopAnswer a : stroop.answers) {
+                        records.add(new StroopAnswerRecord(a.wordText, a.inkColorName,
+                                a.spokenText, a.correct, a.reactionTimeMs));
+                    }
+                    dt.setStroopAnswers(records);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("RecordFragment", "Could not capture Stroop results", e);
+        }
+
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.DUAL_TASK_COMPLETED);
         currentAssessment.setDualTaskTestDate(new Date());
 
+        generateCsvExport("DualTask", metrics);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();
@@ -718,7 +779,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.setSwayAreaAndBalanceTestDate(new Date());
 
         recalculateComparisons(currentAssessment);
-
+        generateCsvExport("Baseline", metrics);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();

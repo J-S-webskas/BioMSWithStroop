@@ -331,6 +331,7 @@ public class AutoReportGenerationService extends Service {
         ArrayList<Float> speedTrials = new ArrayList<>();
         ArrayList<Float> enduranceTrials = new ArrayList<>();
         ArrayList<Float> dtBalanceTrials = new ArrayList<>();
+        ArrayList<ReportModel.StroopTrialData> dtStroopTrials = new ArrayList<>();
         ArrayList<Float> dtDTCTrials = new ArrayList<>();
         ArrayList<Float> saBalanceTrials = new ArrayList<>();
         ArrayList<Float> saDTCTrials = new ArrayList<>();
@@ -374,6 +375,16 @@ public class AutoReportGenerationService extends Service {
 
             if (assessment.getDualTask() != null && assessment.getDualTask().getBalanceScore() > 0) {
                 dtBalanceTrials.add(assessment.getDualTask().getBalanceScore());
+            }
+
+            if (assessment.getDualTask() != null && assessment.getDualTask().getStroopTotalTrials() > 0) {
+                DualTaskAssessment dtA = assessment.getDualTask();
+                dtStroopTrials.add(new ReportModel.StroopTrialData(
+                        dtA.getStroopTotalTrials(),
+                        dtA.getStroopCorrectCount(),
+                        dtA.getStroopAccuracyPercent(),
+                        dtA.getStroopAvgReactionMs(),
+                        dtA.getStroopAnswers()));
             }
 
             if (assessment.getDualTask() != null && assessment.getDualTask().getSwayPathLength() > 0) {
