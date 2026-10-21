@@ -27,6 +27,7 @@ public class Profile extends AppCompatActivity {
 
     private TextView currentWeight;
     private TextView currentGender;
+    private TextView currentTrialDistance;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +69,72 @@ public class Profile extends AppCompatActivity {
         // exported data — never their name.
         TextView currentPatientId = findViewById(R.id.currentPatientId);
         currentPatientId.setText(AnonymousIdManager.getId(this));
+
+        // Camera distance for the COM anchor: the tape-measured distance
+        // the subject stands from the camera. When set, it anchors the
+        // sway scale; when unset, the app calibrates from the camera.
+        CardView trialDistance = findViewById(R.id.trialDistance);
+        currentTrialDistance = findViewById(R.id.currentTrialDistance);
+        trialDistance.setOnClickListener(v -> showTrialDistanceDialog());
+        refreshTrialDistanceLabel();
+    }
+
+    private void refreshTrialDistanceLabel() {
+        float d = getSharedPreferences(PoseLandmarkerHelper.TRIAL_SETUP_PREFS, MODE_PRIVATE)
+                .getFloat(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M, 0f);
+        if (currentTrialDistance != null) {
+            currentTrialDistance.setText(d > 0
+                    ? String.format(java.util.Locale.US, "%.2f m", d)
+                    : "Camera (auto)");
+        }
+    }
+
+    private void showTrialDistanceDialog() {
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
+                .setTitle("Camera Distance")
+                .setMessage("Tape-measured distance from the camera to where the subject stands, in meters. Leave empty to let the app calibrate from the camera instead.")
+                .setPositiveButton("Save", null)
+                .setNegativeButton("Cancel", null);
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_trial_distance, null);
+        EditText distanceInput = dialogView.findViewById(R.id.distanceInput);
+        float current = getSharedPreferences(PoseLandmarkerHelper.TRIAL_SETUP_PREFS, MODE_PRIVATE)
+                .getFloat(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M, 0f);
+        if (current > 0) {
+            distanceInput.setText(String.format(java.util.Locale.US, "%.2f", current));
+        }
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(dlg -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                String s = distanceInput.getText().toString().trim();
+                if (s.isEmpty()) {
+                    getSharedPreferences(PoseLandmarkerHelper.TRIAL_SETUP_PREFS, MODE_PRIVATE)
+                            .edit().remove(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M).apply();
+                    Toast.makeText(this, "Camera distance cleared -- camera calibration will be used", Toast.LENGTH_SHORT).show();
+                    refreshTrialDistanceLabel();
+                    dialog.dismiss();
+                    return;
+                }
+                try {
+                    double parsed = Double.parseDouble(s);
+                    if (parsed < 0.5 || parsed > 10) {
+                        distanceInput.setError("Enter a distance between 0.5 and 10 m");
+                        return;
+                    }
+                    getSharedPreferences(PoseLandmarkerHelper.TRIAL_SETUP_PREFS, MODE_PRIVATE)
+                            .edit().putFloat(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M, (float) parsed).apply();
+                    Toast.makeText(this, "Camera distance saved: " + parsed + " m", Toast.LENGTH_SHORT).show();
+                    refreshTrialDistanceLabel();
+                    dialog.dismiss();
+                } catch (NumberFormatException e) {
+                    distanceInput.setError("Invalid number format");
+                }
+            });
+        });
+        dialog.show();
     }
 
     private void showWeightDialog() {

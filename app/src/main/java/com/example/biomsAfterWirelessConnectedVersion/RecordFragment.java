@@ -6,6 +6,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -599,6 +600,19 @@ public class RecordFragment extends Fragment {
      * exist — the history maps are cleared right after saving. Export
      * problems must never break saving, so everything is guarded.
      */
+    /** Load the plausibility-gate bounds for this protocol (trial setup prefs). */
+    private void applyPlausibilityGateConfig() {
+        try {
+            SharedPreferences p = requireContext().getSharedPreferences(
+                    PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE);
+            BalanceCalculator.GATE_AP_RANGE_MM = p.getFloat("gate_ap_range_mm",
+                    BalanceCalculator.DEFAULT_GATE_AP_RANGE_MM);
+            BalanceCalculator.GATE_ML_RANGE_MM = p.getFloat("gate_ml_range_mm",
+                    BalanceCalculator.DEFAULT_GATE_ML_RANGE_MM);
+        } catch (Exception ignored) {
+            // Defaults stay in effect.
+        }
+    }
     private void generateCsvExport(String conditionLabel, SwayMetrics metrics) {
         try {
             Map<String, List<Float>> jointSeries = new HashMap<>();
@@ -614,6 +628,18 @@ public class RecordFragment extends Fragment {
                     : null;
             if (frag instanceof CameraFragment) {
                 fov = ((CameraFragment) frag).getCurrentFovDegrees();
+                CameraFragment cam = (CameraFragment) frag;
+                fov = cam.getCurrentFovDegrees();
+                if (metrics != null) {
+                    // Anchor + phone-motion audit for the SystemLog.
+                    PoseLandmarkerHelper.AnchorDiagnostics diag = cam.getAnchorDiagnostics();
+                    metrics.anchorZ = diag.anchorZ;
+                    metrics.anchorSource = diag.source;
+                    metrics.calibFramesUsed = diag.calibFramesUsed;
+                    metrics.calibLowConfidence = diag.lowConfidence;
+                    metrics.anchorDisagreement = diag.disagreement;
+                    metrics.phoneRotationDeg = cam.getMaxPhoneRotationDeg();
+                }
             }
             TrialCsvExporter.exportTrial(requireContext(), conditionLabel, metrics,
                     jointSeries, PoseLandmarkerHelper.getDroppedFrameCount(), fov);
@@ -627,6 +653,7 @@ public class RecordFragment extends Fragment {
         currentAssessment = trialAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
+        applyPlausibilityGateConfig();
         SwayMetrics metrics = bc.computeSwayMetrics(COMHistories);
         float swayArea = metrics.swayAreaMm2;
         Map<String, Float> ARJScores = new HashMap<>();
@@ -657,6 +684,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.getSensoryAtaxia().setComTrajZ(metrics.trajZ);
         currentAssessment.getSensoryAtaxia().setComFrameRate(metrics.frameRate);
         currentAssessment.getSensoryAtaxia().setSwayMetricsValid(metrics.valid);
+        currentAssessment.getSensoryAtaxia().setSwayRangeFlag(metrics.rangeFlag);
         currentAssessment.getSensoryAtaxia().setARJ(ARJScores);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.SENSORY_ATAXIA_COMPLETED);
         currentAssessment.setSensoryAtaxiaTestDate(new Date());
@@ -681,6 +709,7 @@ public class RecordFragment extends Fragment {
         currentAssessment = todayAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
+        applyPlausibilityGateConfig();
         SwayMetrics metrics = bc.computeSwayMetrics(COMHistories);
         float swayArea = metrics.swayAreaMm2;
         Map<String, Float> ARJScores = new HashMap<>();
@@ -709,6 +738,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.getDualTask().setComTrajZ(metrics.trajZ);
         currentAssessment.getDualTask().setComFrameRate(metrics.frameRate);
         currentAssessment.getDualTask().setSwayMetricsValid(metrics.valid);
+        currentAssessment.getDualTask().setSwayRangeFlag(metrics.rangeFlag);
         currentAssessment.getDualTask().setARJ(ARJScores);
 
         // Persist the Stroop voice results recorded during this trial.
@@ -764,6 +794,7 @@ public class RecordFragment extends Fragment {
         currentAssessment = trialAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
+        applyPlausibilityGateConfig();
         SwayMetrics metrics = bc.computeSwayMetrics(COMHistories);
         float swayArea = metrics.swayAreaMm2;
         currentAssessment.getBaseline().setBalanceScore(swayArea);
@@ -775,6 +806,7 @@ public class RecordFragment extends Fragment {
         currentAssessment.getBaseline().setComTrajZ(metrics.trajZ);
         currentAssessment.getBaseline().setComFrameRate(metrics.frameRate);
         currentAssessment.getBaseline().setSwayMetricsValid(metrics.valid);
+        currentAssessment.getBaseline().setSwayRangeFlag(metrics.rangeFlag);
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.SWAY_AREA_BALANCE_COMPLETED);
         currentAssessment.setSwayAreaAndBalanceTestDate(new Date());
 

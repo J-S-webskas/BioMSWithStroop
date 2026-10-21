@@ -13,6 +13,17 @@ public class BalanceCalculator {
      *  filtering, so the filter's design rate is always exactly true. */
     private static final float GRID_RATE_HZ = 30.0f;
 
+    /** Plausibility gate (defaults fit a feet-together stance). A trial
+     *  whose filtered COM range exceeds the base of support the subject
+     *  was standing on cannot be quiet-standing sway; it is flagged --
+     *  never deleted -- so it can be excluded in analysis with a reason.
+     *  Bounds are protocol settings, overridable via SharedPreferences
+     *  ("trial_setup": gate_ap_range_mm / gate_ml_range_mm). */
+    public static final float DEFAULT_GATE_AP_RANGE_MM = 300f;
+    public static final float DEFAULT_GATE_ML_RANGE_MM = 250f;
+    public static volatile float GATE_AP_RANGE_MM = DEFAULT_GATE_AP_RANGE_MM;
+    public static volatile float GATE_ML_RANGE_MM = DEFAULT_GATE_ML_RANGE_MM;
+
     /** Despike: a sample >5 cm from its 5-sample rolling median is a pose
      *  glitch, not physiology (sway cannot move that far in one frame). */
     private static final int DESPIKE_RADIUS = 2;
@@ -35,6 +46,10 @@ public class BalanceCalculator {
      */
     public SwayMetrics computeSwayMetrics(List<COMSample> samples) {
         SwayMetrics m = new SwayMetrics();
+        // Drop the first 1.5 seconds (45 frames at 30fps) to ignore the "settling" period.
+        if (samples != null && samples.size() > 45) {
+            samples = new ArrayList<>(samples.subList(45, samples.size()));
+        }
         if (samples == null || samples.size() < MIN_REAL_SAMPLES) {
             m.valid = false;
             m.sampleCount = samples == null ? 0 : samples.size();
@@ -123,6 +138,18 @@ public class BalanceCalculator {
         }
         m.rmsMLMm = (float) (Math.sqrt(sx / n) * 1000.0);  // x: mediolateral
         m.rmsAPMm = (float) (Math.sqrt(sz / n) * 1000.0);  // z: anteroposterior
+        // Plausibility gate: total excursion of the filtered trajectory.
+        double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE;
+        double minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+        for (Point2D p : filtered) {
+            if (p.getX() < minX) minX = p.getX();
+            if (p.getX() > maxX) maxX = p.getX();
+            if (p.getZ() < minZ) minZ = p.getZ();
+            if (p.getZ() > maxZ) maxZ = p.getZ();
+        }
+        m.mlRangeMm = (float) ((maxX - minX) * 1000.0);
+        m.apRangeMm = (float) ((maxZ - minZ) * 1000.0);
+        m.rangeFlag = m.mlRangeMm > GATE_ML_RANGE_MM || m.apRangeMm > GATE_AP_RANGE_MM;
 
         return m;
     }
