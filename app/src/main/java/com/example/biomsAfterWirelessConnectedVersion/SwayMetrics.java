@@ -33,4 +33,17 @@ public class SwayMetrics implements Serializable {
     public int interpolatedFrames = 0;  // grid points interpolated across a dropout gap
     public List<Float> trajX = new ArrayList<>();  // filtered COM trajectory
     public List<Float> trajZ = new ArrayList<>();
+
+    public float apRangeMm = 0f;        // max-min of the filtered AP (z) series
+    public float mlRangeMm = 0f;        // max-min of the filtered ML (x) series
+    public boolean rangeFlag = false;   // plausibility gate: range beyond the stance's base of support
+
+    // Anchor audit, filled by RecordFragment from the camera/pose helper
+    // at save time and written to the export SystemLog.
+    public double anchorZ = 0;
+    public String anchorSource = "none";
+    public int calibFramesUsed = 0;
+    public boolean calibLowConfidence = false;
+    public boolean anchorDisagreement = false;
+    public float phoneRotationDeg = 0f; // max device rotation during the trial (gyro audit)
 }

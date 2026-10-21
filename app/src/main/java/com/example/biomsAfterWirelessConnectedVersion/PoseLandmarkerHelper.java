@@ -23,6 +23,7 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker;
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -98,6 +99,182 @@ public class PoseLandmarkerHelper {
 
     public static void resetDroppedFrameCount() {
         droppedFrameCount = 0;
+    }
+
+    // ------------------------------------------------------------------
+    // COM anchor calibration.
+    //
+    // The camera-space hip anchor used to be recomputed from the apparent
+    // torso size on EVERY frame (Z_hip = f * D_torso / d_torso_pixels).
+    // Apparent torso size wobbles with breathing, posture and landmark
+    // noise, so the anchor itself wandered: in one recorded session the
+    // estimated distance re-locked ~11 cm mid-trial on a motionless
+    // photo, and a standing trial produced a 33 cm COM range -- wider
+    // than the base of support. The anchor is now calibrated once per
+    // test:
+    //
+    //  - While no test is running (preview / countdown), frames whose
+    //    shoulder/hip landmarks pass a visibility gate contribute their
+    //    Z_hip estimate to a calibration buffer.
+    //  - freezeAnchorForTest() (called at the test-start funnel, and
+    //    lazily on the first recorded frame for start paths without a
+    //    funnel call) resolves the anchor: a manually entered tape
+    //    distance (Profile > Camera Distance) wins; the camera median
+    //    is the fallback and the cross-check. A >10% disagreement
+    //    between the two is recorded, not silently absorbed.
+    //  - During the test, the scale (meters per pixel) is derived from
+    //    the anchored Z only, and Z itself is a ~5 s sliding median of
+    //    the per-frame estimates: steps and re-locks are impossible,
+    //    while slow whole-body AP translation -- which the hip-centred
+    //    world landmarks cannot see -- still passes.
+    // ------------------------------------------------------------------
+    public static final String TRIAL_SETUP_PREFS = "trial_setup";
+    public static final String KEY_MANUAL_DISTANCE_M = "manual_distance_m";
+    private static final float ANCHOR_VISIBILITY_THRESHOLD = 0.5f;
+    private static final int ANCHOR_MIN_CALIBRATION_FRAMES = 15;
+    private static final int ANCHOR_CALIBRATION_MAX = 300;
+    private static final int ANCHOR_Z_WINDOW = 150; // ~5 s at 30 fps
+
+    private final List<Double> calibrationZ = new ArrayList<>();
+    private final ArrayDeque<Double> anchorZWindow = new ArrayDeque<>();
+    private boolean anchorFrozen = false;
+    private double frozenAnchorZ = 0;
+    private String anchorSource = "none";
+    private int anchorCalibFramesUsed = 0;
+    private boolean anchorLowConfidence = false;
+    private boolean anchorDisagreement = false;
+
+    /** Snapshot of how the current test's anchor was produced (export SystemLog). */
+    public static class AnchorDiagnostics {
+        public double anchorZ = 0;
+        public String source = "none";
+        public int calibFramesUsed = 0;
+        public boolean lowConfidence = false;
+        public boolean disagreement = false;
+    }
+
+    public synchronized AnchorDiagnostics getAnchorDiagnostics() {
+        AnchorDiagnostics d = new AnchorDiagnostics();
+        d.anchorZ = frozenAnchorZ;
+        d.source = anchorSource;
+        d.calibFramesUsed = anchorCalibFramesUsed;
+        d.lowConfidence = anchorLowConfidence;
+        d.disagreement = anchorDisagreement;
+        return d;
+    }
+
+    /** Start a fresh calibration (called when a new countdown is shown). */
+    public synchronized void resetCalibration() {
+        calibrationZ.clear();
+        anchorZWindow.clear();
+        anchorFrozen = false;
+        frozenAnchorZ = 0;
+        anchorSource = "none";
+        anchorCalibFramesUsed = 0;
+        anchorLowConfidence = false;
+        anchorDisagreement = false;
+    }
+
+    /** End the anchor's life with the test (called when the camera stops). */
+    public synchronized void releaseAnchor() {
+        resetCalibration();
+    }
+
+    private synchronized void addCalibrationSample(double zHip) {
+        if (anchorFrozen) return;
+        calibrationZ.add(zHip);
+        while (calibrationZ.size() > ANCHOR_CALIBRATION_MAX) {
+            calibrationZ.remove(0);
+        }
+    }
+
+    private static double medianOf(List<Double> values) {
+        if (values == null || values.isEmpty()) return 0;
+        List<Double> sorted = new ArrayList<>(values);
+        Collections.sort(sorted);
+        int mid = sorted.size() / 2;
+        if (sorted.size() % 2 == 1) return sorted.get(mid);
+        return (sorted.get(mid - 1) + sorted.get(mid)) / 2.0;
+    }
+
+    /**
+     * Resolve and freeze the anchor for the test that is about to start.
+     * Idempotent: later calls during the same test do nothing.
+     */
+    public synchronized void freezeAnchorForTest() {
+        if (anchorFrozen) return;
+        anchorFrozen = true;
+        anchorCalibFramesUsed = calibrationZ.size();
+        double cameraMedian = medianOf(calibrationZ);
+        double manual = 0;
+        try {
+            if (context != null) {
+                manual = context.getSharedPreferences(TRIAL_SETUP_PREFS, Context.MODE_PRIVATE)
+                        .getFloat(KEY_MANUAL_DISTANCE_M, 0f);
+            }
+        } catch (Exception ignored) {
+            manual = 0;
+        }
+        boolean hasCamera = anchorCalibFramesUsed > 0 && cameraMedian > 0;
+        boolean hasManual = manual > 0.5 && manual < 10; // sane tape distances only
+        anchorLowConfidence = anchorCalibFramesUsed < ANCHOR_MIN_CALIBRATION_FRAMES && !hasManual;
+        if (hasManual && hasCamera) {
+            double relDiff = Math.abs(manual - cameraMedian) / manual;
+            anchorDisagreement = relDiff > 0.10;
+            frozenAnchorZ = manual;
+            anchorSource = anchorDisagreement ? "manual (camera disagreed)" : "manual+camera agree";
+        } else if (hasManual) {
+            frozenAnchorZ = manual;
+            anchorSource = "manual";
+        } else if (hasCamera) {
+            frozenAnchorZ = cameraMedian;
+            anchorSource = "camera";
+        } else {
+            frozenAnchorZ = 0;
+            anchorSource = "none";
+            anchorLowConfidence = true;
+        }
+        anchorZWindow.clear();
+        if (frozenAnchorZ > 0) {
+            // Seed the sliding window with the calibrated anchor so the
+            // first frames of the test are anchored, not raw.
+            for (int i = 0; i < 15; i++) anchorZWindow.addLast(frozenAnchorZ);
+        }
+        Log.d(TAG, "Anchor frozen: Z=" + frozenAnchorZ + " source=" + anchorSource
+                + " calibFrames=" + anchorCalibFramesUsed
+                + " lowConfidence=" + anchorLowConfidence
+                + " disagreement=" + anchorDisagreement);
+    }
+
+    /**
+     * The Z (camera distance) to use for one recorded frame: a sliding
+     * median of recent per-frame estimates, seeded by the frozen anchor.
+     * Kills steps and re-locks; passes slow, real AP translation.
+     */
+    private synchronized double anchoredZ(double rawZ) {
+        anchorZWindow.addLast(rawZ);
+        while (anchorZWindow.size() > ANCHOR_Z_WINDOW) {
+            anchorZWindow.removeFirst();
+        }
+        return medianOf(new ArrayList<>(anchorZWindow));
+    }
+
+    /** Calibration frames must have clearly visible shoulders and hips. */
+    private boolean passesAnchorVisibilityGate(List<NormalizedLandmark> landmarks) {
+        try {
+            int[] idx = {11, 12, 23, 24};
+            for (int i : idx) {
+                if (i >= landmarks.size()) return false;
+                java.util.Optional<Float> v = landmarks.get(i).visibility();
+                if (v != null && v.isPresent() && v.get() < ANCHOR_VISIBILITY_THRESHOLD) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            // If visibility is unavailable, do not block calibration.
+            return true;
+        }
     }
 
     public PoseLandmarkerHelper(Context context) {
@@ -465,8 +642,27 @@ public class PoseLandmarkerHelper {
 
                             double[] cameraSpaceHip = calculateCameraSpaceHip(landmarks, worldLandmarks, input.getWidth(), input.getHeight());
                             if (cameraSpaceHip != null) {
-                                comX_final = cameraSpaceHip[0] + comX_rel;
-                                comZ_final = cameraSpaceHip[2] + comZ_rel;
+                                double rawZ = cameraSpaceHip[2];
+                                if (!RecordFragment.isTestStarted()) {
+                                    // Preview / countdown: feed anchor calibration.
+                                    if (passesAnchorVisibilityGate(landmarks)) {
+                                        addCalibrationSample(rawZ);
+                                    }
+                                    comX_final = cameraSpaceHip[0] + comX_rel;
+                                    comZ_final = rawZ + comZ_rel;
+                                } else {
+                                    // Recorded frame: frozen scale + sliding-median Z.
+                                    if (!anchorFrozen) {
+                                        freezeAnchorForTest();
+                                    }
+                                    double zUsed = anchoredZ(rawZ);
+                                    double scaleUsed = cameraSpaceHip[4] > 0
+                                            ? zUsed / cameraSpaceHip[4] : 0;
+                                    double xUsed = scaleUsed
+                                            * (cameraSpaceHip[3] - input.getWidth() / 2.0);
+                                    comX_final = xUsed + comX_rel;
+                                    comZ_final = zUsed + comZ_rel;
+                                }
                             } else {
                                 comX_final = comX_rel;
                                 comZ_final = comZ_rel;
@@ -475,6 +671,11 @@ public class PoseLandmarkerHelper {
 
                         hasValidPose = true;
                         boolean currentlyStarted = RecordFragment.isTestStarted();
+                        if (wasTestStarted && !currentlyStarted) {
+                            // Test just ended: release the anchor so the
+                            // next test calibrates fresh.
+                            releaseAnchor();
+                        }
                         wasTestStarted = currentlyStarted;
 
                         if (currentlyStarted) {
@@ -596,7 +797,10 @@ public class PoseLandmarkerHelper {
         double X_hip = D_torso_meters * (hip_mid_px_x - cx) / d_torso_pixels;
         double Y_hip = D_torso_meters * (hip_mid_px_y - cy) / d_torso_pixels;
 
-        double[] rawCHip = new double[]{X_hip, Y_hip, Z_hip};
+        // {X_hip, Y_hip, Z_hip, hipMidPxX, fPixels} -- the caller needs the
+        // hip's pixel position and the focal length to rebuild X from the
+        // anchored (smoothed) Z instead of the raw per-frame ratio.
+        double[] rawCHip = new double[]{X_hip, Y_hip, Z_hip, hip_mid_px_x, f_pixels};
         // No smoothing here, by design. This used to EMA-smooth (alpha=0.25)
         // ONLY the hip anchor while the segmental COM offset was added raw —
         // two halves of one signal filtered differently, and the EMA state

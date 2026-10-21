@@ -11,6 +11,10 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.os.Bundle;
@@ -62,7 +66,7 @@ Real-time display, without data collection and storage.
 Camera frame -> MediaPipe processing -> Coordinate data -> Draw to screen -> Discard
  */
 
-public class CameraFragment extends Fragment implements PoseLandmarkerHelper.LandmarkerListener {
+public class CameraFragment extends Fragment implements PoseLandmarkerHelper.LandmarkerListener, SensorEventListener {
 
     private View rootView;
     private static final String TAG = "Pose Landmarker";
@@ -90,6 +94,15 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     Button btnCancel;
 
     private StroopVoiceManager stroopVoiceManager;
+
+    // Phone-motion (gyro) audit: max rotation of the device itself since
+    // the current test started -- read by the export's SystemLog so a
+    // trial can be checked for camera motion after the fact.
+    private SensorManager sensorManager;
+    private Sensor rotationVectorSensor;
+    private boolean gyroArmed = false;
+    private float[] gyroRefMatrix = null;
+    private float maxPhoneRotationDeg = 0f;
     private LinearLayout stroopVoiceContainer;
     private TextView tvStroopWord;
     private TextView tvVoiceStatus;
@@ -162,6 +175,11 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         }
         isCountdownActive = true;
 
+        // Fresh anchor calibration for this countdown.
+        if (poseLandmarkerHelper != null) {
+            poseLandmarkerHelper.resetCalibration();
+        }
+
         // Find container
         ViewGroup container = (ViewGroup) getFragmentCameraBinding().getRoot();
 
@@ -232,6 +250,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
                         // Start the actual test
                         isCountdownActive = false;
+                        // Freeze the COM anchor from the countdown
+                        // calibration and start the phone-motion audit.
+                        if (poseLandmarkerHelper != null) {
+                            poseLandmarkerHelper.freezeAnchorForTest();
+                        }
+                        startPhoneMotionTracking();
                         // Tell RecordFragment that test has started
                         RecordFragment.setTestStarted(true);
                         PoseLandmarkerHelper.resetDroppedFrameCount();
@@ -295,11 +319,27 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 }
             }
         });
+
+        // Register the rotation-vector sensor for the phone-motion audit.
+        if (sensorManager == null && getContext() != null) {
+            sensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
+        }
+        if (sensorManager != null) {
+            rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+            if (rotationVectorSensor != null) {
+                sensorManager.registerListener(this, rotationVectorSensor,
+                        SensorManager.SENSOR_DELAY_NORMAL);
+            }
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(this);
+        }
+        gyroArmed = false;
         if (poseLandmarkerHelper != null) {
             viewModel.setMinPoseDetectionConfidence(poseLandmarkerHelper.minPoseDetectionConfidence);
             viewModel.setMinPoseTrackingConfidence(poseLandmarkerHelper.minPoseTrackingConfidence);
@@ -314,6 +354,50 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 }
             });
         }
+    }
+
+    /** Begin (or restart) phone-motion tracking for a test that is starting. */
+    public void startPhoneMotionTracking() {
+        gyroArmed = true;
+        gyroRefMatrix = null;
+        maxPhoneRotationDeg = 0f;
+    }
+
+    /** Max device rotation (degrees) since the current test started. */
+    public float getMaxPhoneRotationDeg() {
+        return maxPhoneRotationDeg;
+    }
+
+    /** Anchor diagnostics from the pose helper (frozen Z, source, calibration size). */
+    public PoseLandmarkerHelper.AnchorDiagnostics getAnchorDiagnostics() {
+        return poseLandmarkerHelper != null
+                ? poseLandmarkerHelper.getAnchorDiagnostics()
+                : new PoseLandmarkerHelper.AnchorDiagnostics();
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (!gyroArmed || event.sensor.getType() != Sensor.TYPE_ROTATION_VECTOR) {
+            return;
+        }
+        float[] current = new float[9];
+        SensorManager.getRotationMatrixFromVector(current, event.values);
+        if (gyroRefMatrix == null) {
+            gyroRefMatrix = current.clone();
+            return;
+        }
+        float[] delta = new float[3];
+        SensorManager.getAngleChange(delta, current, gyroRefMatrix);
+        double magRad = Math.sqrt(delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2]);
+        float deg = (float) Math.toDegrees(magRad);
+        if (deg > maxPhoneRotationDeg) {
+            maxPhoneRotationDeg = deg;
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Not needed for the audit.
     }
 
     /** The horizontal FOV (degrees) actually used for this phone's COM
@@ -442,6 +526,10 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
             // todo: Must wait for 1 second before hitting btn Start test, or else the preview countdown is frozen on screen..unfixable yikes
             btnCancel.setOnClickListener(v -> {
+                if (poseLandmarkerHelper != null) {
+                    poseLandmarkerHelper.freezeAnchorForTest();
+                }
+                startPhoneMotionTracking();
                 RecordFragment.setTestStarted(true);
                 // This is in test view
 
@@ -615,6 +703,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
     public void stopCamera() {
         stopVoiceStroop();
+        gyroArmed = false;
         // Stop accepting new frames
         if (imageAnalyzer != null) {
             imageAnalyzer.clearAnalyzer();
@@ -623,6 +712,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
         // Clear pose landmarker
         if (poseLandmarkerHelper != null) {
+            poseLandmarkerHelper.releaseAnchor();
             poseLandmarkerHelper.clearPoseLandmarker();
             poseLandmarkerHelper = null;
         }
