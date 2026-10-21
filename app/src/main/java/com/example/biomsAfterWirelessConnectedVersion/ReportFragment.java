@@ -29,6 +29,15 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Collections;
+import java.util.Map;
+import java.util.TreeMap;
+
+import java.io.File;
+
+import android.net.Uri;
+
+import androidx.core.content.FileProvider;
 
 public class ReportFragment extends Fragment {
 
@@ -60,6 +69,12 @@ public class ReportFragment extends Fragment {
         btnDeleteReport.setOnClickListener(v -> {
             v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
             showDeleteReportDialog();
+        });
+
+        Button btnExportCsv = view.findViewById(R.id.btn_export_csv);
+        btnExportCsv.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            showExportCsvDialog();
         });
 
         noData = view.findViewById(R.id.noData);
@@ -661,6 +676,154 @@ public class ReportFragment extends Fragment {
         }
         return sum / set.size();
     }
+    // ------------------------------------------------------------------
+    // Standalone CSV export: pick a day, then a test that was actually
+    // completed that day; the ZIP is generated on the fly from the
+    // stored assessment data and handed to the share sheet.
+    // ------------------------------------------------------------------
+
+    private void showExportCsvDialog() {
+        List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
+        Map<String, List<AssessmentData>> byDate = new TreeMap<>(Collections.reverseOrder());
+        SimpleDateFormat keyFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        for (AssessmentData a : all) {
+            if (a.getTimestamp() == null) continue;
+            String key = keyFmt.format(a.getTimestamp());
+            byDate.computeIfAbsent(key, k -> new ArrayList<>()).add(a);
+        }
+        if (byDate.isEmpty()) {
+            Toast.makeText(requireContext(), "No recorded tests to export yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<String> keys = new ArrayList<>(byDate.keySet());
+        String todayKey = keyFmt.format(new Date());
+        SimpleDateFormat dispFmt = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
+        String[] labels = new String[keys.size()];
+        for (int i = 0; i < keys.size(); i++) {
+            String label = keys.get(i);
+            try {
+                label = dispFmt.format(keyFmt.parse(keys.get(i)));
+            } catch (Exception ignored) {
+            }
+            labels[i] = (keys.get(i).equals(todayKey) ? "Today \u2014 " : "") + label;
+        }
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Export CSV \u2014 choose a day")
+                .setItems(labels, (d, which) ->
+                        showExportConditionDialog(keys.get(which), byDate.get(keys.get(which))))
+                .show();
+    }
+
+    private void showExportConditionDialog(String dateKey, List<AssessmentData> day) {
+        int nBaseline = 0, nDual = 0, nSensory = 0;
+        for (AssessmentData a : day) {
+            if (hasBaselineTrial(a)) nBaseline++;
+            if (hasDualTaskTrial(a)) nDual++;
+            if (hasSensoryTrial(a)) nSensory++;
+        }
+        List<String> labels = new ArrayList<>();
+        List<String> conditions = new ArrayList<>();
+        if (nBaseline > 0) {
+            labels.add("Baseline (" + nBaseline + (nBaseline == 1 ? " trial" : " trials") + ")");
+            conditions.add("Baseline");
+        }
+        if (nDual > 0) {
+            labels.add("Dual Task (" + nDual + (nDual == 1 ? " trial" : " trials") + ")");
+            conditions.add("DualTask");
+        }
+        if (nSensory > 0) {
+            labels.add("Sensory Ataxia (" + nSensory + (nSensory == 1 ? " trial" : " trials") + ")");
+            conditions.add("SensoryAtaxia");
+        }
+        if (conditions.isEmpty()) {
+            Toast.makeText(requireContext(), "No completed tests on this day.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Export CSV \u2014 choose a test")
+                .setItems(labels.toArray(new String[0]), (d, which) ->
+                        exportStoredCondition(dateKey, conditions.get(which), day))
+                .show();
+    }
+
+    private boolean hasBaselineTrial(AssessmentData a) {
+        return a.getSwayAreaAndBalanceTestDate() != null || a.getBaseline().getBalanceScore() > 0;
+    }
+
+    private boolean hasDualTaskTrial(AssessmentData a) {
+        return a.getDualTask() != null && (a.getDualTaskTestDate() != null
+                || a.getDualTask().getBalanceScore() > 0
+                || a.getDualTask().getStroopTotalTrials() > 0);
+    }
+
+    private boolean hasSensoryTrial(AssessmentData a) {
+        return a.getSensoryAtaxia() != null && (a.getSensoryAtaxiaTestDate() != null
+                || a.getSensoryAtaxia().getBalanceScore() > 0);
+    }
+
+    private void exportStoredCondition(String dateKey, String condition, List<AssessmentData> day) {
+        List<AssessmentData> chronological = new ArrayList<>(day);
+        Collections.sort(chronological, (a1, a2) -> a1.getTimestamp().compareTo(a2.getTimestamp()));
+        List<TrialCsvExporter.StoredTrialData> trials = new ArrayList<>();
+        for (AssessmentData a : chronological) {
+            TrialCsvExporter.StoredTrialData t = null;
+            if ("Baseline".equals(condition) && hasBaselineTrial(a)) {
+                t = toStoredTrial(a.getBaseline().getComTrajX(), a.getBaseline().getComTrajZ(),
+                        a.getBaseline().getComFrameRate(), a.getBaseline().getBalanceScore(),
+                        a.getBaseline().getSwayPathLength(), a.getBaseline().getSwayMeanVelocity(),
+                        a.getBaseline().getSwayRmsAP(), a.getBaseline().getSwayRmsML(),
+                        a.getBaseline().getCameraDistanceM(), a.getBaseline().isSwayMetricsValid());
+            } else if ("DualTask".equals(condition) && hasDualTaskTrial(a)) {
+                t = toStoredTrial(a.getDualTask().getComTrajX(), a.getDualTask().getComTrajZ(),
+                        a.getDualTask().getComFrameRate(), a.getDualTask().getBalanceScore(),
+                        a.getDualTask().getSwayPathLength(), a.getDualTask().getSwayMeanVelocity(),
+                        a.getDualTask().getSwayRmsAP(), a.getDualTask().getSwayRmsML(),
+                        a.getDualTask().getCameraDistanceM(), a.getDualTask().isSwayMetricsValid());
+            } else if ("SensoryAtaxia".equals(condition) && hasSensoryTrial(a)) {
+                t = toStoredTrial(a.getSensoryAtaxia().getComTrajX(), a.getSensoryAtaxia().getComTrajZ(),
+                        a.getSensoryAtaxia().getComFrameRate(), a.getSensoryAtaxia().getBalanceScore(),
+                        a.getSensoryAtaxia().getSwayPathLength(), a.getSensoryAtaxia().getSwayMeanVelocity(),
+                        a.getSensoryAtaxia().getSwayRmsAP(), a.getSensoryAtaxia().getSwayRmsML(),
+                        a.getSensoryAtaxia().getCameraDistanceM(), a.getSensoryAtaxia().isSwayMetricsValid());
+            }
+            if (t != null) trials.add(t);
+        }
+        if (trials.isEmpty()) {
+            Toast.makeText(requireContext(), "Nothing to export for that test.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        File zip = TrialCsvExporter.exportStoredTrials(requireContext(), dateKey, condition, trials);
+        if (zip == null) {
+            Toast.makeText(requireContext(), "Export failed.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Uri uri = FileProvider.getUriForFile(requireContext(),
+                requireContext().getPackageName() + ".fileprovider", zip);
+        Intent share = new Intent(Intent.ACTION_SEND);
+        share.setType("application/zip");
+        share.putExtra(Intent.EXTRA_STREAM, uri);
+        share.putExtra(Intent.EXTRA_SUBJECT, zip.getName());
+        share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(Intent.createChooser(share, "Export CSV data"));
+    }
+
+    private TrialCsvExporter.StoredTrialData toStoredTrial(List<Float> trajX, List<Float> trajZ,
+            float frameRate, float area, float path, float vel, float rmsAP, float rmsML,
+            float cameraDistanceM, boolean valid) {
+        TrialCsvExporter.StoredTrialData t = new TrialCsvExporter.StoredTrialData();
+        if (trajX != null) t.trajX = trajX;
+        if (trajZ != null) t.trajZ = trajZ;
+        t.frameRate = frameRate;
+        t.swayAreaMm2 = area;
+        t.pathLengthMm = path;
+        t.meanVelocityMmS = vel;
+        t.rmsAPMm = rmsAP;
+        t.rmsMLMm = rmsML;
+        t.cameraDistanceM = cameraDistanceM;
+        t.valid = valid;
+        return t;
+    }
+
     private final BroadcastReceiver reportUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {

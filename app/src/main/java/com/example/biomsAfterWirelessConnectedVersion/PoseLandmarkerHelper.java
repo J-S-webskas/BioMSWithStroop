@@ -681,17 +681,37 @@ public class PoseLandmarkerHelper {
                         if (currentlyStarted) {
                             RecordFragment.setHasValidPose(true);
                         }
-                        float left_hip = calculateAngle(landmarks.get(11), landmarks.get(23), landmarks.get(25));
-                        float right_knee = calculateAngle(landmarks.get(24), landmarks.get(26), landmarks.get(28));
+                        // All 10 joint angles, vertex at the middle landmark:
+                        // ankle = knee-ankle-foot index, knee = hip-knee-ankle,
+                        // hip = shoulder-hip-knee, shoulder = elbow-shoulder-hip,
+                        // elbow = shoulder-elbow-wrist.
+                        float left_ankle = calculateAngle(landmarks.get(25), landmarks.get(27), landmarks.get(31));
+                        float right_ankle = calculateAngle(landmarks.get(26), landmarks.get(28), landmarks.get(32));
                         float left_knee = calculateAngle(landmarks.get(23), landmarks.get(25), landmarks.get(27));
+                        float right_knee = calculateAngle(landmarks.get(24), landmarks.get(26), landmarks.get(28));
+                        float left_hip = calculateAngle(landmarks.get(11), landmarks.get(23), landmarks.get(25));
+                        float right_hip = calculateAngle(landmarks.get(12), landmarks.get(24), landmarks.get(26));
+                        float left_shoulder = calculateAngle(landmarks.get(13), landmarks.get(11), landmarks.get(23));
+                        float right_shoulder = calculateAngle(landmarks.get(14), landmarks.get(12), landmarks.get(24));
+                        float left_elbow = calculateAngle(landmarks.get(11), landmarks.get(13), landmarks.get(15));
+                        float right_elbow = calculateAngle(landmarks.get(12), landmarks.get(14), landmarks.get(16));
 
                         if (RecordFragment.isTestStarted()) {
                             // pass the COM x and y to record fragment:
                             if (comX_final != 0 && comZ_final != 0) {
                                 RecordFragment.addCOMPerFrame(comX_final, comZ_final, currentTimestamp);
                             }
-                            RecordFragment.addAnglePerFrame("right_knee", right_knee);
+                            RecordFragment.addAnglePerFrame("left_ankle", left_ankle);
+                            RecordFragment.addAnglePerFrame("right_ankle", right_ankle);
                             RecordFragment.addAnglePerFrame("left_knee", left_knee);
+                            RecordFragment.addAnglePerFrame("right_knee", right_knee);
+                            RecordFragment.addAnglePerFrame("left_hip", left_hip);
+                            RecordFragment.addAnglePerFrame("right_hip", right_hip);
+                            RecordFragment.addAnglePerFrame("left_shoulder", left_shoulder);
+                            RecordFragment.addAnglePerFrame("right_shoulder", right_shoulder);
+                            RecordFragment.addAnglePerFrame("left_elbow", left_elbow);
+                            RecordFragment.addAnglePerFrame("right_elbow", right_elbow);
+                            // Legacy balance feeds (ARJ) — unchanged.
                             RecordFragment.HipBalanceaddAnglePerFrame("left_hip", left_hip);
                             RecordFragment.KneeBalanceaddAnglePerFrame("left_knee", left_knee);
                         }

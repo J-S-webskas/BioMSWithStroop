@@ -34,6 +34,9 @@ public class SwayMetrics implements Serializable {
     public List<Float> trajX = new ArrayList<>();  // filtered COM trajectory
     public List<Float> trajZ = new ArrayList<>();
 
+    public float cameraDistanceM = 0f;  // camera distance (m) the user recorded
+                                        // this trial with; 0 = none entered
+
     public float apRangeMm = 0f;        // max-min of the filtered AP (z) series
     public float mlRangeMm = 0f;        // max-min of the filtered ML (x) series
     public boolean rangeFlag = false;   // plausibility gate: range beyond the stance's base of support

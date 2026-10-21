@@ -363,11 +363,13 @@ public class ReportDetailActivity extends AppCompatActivity {
         // Dual Task, showcased separately from the sway table)
         TextView stroopSummary = findViewById(R.id.stroopSummary);
         Button btnViewStroopResults = findViewById(R.id.btnViewStroopResults);
+        Button btnExportStroopResults = findViewById(R.id.btnExportStroopResults);
         if (reportModel != null && btnViewStroopResults != null) {
             java.util.List<ReportModel.StroopTrialData> stroopTrials =
                     reportModel.getDualTaskStroopTrials();
             if (stroopTrials == null || stroopTrials.isEmpty()) {
                 btnViewStroopResults.setEnabled(false);
+                if (btnExportStroopResults != null) btnExportStroopResults.setEnabled(false);
             } else {
                 ReportModel.StroopTrialData latest = stroopTrials.get(stroopTrials.size() - 1);
                 if (stroopSummary != null) {
@@ -383,6 +385,28 @@ public class ReportDetailActivity extends AppCompatActivity {
                     intent.putExtra("date", reportModel.getDate());
                     startActivity(intent);
                 });
+                if (btnExportStroopResults != null) {
+                    btnExportStroopResults.setOnClickListener(v -> {
+                        String dateStr = reportModel.getTimeStamp() != null
+                                ? new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(reportModel.getTimeStamp())
+                                : "unknown-date";
+                        File zip = TrialCsvExporter.exportStroopResults(
+                                ReportDetailActivity.this, dateStr, stroopTrials);
+                        if (zip == null) {
+                            Toast.makeText(ReportDetailActivity.this,
+                                    "Could not create the Stroop export", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        Uri uri = FileProvider.getUriForFile(ReportDetailActivity.this,
+                                getPackageName() + ".fileprovider", zip);
+                        Intent share = new Intent(Intent.ACTION_SEND);
+                        share.setType("application/zip");
+                        share.putExtra(Intent.EXTRA_STREAM, uri);
+                        share.putExtra(Intent.EXTRA_SUBJECT, zip.getName());
+                        share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        startActivity(Intent.createChooser(share, "Export Stroop results"));
+                    });
+                }
             }
         }
         sensoryAtaxiaBalanceTrialsTextView = findViewById(R.id.SensoryAtaxiaBalanceTrials);
