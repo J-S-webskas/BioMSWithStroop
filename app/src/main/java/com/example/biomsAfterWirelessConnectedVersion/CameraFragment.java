@@ -92,6 +92,16 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private boolean isCountdownActive = false;
     private TextView countdownTextView;
     private View countdownOverlay;
+    // Countdown lifecycle token. Every showCountdown()/cancelCountdown()
+    // bumps it; ticks and animation end-actions capture the generation
+    // they belong to and no-op once it has moved on. Without this, the
+    // PREVIEW countdown's final animation end-action -- which the
+    // handler-based cancel cannot retract -- fires after the Start Test
+    // handler has already built the TEST countdown, and removes/nulls
+    // the shared fields, i.e. the new countdown's views: the test
+    // countdown visibly disappears (the race behind the old "must wait
+    // before hitting Start Test" workaround).
+    private int countdownGeneration = 0;
     private String assessmentType = "";
     private Handler countdownHandler = new Handler(Looper.getMainLooper());
     private boolean isPreviewMode = true;
@@ -255,52 +265,73 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
 
-        // Start countdown from 3
-        startCountdownSequence(3);
+        // Start countdown from 3. Capture the views and this countdown's
+        // generation: everything this countdown has pending (handler
+        // ticks, the final animation's end action) acts on the captured
+        // views and only while its generation is still current.
+        final View overlayView = countdownOverlay;
+        final TextView textView = countdownTextView;
+        final int generation = ++countdownGeneration;
+        startCountdownSequence(3, generation, overlayView, textView);
     }
 
-    private void startCountdownSequence(int count) {
+    private void startCountdownSequence(int count, int generation,
+                                        View overlayView, TextView textView) {
+        if (generation != countdownGeneration) {
+            // A newer countdown (or a cancel) owns the screen now.
+            return;
+        }
         if (!isAdded() || _fragmentCameraBinding == null) {
             Log.e(TAG, "Fragment not ready, stopping countdown");
             isCountdownActive = false;
             return;
         }
-        if (countdownTextView == null) {
+        if (textView == null) {
             Log.e(TAG, "Countdown TextView is null");
             isCountdownActive = false;
             return;
         }
         if (count > 0) {
-            countdownTextView.setText(String.valueOf(count));
+            textView.setText(String.valueOf(count));
             // Animation
-            countdownTextView.setScaleX(1.5f);
-            countdownTextView.setScaleY(1.5f);
-            countdownTextView.animate()
+            textView.setScaleX(1.5f);
+            textView.setScaleY(1.5f);
+            textView.animate()
                     .scaleX(1f)
                     .scaleY(1f)
                     .setDuration(500)
                     .start();
 
             // Schedule next count
-            countdownHandler.postDelayed(() -> startCountdownSequence(count - 1), 1000);
+            countdownHandler.postDelayed(
+                    () -> startCountdownSequence(count - 1, generation, overlayView, textView),
+                    1000);
         } else {
-            countdownTextView.animate()
+            textView.animate()
                     .scaleX(1.5f)
                     .scaleY(1.5f)
                     .setDuration(500)
                     .withEndAction(() -> {
-                        // Remove countdown UI
-                        if (_fragmentCameraBinding != null && countdownOverlay != null && countdownTextView != null) {
+                        if (generation != countdownGeneration) {
+                            // Superseded while the final animation was
+                            // running (e.g. Start Test was tapped): the
+                            // views below belong to a newer countdown.
+                            return;
+                        }
+                        // Remove THIS countdown's UI (captured views --
+                        // never the shared fields, which may already
+                        // point at a successor's views).
+                        if (_fragmentCameraBinding != null) {
                             try {
                                 ViewGroup container = (ViewGroup) getFragmentCameraBinding().getRoot();
-                                container.removeView(countdownOverlay);
-                                container.removeView(countdownTextView);
+                                container.removeView(overlayView);
+                                container.removeView(textView);
                             } catch (Exception e) {
                                 Log.e(TAG, "Error removing countdown views: " + e.getMessage());
                             }
                         }
-                        countdownOverlay = null;
-                        countdownTextView = null;
+                        if (countdownOverlay == overlayView) countdownOverlay = null;
+                        if (countdownTextView == textView) countdownTextView = null;
 
                         // Start the actual test
                         isCountdownActive = false;
@@ -710,7 +741,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     private void cancelCountdown() {
+        // Invalidate the current countdown FIRST: its final animation's
+        // end action is not a handler callback and cannot be retracted
+        // below, so the generation bump is what guarantees it no-ops.
+        countdownGeneration++;
         countdownHandler.removeCallbacksAndMessages(null);
+        if (countdownTextView != null) {
+            countdownTextView.animate().cancel();
+        }
 
         // Remove the countdown UI if it exists
         if (countdownOverlay != null && countdownTextView != null) {
