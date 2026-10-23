@@ -96,6 +96,14 @@ public class StroopVoiceManager implements RecognitionListener {
     private long trialStartTimeMs;
     private boolean isListeningActive = false;
 
+    // Recognizer-session hardening (see buildRecognizerIntent): the
+    // current simplification level, how many hard errors in a row the
+    // service has produced, and whether the session has given up.
+    private int intentLevel = 0;
+    private int consecutiveHardErrors = 0;
+    private boolean recognizerTerminal = false;
+    private static final int MAX_HARD_ERRORS = 3;
+
     private int lastTextIndex = -1;
     private int lastColorIndex = -1;
 
@@ -120,14 +128,67 @@ public class StroopVoiceManager implements RecognitionListener {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context);
         speechRecognizer.setRecognitionListener(this);
 
-        recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 100L);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
-        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
+        recognizerIntent = buildRecognizerIntent(intentLevel);
+    }
+
+    /**
+     * The recognizer intent at a given simplification level. Some OEM
+     * recognition services reject a session outright (ERROR_CLIENT) when
+     * it carries extras they do not honor, and the old code restarted
+     * the identical intent forever, invisibly -- the test "heard
+     * nothing" and no result was ever recorded. Level 0 is the full
+     * intent; each higher level strips the non-essential extras:
+     *   0: everything (partial results, max results, speech-input timing)
+     *   1: no speech-input timing extras (the non-core ones)
+     *   2: bare minimum -- language model + language only
+     */
+    private Intent buildRecognizerIntent(int level) {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US);
+        if (level <= 1) {
+            intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+            intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10);
+        }
+        if (level <= 0) {
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 100L);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 300L);
+        }
+        return intent;
+    }
+
+    /** Recreate the recognizer at the current intent level (a fresh
+     *  recognizer also clears a service session stuck in a bad state). */
+    private void rebuildRecognizer() {
+        if (speechRecognizer != null) {
+            try {
+                speechRecognizer.destroy();
+            } catch (Exception ignored) {
+            }
+            speechRecognizer = null;
+        }
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+            return;
+        }
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context);
+        speechRecognizer.setRecognitionListener(this);
+        recognizerIntent = buildRecognizerIntent(intentLevel);
+    }
+
+    private static String errorName(int error) {
+        switch (error) {
+            case SpeechRecognizer.ERROR_NETWORK_TIMEOUT: return "ERROR_NETWORK_TIMEOUT";
+            case SpeechRecognizer.ERROR_NETWORK: return "ERROR_NETWORK";
+            case SpeechRecognizer.ERROR_AUDIO: return "ERROR_AUDIO";
+            case SpeechRecognizer.ERROR_SERVER: return "ERROR_SERVER";
+            case SpeechRecognizer.ERROR_CLIENT: return "ERROR_CLIENT";
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: return "ERROR_SPEECH_TIMEOUT";
+            case SpeechRecognizer.ERROR_NO_MATCH: return "ERROR_NO_MATCH";
+            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: return "ERROR_RECOGNIZER_BUSY";
+            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS: return "ERROR_INSUFFICIENT_PERMISSIONS";
+            default: return "ERROR_" + error;
+        }
     }
 
     public void startTest() {
@@ -137,6 +198,15 @@ public class StroopVoiceManager implements RecognitionListener {
         answers.clear();
         lastTextIndex = -1;
         lastColorIndex = -1;
+        intentLevel = 0;
+        consecutiveHardErrors = 0;
+        recognizerTerminal = false;
+        if (speechRecognizer == null) {
+            // stopTest() destroys the recognizer; recreate for a new run.
+            initSpeechRecognizer();
+        } else {
+            recognizerIntent = buildRecognizerIntent(intentLevel);
+        }
         isListeningActive = true;
 
         nextTrial();
@@ -333,6 +403,9 @@ public class StroopVoiceManager implements RecognitionListener {
 
     @Override
     public void onResults(Bundle results) {
+        // A full result proves the current intent level works on this
+        // device's recognition service.
+        consecutiveHardErrors = 0;
         ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         if (matches != null && !matches.isEmpty()) {
             processSpokenMatches(matches);
@@ -351,13 +424,58 @@ public class StroopVoiceManager implements RecognitionListener {
 
     @Override
     public void onError(int error) {
-        // automatically restart speech listening if no speech detected
-        if (isListeningActive) {
+        // Every error is logged BY NAME: the old silent restart made a
+        // failing recognition service indistinguishable from a quiet
+        // room, and no Stroop result ever reached the report.
+        Log.e(TAG, "Recognizer error: " + errorName(error) + " (" + error + ")"
+                + " intentLevel=" + intentLevel + " active=" + isListeningActive);
+        if (!isListeningActive || recognizerTerminal) {
+            return;
+        }
+        switch (error) {
+            case SpeechRecognizer.ERROR_NO_MATCH:
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
+                // Benign: the session ran, nobody (recognizably) spoke.
+                startListening();
+                return;
+            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:
+                recognizerTerminal = true;
+                if (listener != null) {
+                    listener.onError("Microphone permission is required for the Stroop voice test");
+                }
+                return;
+            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
+                // Transient: retry the same intent after a short pause.
+                mainHandler.postDelayed(this::startListening, 500);
+                return;
+            default:
+                break;
+        }
+        // Hard error: the service rejected or failed the session
+        // itself. Rebuild with a simpler intent; if the simplest
+        // intent keeps failing, stop looping and say so on screen
+        // instead of restarting forever.
+        consecutiveHardErrors++;
+        if (intentLevel < 2) {
+            intentLevel++;
+            Log.w(TAG, "Rebuilding recognizer with simpler intent, level " + intentLevel);
+            rebuildRecognizer();
+            startListening();
+        } else if (consecutiveHardErrors >= MAX_HARD_ERRORS) {
+            recognizerTerminal = true;
+            if (listener != null) {
+                listener.onError("Voice recognition isn't responding on this device ("
+                        + errorName(error) + "). Answers can't be heard for this test.");
+            }
+        } else {
+            rebuildRecognizer();
             startListening();
         }
     }
 
-    @Override public void onReadyForSpeech(Bundle params) {}
+    @Override public void onReadyForSpeech(Bundle params) {
+        Log.d(TAG, "Recognizer ready, intentLevel=" + intentLevel);
+    }
     @Override public void onBeginningOfSpeech() {}
     @Override public void onRmsChanged(float rmsdB) {}
     @Override public void onBufferReceived(byte[] buffer) {}

@@ -99,6 +99,11 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     Button btnCancel;
 
     private StroopVoiceManager stroopVoiceManager;
+    // Set when a dual task wants the Stroop test but the microphone
+    // permission is still outstanding; onRequestPermissionsResult
+    // starts the test the moment the permission lands.
+    private boolean pendingStroopStart = false;
+    private boolean dualTaskStroopActive = false;
 
     // Phone-motion (gyro) audit: max rotation of the device itself since
     // the current test started -- read by the export's SystemLog so a
@@ -126,6 +131,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     public void onDualTaskStarted() {
+        dualTaskStroopActive = true;
         if (stroopVoiceContainer != null) {
             stroopVoiceContainer.setVisibility(View.VISIBLE);
         }
@@ -136,14 +142,33 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         // where it actually matters.
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
+            pendingStroopStart = true;
             ActivityCompat.requestPermissions(requireActivity(),
                     new String[]{Manifest.permission.RECORD_AUDIO}, 2001);
             if (tvVoiceStatus != null) {
-                tvVoiceStatus.setText("Microphone permission needed — grant it, then restart the test");
+                tvVoiceStatus.setText("Microphone permission needed — grant it and the voice test will start");
             }
             return;
         }
 
+        startStroopVoiceTest();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 2001 && pendingStroopStart && dualTaskStroopActive
+                && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // The permission arrived mid-test: start the voice test now
+            // instead of losing this trial's Stroop result entirely.
+            pendingStroopStart = false;
+            startStroopVoiceTest();
+        }
+    }
+
+    private void startStroopVoiceTest() {
         stroopVoiceManager = new StroopVoiceManager(requireContext(), new StroopVoiceManager.StroopVoiceListener() {
             @Override
             public void onNewTrial(String wordText, int colorInt) {
@@ -178,6 +203,8 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     public StroopVoiceManager.VoiceStroopResult stopVoiceStroop() {
+        dualTaskStroopActive = false;
+        pendingStroopStart = false;
         if (stroopVoiceContainer != null) {
             stroopVoiceContainer.setVisibility(View.GONE);
         }
@@ -562,6 +589,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 }
                 startPhoneMotionTracking();
                 RecordFragment.setTestStarted(true);
+                if ("DualTask".equals(finalAssessmentType)) {
+                    // The countdown path starts the Stroop test at its
+                    // end; this manual Start path must too, or a dual
+                    // task begun here records no Stroop result at all.
+                    onDualTaskStarted();
+                }
                 // This is in test view
 
                 RecordFragment recordFragment = new RecordFragment();
