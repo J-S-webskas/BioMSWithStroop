@@ -595,6 +595,31 @@ public class RecordFragment extends Fragment {
         return 0f;
     }
 
+    /** Mean velocity of the most recent stored Baseline trial (the same
+     *  trial getLatestBaselineBalance reads), for DTC comparisons. The
+     *  per-trial saves used to read this from the fresh assessment's own
+     *  empty Baseline slot, so velocity/path DTCs were never stored. */
+    private float getLatestBaselineVelocity() {
+        List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
+        for (AssessmentData a : all) {
+            if (a.getBaseline() != null && a.getBaseline().getBalanceScore() > 0) {
+                return a.getBaseline().getSwayMeanVelocity();
+            }
+        }
+        return 0f;
+    }
+
+    /** Path length of the most recent stored Baseline trial. */
+    private float getLatestBaselinePathLength() {
+        List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
+        for (AssessmentData a : all) {
+            if (a.getBaseline() != null && a.getBaseline().getBalanceScore() > 0) {
+                return a.getBaseline().getSwayPathLength();
+            }
+        }
+        return 0f;
+    }
+
     /**
      * Builds the CSV export package for the trial being saved (see
      * TrialCsvExporter). Must run while the trial's in-memory series still
@@ -707,12 +732,12 @@ public class RecordFragment extends Fragment {
             currentAssessment.getComparisons().setSensoryAtaxiaBalanceChange(balanceChange);
         }
 
-        float baselineVel = currentAssessment.getBaseline().getSwayMeanVelocity();
+        float baselineVel = getLatestBaselineVelocity();
         if (baselineVel > 0) {
             float vChange = ((metrics.meanVelocityMmS - baselineVel) / baselineVel) * 100f;
             currentAssessment.getComparisons().setSensoryAtaxiaVelocityChange(vChange);
         }
-        float baselinePath = currentAssessment.getBaseline().getSwayPathLength();
+        float baselinePath = getLatestBaselinePathLength();
         if (baselinePath > 0) {
             float pChange = ((metrics.pathLengthMm - baselinePath) / baselinePath) * 100f;
             currentAssessment.getComparisons().setSensoryAtaxiaPathLengthChange(pChange);
@@ -749,8 +774,14 @@ public class RecordFragment extends Fragment {
     }
 
     private void saveDualTaskResults() throws IOException {
-        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
-        currentAssessment = todayAssessment;
+        // One assessment file per trial, exactly like the Baseline and
+        // Sensory Ataxia saves. This method used to load the shared
+        // "today" assessment and write into its single DualTask slot,
+        // so every dual-task recording of the day overwrote the same
+        // slot of the same file -- reports, which collect one trial per
+        // file, could only ever show a single dual-task trial per day.
+        AssessmentData trialAssessment = new AssessmentData(username);
+        currentAssessment = trialAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
         applyPlausibilityGateConfig();
@@ -763,12 +794,12 @@ public class RecordFragment extends Fragment {
             float balanceChange = ((swayArea - baselineBalance) / baselineBalance) * 100f;
             currentAssessment.getComparisons().setDualTaskBalanceChange(balanceChange);
         }
-        float baselineVel = currentAssessment.getBaseline().getSwayMeanVelocity();
+        float baselineVel = getLatestBaselineVelocity();
         if (baselineVel > 0) {
             float vChange = ((metrics.meanVelocityMmS - baselineVel) / baselineVel) * 100f;
             currentAssessment.getComparisons().setDualTaskVelocityChange(vChange);
         }
-        float baselinePath = currentAssessment.getBaseline().getSwayPathLength();
+        float baselinePath = getLatestBaselinePathLength();
         if (baselinePath > 0) {
             float pChange = ((metrics.pathLengthMm - baselinePath) / baselinePath) * 100f;
             currentAssessment.getComparisons().setDualTaskPathLengthChange(pChange);
@@ -791,12 +822,16 @@ public class RecordFragment extends Fragment {
         // running at this point (it is stopped right after this save), so
         // stop the voice test here and store what it recorded.
         try {
-            Fragment stroopFragment = getActivity() != null
-                    ? getActivity().getSupportFragmentManager().findFragmentById(R.id.fragment_container)
-                    : null;
-            if (stroopFragment instanceof CameraFragment) {
+            // Find the camera fragment wherever it sits in the fragment
+            // manager: at save time the container usually holds THIS
+            // RecordFragment, so the old findFragmentById lookup missed
+            // the CameraFragment and the Stroop result was never
+            // captured -- reports always said "No Stroop results
+            // recorded" even though the test ran.
+            CameraFragment stroopFragment = findCameraFragment();
+            if (stroopFragment != null) {
                 StroopVoiceManager.VoiceStroopResult stroop =
-                        ((CameraFragment) stroopFragment).stopVoiceStroop();
+                        stroopFragment.stopVoiceStroop();
                 if (stroop != null && stroop.totalTrials > 0) {
                     DualTaskAssessment dt = currentAssessment.getDualTask();
                     dt.setStroopTotalTrials(stroop.totalTrials);
