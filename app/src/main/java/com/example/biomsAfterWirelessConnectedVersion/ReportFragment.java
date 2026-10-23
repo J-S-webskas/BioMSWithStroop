@@ -277,6 +277,21 @@ public class ReportFragment extends Fragment {
         ArrayList<Float> saVelocityDTCTrials = new ArrayList<>();
         ArrayList<Float> saPathLengthDTCTrials = new ArrayList<>();
 
+        // Timestamped trial points for report-time DTC computation
+        // (see computeDtcTrials). Chronological, like the trial lists.
+        ArrayList<Long> baseTimes = new ArrayList<>();
+        ArrayList<Float> baseBalPts = new ArrayList<>();
+        ArrayList<Float> baseVelPts = new ArrayList<>();
+        ArrayList<Float> basePathPts = new ArrayList<>();
+        ArrayList<Long> dtTimes = new ArrayList<>();
+        ArrayList<Float> dtBalPts = new ArrayList<>();
+        ArrayList<Float> dtVelPts = new ArrayList<>();
+        ArrayList<Float> dtPathPts = new ArrayList<>();
+        ArrayList<Long> saTimes = new ArrayList<>();
+        ArrayList<Float> saBalPts = new ArrayList<>();
+        ArrayList<Float> saVelPts = new ArrayList<>();
+        ArrayList<Float> saPathPts = new ArrayList<>();
+
         for (AssessmentData assessment : chronologicalAssessments) {
             String currentDate = sdf.format(assessment.getTimestamp());
             long currentTimestamp = assessment.getTimestamp().getTime();
@@ -291,6 +306,10 @@ public class ReportFragment extends Fragment {
                 if (balance > 0) {
                     balanceTrials.add(balance);
                     allBalanceValues.add(balance);
+                    baseTimes.add(currentTimestamp);
+                    baseBalPts.add(balance);
+                    baseVelPts.add(assessment.getBaseline().getSwayMeanVelocity());
+                    basePathPts.add(assessment.getBaseline().getSwayPathLength());
                 }
                 if (assessment.getBaseline().getSwayPathLength() > 0) {
                     swayPathLengthTrials.add(assessment.getBaseline().getSwayPathLength());
@@ -348,6 +367,12 @@ public class ReportFragment extends Fragment {
                 }
                 float dtBalance = dualTask.getBalanceScore();
                 if (assessment.getDualTaskTestDate() != null || dtBalance > 0) {
+                    if (dtBalance > 0 || dualTask.getSwayPathLength() > 0) {
+                        dtTimes.add(currentTimestamp);
+                        dtBalPts.add(dtBalance);
+                        dtVelPts.add(dualTask.getSwayMeanVelocity());
+                        dtPathPts.add(dualTask.getSwayPathLength());
+                    }
                     if (dtBalance > 0) dtBalanceTrials.add(dtBalance);
                     if (dualTask.getSwayPathLength() > 0) {
                         dtSwayPathLengthTrials.add(dualTask.getSwayPathLength());
@@ -375,6 +400,12 @@ public class ReportFragment extends Fragment {
             if (sensory != null) {
                 float saBalance = sensory.getBalanceScore();
                 if (assessment.getSensoryAtaxiaTestDate() != null || saBalance > 0) {
+                    if (saBalance > 0 || sensory.getSwayPathLength() > 0) {
+                        saTimes.add(currentTimestamp);
+                        saBalPts.add(saBalance);
+                        saVelPts.add(sensory.getSwayMeanVelocity());
+                        saPathPts.add(sensory.getSwayPathLength());
+                    }
                     if (saBalance > 0) saBalanceTrials.add(saBalance);
                     if (sensory.getSwayPathLength() > 0) {
                         saSwayPathLengthTrials.add(sensory.getSwayPathLength());
@@ -417,6 +448,43 @@ public class ReportFragment extends Fragment {
             }
         }
 
+        // Report-time DTC: compute each condition trial's percent change
+        // against the most recent baseline trial at or before it, from
+        // the stored trial values themselves. The save-time comparisons
+        // collected above are only a fallback (used when a trial has no
+        // pairable baseline this day, e.g. its baseline was recorded on
+        // another day): builds before PR #25 never stored velocity/path
+        // DTC at all, so reading the stored comparisons alone left
+        // those DTCs at 0 for every older trial.
+        ArrayList<Float> computedDtBalDTC = new ArrayList<>();
+        ArrayList<Float> computedDtVelDTC = new ArrayList<>();
+        ArrayList<Float> computedDtPathDTC = new ArrayList<>();
+        ArrayList<Float> computedSaBalDTC = new ArrayList<>();
+        ArrayList<Float> computedSaVelDTC = new ArrayList<>();
+        ArrayList<Float> computedSaPathDTC = new ArrayList<>();
+        computeDtcTrials(baseTimes, baseBalPts, baseVelPts, basePathPts,
+                dtTimes, dtBalPts, dtVelPts, dtPathPts,
+                computedDtBalDTC, computedDtVelDTC, computedDtPathDTC);
+        computeDtcTrials(baseTimes, baseBalPts, baseVelPts, basePathPts,
+                saTimes, saBalPts, saVelPts, saPathPts,
+                computedSaBalDTC, computedSaVelDTC, computedSaPathDTC);
+        if (!computedDtBalDTC.isEmpty()) dtDTCTrials = computedDtBalDTC;
+        if (!computedDtVelDTC.isEmpty()) dtVelocityDTCTrials = computedDtVelDTC;
+        if (!computedDtPathDTC.isEmpty()) dtPathLengthDTCTrials = computedDtPathDTC;
+        if (!computedSaBalDTC.isEmpty()) saDTCTrials = computedSaBalDTC;
+        if (!computedSaVelDTC.isEmpty()) saVelocityDTCTrials = computedSaVelDTC;
+        if (!computedSaPathDTC.isEmpty()) saPathLengthDTCTrials = computedSaPathDTC;
+        // The headline DTC for each metric is the most recent trial's
+        // value in the final list (computed where available, stored
+        // fallback otherwise). The velocity/path headline values were
+        // previously never assigned here at all, so they always read 0.
+        DTBalanceDTC = dtDTCTrials.isEmpty() ? 0 : dtDTCTrials.get(dtDTCTrials.size() - 1);
+        DTVelocityDTC = dtVelocityDTCTrials.isEmpty() ? 0 : dtVelocityDTCTrials.get(dtVelocityDTCTrials.size() - 1);
+        DTPathDTC = dtPathLengthDTCTrials.isEmpty() ? 0 : dtPathLengthDTCTrials.get(dtPathLengthDTCTrials.size() - 1);
+        SABalanceDTC = saDTCTrials.isEmpty() ? 0 : saDTCTrials.get(saDTCTrials.size() - 1);
+        SAVelocityDTC = saVelocityDTCTrials.isEmpty() ? 0 : saVelocityDTCTrials.get(saVelocityDTCTrials.size() - 1);
+        SAPathDTC = saPathLengthDTCTrials.isEmpty() ? 0 : saPathLengthDTCTrials.get(saPathLengthDTCTrials.size() - 1);
+
         if (!hasDataForDate) {
             Toast.makeText(requireContext(), "No assessment data found for " + targetDateStr, Toast.LENGTH_SHORT).show();
             return;
@@ -447,7 +515,11 @@ public class ReportFragment extends Fragment {
         newReport.setDualTaskBalanceToday(DTbalanceToday);
         // DTC
         newReport.setDualTaskDTCBalance(DTBalanceDTC);
+        newReport.setDualTaskDTCSwayVelocity(DTVelocityDTC);
+        newReport.setDualTaskDTCSwayPathLength(DTPathDTC);
         newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
+        newReport.setSensoryAtaxiaDTCSwayVelocity(SAVelocityDTC);
+        newReport.setSensoryAtaxiaDTCSwayPathLength(SAPathDTC);
         // SD & CV
         newReport.setBalanceSD(BalanceSD);
         newReport.setEnduranceSD(EnduranceSD);
@@ -668,6 +740,47 @@ public class ReportFragment extends Fragment {
             return dateStr;
         }
     }
+    /**
+     * Report-time dual task cost. For each condition trial (chronological),
+     * finds the most recent baseline trial recorded at or before it and
+     * appends the percent change ((trial - baseline) / baseline) x 100 for
+     * each metric both sides recorded (> 0). Trials with no pairable
+     * baseline contribute nothing; callers fall back to the save-time
+     * comparisons in that case. Computing DTC here, from the stored trial
+     * values, keeps reports correct for trials whose save-time
+     * comparisons were never stored (builds before PR #25 stored no
+     * velocity/path DTC) and makes the result independent of the order
+     * in which assessment files happen to be read.
+     */
+    private static void computeDtcTrials(
+            ArrayList<Long> baseTimes, ArrayList<Float> baseBal,
+            ArrayList<Float> baseVel, ArrayList<Float> basePath,
+            ArrayList<Long> condTimes, ArrayList<Float> condBal,
+            ArrayList<Float> condVel, ArrayList<Float> condPath,
+            ArrayList<Float> outBal, ArrayList<Float> outVel,
+            ArrayList<Float> outPath) {
+        for (int i = 0; i < condTimes.size(); i++) {
+            int b = -1;
+            for (int j = 0; j < baseTimes.size(); j++) {
+                if (baseTimes.get(j) <= condTimes.get(i)) {
+                    b = j;
+                } else {
+                    break;
+                }
+            }
+            if (b < 0) continue;
+            if (condBal.get(i) > 0 && baseBal.get(b) > 0) {
+                outBal.add(((condBal.get(i) - baseBal.get(b)) / baseBal.get(b)) * 100f);
+            }
+            if (condVel.get(i) > 0 && baseVel.get(b) > 0) {
+                outVel.add(((condVel.get(i) - baseVel.get(b)) / baseVel.get(b)) * 100f);
+            }
+            if (condPath.get(i) > 0 && basePath.get(b) > 0) {
+                outPath.add(((condPath.get(i) - basePath.get(b)) / basePath.get(b)) * 100f);
+            }
+        }
+    }
+
     private float getMean(ArrayList<Float> set) {
         if (set == null || set.isEmpty()) return 1f; // Avoid division by zero
         float sum = 0;

@@ -295,18 +295,25 @@ public class AutoReportGenerationService extends Service {
                 if (currentTimestamp > latestSATimestamp) latestSATimestamp = currentTimestamp;
             }
 
-            // Comparisons / DTC
+            // Comparisons / DTC (save-time values; the fallback for the
+            // report-time computation below). These assignments must stay
+            // non-zero-guarded: this loop runs once per assessment file,
+            // so an unconditional assignment lets the last file read -- in
+            // practice a baseline-only file whose comparisons are all
+            // zero -- overwrite every real DTC with 0.
             TestComparisons comparisons = assessment.getComparisons();
-            DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
-            DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
-            DTBalanceDTC = comparisons.getDualTaskBalanceChange();
-            DTVelocityDTC = comparisons.getDualTaskVelocityChange();
-            DTPathDTC = comparisons.getDualTaskPathLengthChange();
-            SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
-            SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
-            SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
-            SAVelocityDTC = comparisons.getSensoryAtaxiaVelocityChange();
-            SAPathDTC = comparisons.getSensoryAtaxiaPathLengthChange();
+            if (comparisons != null) {
+                if (comparisons.getDualTaskARJLeftKneeChange() != 0) DTARJLeftKneeDTC = comparisons.getDualTaskARJLeftKneeChange();
+                if (comparisons.getDualTaskARJRightKneeChange() != 0) DTARJRightKneeDTC = comparisons.getDualTaskARJRightKneeChange();
+                if (comparisons.getDualTaskBalanceChange() != 0) DTBalanceDTC = comparisons.getDualTaskBalanceChange();
+                if (comparisons.getDualTaskVelocityChange() != 0) DTVelocityDTC = comparisons.getDualTaskVelocityChange();
+                if (comparisons.getDualTaskPathLengthChange() != 0) DTPathDTC = comparisons.getDualTaskPathLengthChange();
+                if (comparisons.getSensoryAtaxiaARJLeftKneeChange() != 0) SAARJLeftKneeDTC = comparisons.getSensoryAtaxiaARJLeftKneeChange();
+                if (comparisons.getSensoryAtaxiaARJRightKneeChange() != 0) SAARJRightKneeDTC = comparisons.getSensoryAtaxiaARJRightKneeChange();
+                if (comparisons.getSensoryAtaxiaBalanceChange() != 0) SABalanceDTC = comparisons.getSensoryAtaxiaBalanceChange();
+                if (comparisons.getSensoryAtaxiaVelocityChange() != 0) SAVelocityDTC = comparisons.getSensoryAtaxiaVelocityChange();
+                if (comparisons.getSensoryAtaxiaPathLengthChange() != 0) SAPathDTC = comparisons.getSensoryAtaxiaPathLengthChange();
+            }
         }
 
         // Calculate SD & CV
@@ -353,12 +360,33 @@ public class AutoReportGenerationService extends Service {
         ArrayList<Float> saVelocityDTCTrials = new ArrayList<>();
         ArrayList<Float> saPathLengthDTCTrials = new ArrayList<>();
 
+        // Timestamped trial points for report-time DTC computation
+        // (see computeDtcTrials). Chronological, like the trial lists.
+        ArrayList<Long> baseTimes = new ArrayList<>();
+        ArrayList<Float> baseBalPts = new ArrayList<>();
+        ArrayList<Float> baseVelPts = new ArrayList<>();
+        ArrayList<Float> basePathPts = new ArrayList<>();
+        ArrayList<Long> dtTimes = new ArrayList<>();
+        ArrayList<Float> dtBalPts = new ArrayList<>();
+        ArrayList<Float> dtVelPts = new ArrayList<>();
+        ArrayList<Float> dtPathPts = new ArrayList<>();
+        ArrayList<Long> saTimes = new ArrayList<>();
+        ArrayList<Float> saBalPts = new ArrayList<>();
+        ArrayList<Float> saVelPts = new ArrayList<>();
+        ArrayList<Float> saPathPts = new ArrayList<>();
+
         for (AssessmentData assessment : chronologicalAssessments) {
             String currentDate = sdf.format(assessment.getTimestamp());
             if (!currentDate.equals(targetDateString)) continue;
 
             float balance = assessment.getBaseline().getBalanceScore();
-            if (balance > 0) balanceTrials.add(balance);
+            if (balance > 0) {
+                balanceTrials.add(balance);
+                baseTimes.add(assessment.getTimestamp().getTime());
+                baseBalPts.add(balance);
+                baseVelPts.add(assessment.getBaseline().getSwayMeanVelocity());
+                basePathPts.add(assessment.getBaseline().getSwayPathLength());
+            }
 
             if (assessment.getBaseline().getSwayPathLength() > 0) {
                 swayPathLengthTrials.add(assessment.getBaseline().getSwayPathLength());
@@ -372,6 +400,15 @@ public class AutoReportGenerationService extends Service {
 
             float endurance = assessment.getBaseline().getEnduranceScore();
             if (endurance > 0) enduranceTrials.add(endurance);
+
+            if (assessment.getDualTask() != null
+                    && (assessment.getDualTask().getBalanceScore() > 0
+                        || assessment.getDualTask().getSwayPathLength() > 0)) {
+                dtTimes.add(assessment.getTimestamp().getTime());
+                dtBalPts.add(assessment.getDualTask().getBalanceScore());
+                dtVelPts.add(assessment.getDualTask().getSwayMeanVelocity());
+                dtPathPts.add(assessment.getDualTask().getSwayPathLength());
+            }
 
             if (assessment.getDualTask() != null && assessment.getDualTask().getBalanceScore() > 0) {
                 dtBalanceTrials.add(assessment.getDualTask().getBalanceScore());
@@ -392,6 +429,15 @@ public class AutoReportGenerationService extends Service {
                 dtSwayVelocityTrials.add(assessment.getDualTask().getSwayMeanVelocity());
                 dtSwayRmsAPTrials.add(assessment.getDualTask().getSwayRmsAP());
                 dtSwayRmsMLTrials.add(assessment.getDualTask().getSwayRmsML());
+            }
+
+            if (assessment.getSensoryAtaxia() != null
+                    && (assessment.getSensoryAtaxia().getBalanceScore() > 0
+                        || assessment.getSensoryAtaxia().getSwayPathLength() > 0)) {
+                saTimes.add(assessment.getTimestamp().getTime());
+                saBalPts.add(assessment.getSensoryAtaxia().getBalanceScore());
+                saVelPts.add(assessment.getSensoryAtaxia().getSwayMeanVelocity());
+                saPathPts.add(assessment.getSensoryAtaxia().getSwayPathLength());
             }
 
             if (assessment.getSensoryAtaxia() != null && assessment.getSensoryAtaxia().getBalanceScore() > 0) {
@@ -426,6 +472,42 @@ public class AutoReportGenerationService extends Service {
                 }
             }
         }
+
+        // Report-time DTC: compute each condition trial's percent change
+        // against the most recent baseline trial at or before it, from
+        // the stored trial values themselves. The save-time comparisons
+        // collected above are only a fallback (used when a trial has no
+        // pairable baseline this day, e.g. its baseline was recorded on
+        // another day): builds before PR #25 never stored velocity/path
+        // DTC at all, so reading the stored comparisons alone left
+        // those DTCs at 0 for every older trial.
+        ArrayList<Float> computedDtBalDTC = new ArrayList<>();
+        ArrayList<Float> computedDtVelDTC = new ArrayList<>();
+        ArrayList<Float> computedDtPathDTC = new ArrayList<>();
+        ArrayList<Float> computedSaBalDTC = new ArrayList<>();
+        ArrayList<Float> computedSaVelDTC = new ArrayList<>();
+        ArrayList<Float> computedSaPathDTC = new ArrayList<>();
+        computeDtcTrials(baseTimes, baseBalPts, baseVelPts, basePathPts,
+                dtTimes, dtBalPts, dtVelPts, dtPathPts,
+                computedDtBalDTC, computedDtVelDTC, computedDtPathDTC);
+        computeDtcTrials(baseTimes, baseBalPts, baseVelPts, basePathPts,
+                saTimes, saBalPts, saVelPts, saPathPts,
+                computedSaBalDTC, computedSaVelDTC, computedSaPathDTC);
+        if (!computedDtBalDTC.isEmpty()) dtDTCTrials = computedDtBalDTC;
+        if (!computedDtVelDTC.isEmpty()) dtVelocityDTCTrials = computedDtVelDTC;
+        if (!computedDtPathDTC.isEmpty()) dtPathLengthDTCTrials = computedDtPathDTC;
+        if (!computedSaBalDTC.isEmpty()) saDTCTrials = computedSaBalDTC;
+        if (!computedSaVelDTC.isEmpty()) saVelocityDTCTrials = computedSaVelDTC;
+        if (!computedSaPathDTC.isEmpty()) saPathLengthDTCTrials = computedSaPathDTC;
+        // The headline DTC for each metric is the most recent trial's
+        // value in the final list (computed where available, stored
+        // fallback otherwise).
+        if (!dtDTCTrials.isEmpty()) DTBalanceDTC = dtDTCTrials.get(dtDTCTrials.size() - 1);
+        if (!dtVelocityDTCTrials.isEmpty()) DTVelocityDTC = dtVelocityDTCTrials.get(dtVelocityDTCTrials.size() - 1);
+        if (!dtPathLengthDTCTrials.isEmpty()) DTPathDTC = dtPathLengthDTCTrials.get(dtPathLengthDTCTrials.size() - 1);
+        if (!saDTCTrials.isEmpty()) SABalanceDTC = saDTCTrials.get(saDTCTrials.size() - 1);
+        if (!saVelocityDTCTrials.isEmpty()) SAVelocityDTC = saVelocityDTCTrials.get(saVelocityDTCTrials.size() - 1);
+        if (!saPathLengthDTCTrials.isEmpty()) SAPathDTC = saPathLengthDTCTrials.get(saPathLengthDTCTrials.size() - 1);
 
         // Build Report object
         ReportModel newReport = new ReportModel();
@@ -511,6 +593,47 @@ public class AutoReportGenerationService extends Service {
         newReport.setDate(displayFormat.format(targetDate));
 
         DataStorageManager.saveReport(this, newReport);
+    }
+
+    /**
+     * Report-time dual task cost. For each condition trial (chronological),
+     * finds the most recent baseline trial recorded at or before it and
+     * appends the percent change ((trial - baseline) / baseline) x 100 for
+     * each metric both sides recorded (> 0). Trials with no pairable
+     * baseline contribute nothing; callers fall back to the save-time
+     * comparisons in that case. Computing DTC here, from the stored trial
+     * values, keeps reports correct for trials whose save-time
+     * comparisons were never stored (builds before PR #25 stored no
+     * velocity/path DTC) and makes the result independent of the order
+     * in which assessment files happen to be read.
+     */
+    private static void computeDtcTrials(
+            ArrayList<Long> baseTimes, ArrayList<Float> baseBal,
+            ArrayList<Float> baseVel, ArrayList<Float> basePath,
+            ArrayList<Long> condTimes, ArrayList<Float> condBal,
+            ArrayList<Float> condVel, ArrayList<Float> condPath,
+            ArrayList<Float> outBal, ArrayList<Float> outVel,
+            ArrayList<Float> outPath) {
+        for (int i = 0; i < condTimes.size(); i++) {
+            int b = -1;
+            for (int j = 0; j < baseTimes.size(); j++) {
+                if (baseTimes.get(j) <= condTimes.get(i)) {
+                    b = j;
+                } else {
+                    break;
+                }
+            }
+            if (b < 0) continue;
+            if (condBal.get(i) > 0 && baseBal.get(b) > 0) {
+                outBal.add(((condBal.get(i) - baseBal.get(b)) / baseBal.get(b)) * 100f);
+            }
+            if (condVel.get(i) > 0 && baseVel.get(b) > 0) {
+                outVel.add(((condVel.get(i) - baseVel.get(b)) / baseVel.get(b)) * 100f);
+            }
+            if (condPath.get(i) > 0 && basePath.get(b) > 0) {
+                outPath.add(((condPath.get(i) - basePath.get(b)) / basePath.get(b)) * 100f);
+            }
+        }
     }
 
     private float standardDeviation(ArrayList<Float> set) {
