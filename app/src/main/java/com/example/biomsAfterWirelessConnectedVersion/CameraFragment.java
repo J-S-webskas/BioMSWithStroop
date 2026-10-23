@@ -78,6 +78,11 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private static final int REQUEST_CODE_CANCEL_TEST = 200;
     private FragmentCameraBinding _fragmentCameraBinding;
     private RecordFragment recordFragment;
+    // Start-button funnel only: what the get-ready countdown's end
+    // action runs right after its start sequence (create the hidden
+    // RecordFragment and start its test timer). Set at click time,
+    // consumed and cleared by the end action, dropped on cancel.
+    private Runnable pendingStartAction;
     private FragmentCameraBinding getFragmentCameraBinding() {
         return _fragmentCameraBinding;
     }
@@ -348,6 +353,16 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         if ("DualTask".equals(assessmentType)) {
                             onDualTaskStarted();
                         }
+                        // Start-button funnel: create the RecordFragment
+                        // and start its test timer now, at the true
+                        // start (see pendingStartAction). Null on the
+                        // auto-countdown funnel, where the host
+                        // RecordFragment already runs the test.
+                        if (pendingStartAction != null) {
+                            Runnable startAction = pendingStartAction;
+                            pendingStartAction = null;
+                            startAction.run();
+                        }
                     })
                     .start();
         }
@@ -615,33 +630,21 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
             // todo: Must wait for 1 second before hitting btn Start test, or else the preview countdown is frozen on screen..unfixable yikes
             btnCancel.setOnClickListener(v -> {
-                if (poseLandmarkerHelper != null) {
-                    poseLandmarkerHelper.freezeAnchorForTest();
-                }
-                startPhoneMotionTracking();
-                RecordFragment.setTestStarted(true);
-                if ("DualTask".equals(finalAssessmentType)) {
-                    // The countdown path starts the Stroop test at its
-                    // end; this manual Start path must too, or a dual
-                    // task begun here records no Stroop result at all.
-                    onDualTaskStarted();
-                }
-                // This is in test view
-
-                RecordFragment recordFragment = new RecordFragment();
-                FragmentManager fm = getParentFragmentManager();
-                FragmentTransaction transaction = fm.beginTransaction();
-
-                // Add the new fragment but hide it immediately
-                transaction.add(R.id.fragment_container, recordFragment);
-                transaction.hide(recordFragment);  // Hidden but running
-                transaction.addToBackStack(null);
-                transaction.commit();
-                recordFragment.setViewModel(viewModel);
-                recordFragment.setContext(requireContext());
-                recordFragment.setActivity(requireActivity());
-                recordFragment.startTest(assessmentType, requireContext());
-                Log.d("CameraFragment", "Background recording started!");
+                // Setup ONLY. The test itself starts in the countdown's
+                // end action, in one place, for both funnels: that is
+                // where the anchor freezes (after the countdown's
+                // calibration tail exists), the phone-motion audit and
+                // the dropped-frame counter start, the focus locks, the
+                // Stroop test starts, and the recording flag rises.
+                // This handler used to do all of that immediately AND
+                // start the RecordFragment's 33 s timer, then run a
+                // get-ready countdown whose end action did it all a
+                // second time -- so the trial included ~3 s of
+                // get-ready, the anchor froze on an immature
+                // calibration, the motion audit restarted mid-trial,
+                // early dropped frames were wiped, the first seconds
+                // recorded with hunting focus, and (dual task) the
+                // Stroop test started twice.
 
                 // Switch to TEST MODE
                 isPreviewMode = false;
@@ -658,6 +661,29 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
                 // Start a fresh countdown
                 showCountdown();
+
+                // What the countdown's end action runs immediately
+                // after its start sequence: create the hidden
+                // RecordFragment and start its test timer, so the
+                // trial window is exactly the test duration measured
+                // from the true start.
+                FragmentManager fm = getParentFragmentManager();
+                pendingStartAction = () -> {
+                    recordFragment = new RecordFragment();
+                    FragmentTransaction transaction = fm.beginTransaction();
+
+                    // Add the new fragment but hide it immediately
+                    transaction.add(R.id.fragment_container, recordFragment);
+                    transaction.hide(recordFragment);  // Hidden but running
+                    transaction.addToBackStack(null);
+                    transaction.commit();
+                    recordFragment.setViewModel(viewModel);
+                    recordFragment.setContext(requireContext());
+                    recordFragment.setActivity(requireActivity());
+                    recordFragment.startTest(assessmentType, requireContext());
+                    Log.d("CameraFragment", "Background recording started!");
+                };
+
                 btnCancel.setEnabled(false);
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     btnCancel.setEnabled(true);
@@ -665,6 +691,10 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 }, 3000);
 
                 btnCancel.setOnClickListener(v2 -> {
+                    // Cancelling during the countdown drops the pending
+                    // start; during the test, recordFragment is the
+                    // running fragment and cancels as before.
+                    pendingStartAction = null;
                     RecordFragment.setTestStarted(false);
                      Fragment fragment = fm.findFragmentById(R.id.fragment_container);
                      if (fragment instanceof CameraFragment) {
@@ -713,6 +743,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     private void cancelTest() {
+        pendingStartAction = null;
         FragmentManager fm = getParentFragmentManager();
         FragmentTransaction transaction = fm.beginTransaction();
         RecordFragment.setTestStarted(false);
