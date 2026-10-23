@@ -718,6 +718,15 @@ public class RecordFragment extends Fragment {
             metrics.fovUsedDegrees = fov;
             TrialCsvExporter.exportTrial(requireContext(), conditionLabel, metrics,
                     jointSeries, metrics.droppedFrames, metrics.fovUsedDegrees);
+            // Also store the joint angles as this trial's sidecar file,
+            // so an export generated later from stored data can include
+            // them (they are not part of the assessment itself -- see
+            // TrialCsvExporter's sidecar note).
+            if (currentAssessment != null) {
+                TrialCsvExporter.saveJointAnglesSidecar(requireContext(),
+                        currentAssessment.getSessionId(), conditionLabel,
+                        jointSeries, metrics);
+            }
         } catch (Exception e) {
             Log.e("RecordFragment", "CSV export failed", e);
         }
