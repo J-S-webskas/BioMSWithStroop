@@ -20,15 +20,20 @@ import java.util.zip.ZipOutputStream;
  * Builds the per-trial CSV export package for one finished test and zips
  * it for sharing (e.g. via Gmail):
  *
- *   &lt;PatientID&gt;_&lt;Condition&gt;_CoM_Trajectory.csv
- *   &lt;PatientID&gt;_&lt;Condition&gt;_JointAngles.csv
- *   &lt;PatientID&gt;_&lt;Condition&gt;_SystemLog.csv
+ *   &lt;PatientID&gt;_&lt;Condition&gt;_&lt;n&gt;_CoM_Trajectory.csv
+ *   &lt;PatientID&gt;_&lt;Condition&gt;_&lt;n&gt;_JointAngles.csv
+ *   &lt;PatientID&gt;_&lt;Condition&gt;_&lt;n&gt;_SystemLog.csv
  *   README.txt
  *
- * zipped as &lt;PatientID&gt;_&lt;yyyy-MM-dd&gt;.zip (with a condition
- * suffix when a second test is exported the same day). The patient is
- * identified ONLY by the anonymous ID from {@link AnonymousIdManager} —
- * never by name.
+ * zipped as &lt;PatientID&gt;_&lt;yyyy-MM-dd&gt;_&lt;Condition&gt;_&lt;n&gt;.zip,
+ * where n is the trial's number within its condition for that day,
+ * counting from 1 (the first Baseline of a day is _Baseline_1, the
+ * second _Baseline_2, and so on; DualTask and SensoryAtaxia are
+ * numbered the same way, each in their own sequence). The number is
+ * also recorded inside SystemLog.csv and README.txt, so exported
+ * trials of one condition can live in one folder without overwriting
+ * each other. The patient is identified ONLY by the anonymous ID from
+ * {@link AnonymousIdManager} — never by name.
  *
  * Axis mapping for the trajectory: the app measures sway in the ground
  * plane — CoM_x_Pos is the mediolateral axis and CoM_z_Pos the
@@ -68,15 +73,21 @@ public class TrialCsvExporter {
                 return null;
             }
 
-            String base = patientId + "_" + conditionLabel;
-            File zip = new File(dir, patientId + "_" + dateStr + ".zip");
-            if (zip.exists()) {
-                zip = new File(dir, patientId + "_" + dateStr + "_" + conditionLabel + ".zip");
-                int n = 2;
-                while (zip.exists()) {
-                    zip = new File(dir, patientId + "_" + dateStr + "_" + conditionLabel + "_" + n + ".zip");
-                    n++;
-                }
+            // Number this trial within its condition for today, counting
+            // from 1: the export runs before the just-finished trial is
+            // saved, so it is (stored trials of this condition today) + 1.
+            int trialNumber = countStoredTrialsToday(context, conditionLabel, dateStr) + 1;
+            String base = patientId + "_" + conditionLabel + "_" + trialNumber;
+            File zip = new File(dir, patientId + "_" + dateStr + "_" + conditionLabel
+                    + "_" + trialNumber + ".zip");
+            while (zip.exists()) {
+                // An earlier export with this number is still on disk
+                // (e.g. its assessment was deleted afterwards): move to
+                // the next free number rather than overwriting it.
+                trialNumber++;
+                base = patientId + "_" + conditionLabel + "_" + trialNumber;
+                zip = new File(dir, patientId + "_" + dateStr + "_" + conditionLabel
+                        + "_" + trialNumber + ".zip");
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zip))) {
@@ -85,9 +96,10 @@ public class TrialCsvExporter {
                 writeEntry(zos, base + "_JointAngles.csv",
                         buildJointAnglesCsv(jointSeries, metrics));
                 writeEntry(zos, base + "_SystemLog.csv",
-                        buildSystemLogCsv(patientId, conditionLabel, dateStr, metrics,
-                                droppedFrames, fovDegrees));
-                writeEntry(zos, "README.txt", buildReadme(patientId, conditionLabel, dateStr));
+                        buildSystemLogCsv(patientId, conditionLabel, dateStr, trialNumber,
+                                metrics, droppedFrames, fovDegrees));
+                writeEntry(zos, "README.txt",
+                        buildReadme(patientId, conditionLabel, dateStr, trialNumber));
             }
 
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -97,6 +109,44 @@ public class TrialCsvExporter {
         } catch (Exception e) {
             Log.e(TAG, "Export failed", e);
             return null;
+        }
+    }
+
+    /**
+     * How many trials of the given condition are already stored for the
+     * given day (yyyy-MM-dd). Each save stores one assessment per trial,
+     * dated by that condition's test date (falling back to the assessment
+     * timestamp when the condition carries data but no test date).
+     * Returns 0 if storage cannot be read, so numbering simply restarts.
+     */
+    private static int countStoredTrialsToday(Context context, String conditionLabel,
+                                              String dateStr) {
+        try {
+            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            int count = 0;
+            for (AssessmentData a : DataStorageManager.loadAllAssessments(context)) {
+                Date testDate = null;
+                boolean hasData = false;
+                if ("Baseline".equals(conditionLabel)) {
+                    testDate = a.getSwayAreaAndBalanceTestDate();
+                    hasData = a.getBaseline() != null && a.getBaseline().getBalanceScore() > 0;
+                } else if ("DualTask".equals(conditionLabel)) {
+                    testDate = a.getDualTaskTestDate();
+                    hasData = a.getDualTask() != null && a.getDualTask().getBalanceScore() > 0;
+                } else if ("SensoryAtaxia".equals(conditionLabel)) {
+                    testDate = a.getSensoryAtaxiaTestDate();
+                    hasData = a.getSensoryAtaxia() != null
+                            && a.getSensoryAtaxia().getBalanceScore() > 0;
+                }
+                Date when = testDate != null ? testDate : (hasData ? a.getTimestamp() : null);
+                if (when != null && dateStr.equals(fmt.format(when))) {
+                    count++;
+                }
+            }
+            return count;
+        } catch (Exception e) {
+            Log.e(TAG, "Could not count stored trials for export numbering", e);
+            return 0;
         }
     }
 
@@ -158,11 +208,13 @@ public class TrialCsvExporter {
     }
 
     private static String buildSystemLogCsv(String patientId, String conditionLabel, String dateStr,
-                                            SwayMetrics metrics, int droppedFrames, double fovDegrees) {
+                                            int trialNumber, SwayMetrics metrics,
+                                            int droppedFrames, double fovDegrees) {
         StringBuilder sb = new StringBuilder();
         sb.append("Metric,Value\n");
         sb.append("PatientID,").append(patientId).append('\n');
         sb.append("Condition,").append(conditionLabel).append('\n');
+        sb.append("TrialNumber,").append(trialNumber).append('\n');
         sb.append("Date,").append(dateStr).append('\n');
         sb.append("DroppedFramesCount,").append(droppedFrames).append('\n');
         sb.append("InterpolatedFramesCount,").append(metrics != null ? metrics.interpolatedFrames : 0).append('\n');
@@ -182,10 +234,13 @@ public class TrialCsvExporter {
         return sb.toString();
     }
 
-    private static String buildReadme(String patientId, String conditionLabel, String dateStr) {
+    private static String buildReadme(String patientId, String conditionLabel, String dateStr,
+                                      int trialNumber) {
         return "BioMS trial export\n"
                 + "PatientID: " + patientId + " (anonymous ID — no name is exported)\n"
                 + "Condition: " + conditionLabel + "\n"
+                + "Trial: " + conditionLabel + " #" + trialNumber + " of " + dateStr
+                + " (trials of a condition are numbered within their day, from 1)\n"
                 + "Date: " + dateStr + "\n\n"
                 + "CoM_Trajectory.csv — the cleaned COM trajectory the sway metrics were\n"
                 + "computed from (despiked -> resampled to a uniform 30 Hz grid ->\n"
