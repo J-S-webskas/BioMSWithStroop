@@ -709,8 +709,15 @@ public class RecordFragment extends Fragment {
                     metrics.phoneRotationDeg = cam.getMaxPhoneRotationDeg();
                 }
             }
+            // Record the dropped-frame count and the FOV actually used
+            // on the metrics object itself, so the save methods can
+            // persist them with the assessment (an export generated
+            // later from stored data then shows the same SystemLog as
+            // this at-save export).
+            metrics.droppedFrames = PoseLandmarkerHelper.getDroppedFrameCount();
+            metrics.fovUsedDegrees = fov;
             TrialCsvExporter.exportTrial(requireContext(), conditionLabel, metrics,
-                    jointSeries, PoseLandmarkerHelper.getDroppedFrameCount(), fov);
+                    jointSeries, metrics.droppedFrames, metrics.fovUsedDegrees);
         } catch (Exception e) {
             Log.e("RecordFragment", "CSV export failed", e);
         }
@@ -759,6 +766,25 @@ public class RecordFragment extends Fragment {
 
         generateCsvExport("SensoryAtaxia", metrics);
         currentAssessment.getSensoryAtaxia().setCameraDistanceM(metrics.cameraDistanceM);
+        // Persist the trial diagnostics with the assessment, so an
+        // export generated later from stored data reproduces the full
+        // at-save SystemLog. generateCsvExport has just enriched
+        // `metrics` with the end-of-test anchor snapshot, the
+        // dropped-frame count and the FOV actually used.
+        currentAssessment.getSensoryAtaxia().setDiagnosticsRecorded(true);
+        currentAssessment.getSensoryAtaxia().setDroppedFrames(metrics.droppedFrames);
+        currentAssessment.getSensoryAtaxia().setInterpolatedFrames(metrics.interpolatedFrames);
+        currentAssessment.getSensoryAtaxia().setDespikedFrames(metrics.despikedFrames);
+        currentAssessment.getSensoryAtaxia().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getSensoryAtaxia().setAnchorZ(metrics.anchorZ);
+        currentAssessment.getSensoryAtaxia().setAnchorSource(metrics.anchorSource);
+        currentAssessment.getSensoryAtaxia().setCalibFramesUsed(metrics.calibFramesUsed);
+        currentAssessment.getSensoryAtaxia().setCalibLowConfidence(metrics.calibLowConfidence);
+        currentAssessment.getSensoryAtaxia().setAnchorDisagreement(metrics.anchorDisagreement);
+        currentAssessment.getSensoryAtaxia().setAnchorClampedFrames(metrics.anchorClampedFrames);
+        currentAssessment.getSensoryAtaxia().setPhoneRotationDeg(metrics.phoneRotationDeg);
+        currentAssessment.getSensoryAtaxia().setApRangeMm(metrics.apRangeMm);
+        currentAssessment.getSensoryAtaxia().setMlRangeMm(metrics.mlRangeMm);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();
@@ -865,6 +891,25 @@ public class RecordFragment extends Fragment {
 
         generateCsvExport("DualTask", metrics);
         currentAssessment.getDualTask().setCameraDistanceM(metrics.cameraDistanceM);
+        // Persist the trial diagnostics with the assessment, so an
+        // export generated later from stored data reproduces the full
+        // at-save SystemLog. generateCsvExport has just enriched
+        // `metrics` with the end-of-test anchor snapshot, the
+        // dropped-frame count and the FOV actually used.
+        currentAssessment.getDualTask().setDiagnosticsRecorded(true);
+        currentAssessment.getDualTask().setDroppedFrames(metrics.droppedFrames);
+        currentAssessment.getDualTask().setInterpolatedFrames(metrics.interpolatedFrames);
+        currentAssessment.getDualTask().setDespikedFrames(metrics.despikedFrames);
+        currentAssessment.getDualTask().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getDualTask().setAnchorZ(metrics.anchorZ);
+        currentAssessment.getDualTask().setAnchorSource(metrics.anchorSource);
+        currentAssessment.getDualTask().setCalibFramesUsed(metrics.calibFramesUsed);
+        currentAssessment.getDualTask().setCalibLowConfidence(metrics.calibLowConfidence);
+        currentAssessment.getDualTask().setAnchorDisagreement(metrics.anchorDisagreement);
+        currentAssessment.getDualTask().setAnchorClampedFrames(metrics.anchorClampedFrames);
+        currentAssessment.getDualTask().setPhoneRotationDeg(metrics.phoneRotationDeg);
+        currentAssessment.getDualTask().setApRangeMm(metrics.apRangeMm);
+        currentAssessment.getDualTask().setMlRangeMm(metrics.mlRangeMm);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();
@@ -903,6 +948,25 @@ public class RecordFragment extends Fragment {
         recalculateComparisons(currentAssessment);
         generateCsvExport("Baseline", metrics);
         currentAssessment.getBaseline().setCameraDistanceM(metrics.cameraDistanceM);
+        // Persist the trial diagnostics with the assessment, so an
+        // export generated later from stored data reproduces the full
+        // at-save SystemLog. generateCsvExport has just enriched
+        // `metrics` with the end-of-test anchor snapshot, the
+        // dropped-frame count and the FOV actually used.
+        currentAssessment.getBaseline().setDiagnosticsRecorded(true);
+        currentAssessment.getBaseline().setDroppedFrames(metrics.droppedFrames);
+        currentAssessment.getBaseline().setInterpolatedFrames(metrics.interpolatedFrames);
+        currentAssessment.getBaseline().setDespikedFrames(metrics.despikedFrames);
+        currentAssessment.getBaseline().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getBaseline().setAnchorZ(metrics.anchorZ);
+        currentAssessment.getBaseline().setAnchorSource(metrics.anchorSource);
+        currentAssessment.getBaseline().setCalibFramesUsed(metrics.calibFramesUsed);
+        currentAssessment.getBaseline().setCalibLowConfidence(metrics.calibLowConfidence);
+        currentAssessment.getBaseline().setAnchorDisagreement(metrics.anchorDisagreement);
+        currentAssessment.getBaseline().setAnchorClampedFrames(metrics.anchorClampedFrames);
+        currentAssessment.getBaseline().setPhoneRotationDeg(metrics.phoneRotationDeg);
+        currentAssessment.getBaseline().setApRangeMm(metrics.apRangeMm);
+        currentAssessment.getBaseline().setMlRangeMm(metrics.mlRangeMm);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();

@@ -116,15 +116,92 @@ public class TrialCsvExporter {
         public float rmsMLMm = 0f;
         public float cameraDistanceM = 0f;
         public boolean valid = false;
+        // Trial diagnostics, persisted on the assessment at save time
+        // so this export can reproduce the at-save SystemLog. Trials
+        // saved before diagnostics were stored have
+        // diagnosticsRecorded = false and say so in their SystemLog.
+        public boolean diagnosticsRecorded = false;
+        public int droppedFrames = 0;
+        public int interpolatedFrames = 0;
+        public int despikedFrames = 0;
+        public double fovUsedDegrees = 0;
+        public double anchorZ = 0;
+        public String anchorSource = null;
+        public int calibFramesUsed = 0;
+        public boolean calibLowConfidence = false;
+        public boolean anchorDisagreement = false;
+        public int anchorClampedFrames = 0;
+        public float phoneRotationDeg = 0f;
+        public float apRangeMm = 0f;
+        public float mlRangeMm = 0f;
+        public boolean rangeFlag = false;
+    }
+
+    /** Copies the persisted diagnostics of a stored Baseline trial. */
+    public static void fillDiagnostics(StoredTrialData t, BaselineAssessment c) {
+        t.diagnosticsRecorded = c.isDiagnosticsRecorded();
+        t.droppedFrames = c.getDroppedFrames();
+        t.interpolatedFrames = c.getInterpolatedFrames();
+        t.despikedFrames = c.getDespikedFrames();
+        t.fovUsedDegrees = c.getFovUsedDegrees();
+        t.anchorZ = c.getAnchorZ();
+        t.anchorSource = c.getAnchorSource();
+        t.calibFramesUsed = c.getCalibFramesUsed();
+        t.calibLowConfidence = c.isCalibLowConfidence();
+        t.anchorDisagreement = c.isAnchorDisagreement();
+        t.anchorClampedFrames = c.getAnchorClampedFrames();
+        t.phoneRotationDeg = c.getPhoneRotationDeg();
+        t.apRangeMm = c.getApRangeMm();
+        t.mlRangeMm = c.getMlRangeMm();
+        t.rangeFlag = c.isSwayRangeFlag();
+    }
+
+    /** Copies the persisted diagnostics of a stored DualTask trial. */
+    public static void fillDiagnostics(StoredTrialData t, DualTaskAssessment c) {
+        t.diagnosticsRecorded = c.isDiagnosticsRecorded();
+        t.droppedFrames = c.getDroppedFrames();
+        t.interpolatedFrames = c.getInterpolatedFrames();
+        t.despikedFrames = c.getDespikedFrames();
+        t.fovUsedDegrees = c.getFovUsedDegrees();
+        t.anchorZ = c.getAnchorZ();
+        t.anchorSource = c.getAnchorSource();
+        t.calibFramesUsed = c.getCalibFramesUsed();
+        t.calibLowConfidence = c.isCalibLowConfidence();
+        t.anchorDisagreement = c.isAnchorDisagreement();
+        t.anchorClampedFrames = c.getAnchorClampedFrames();
+        t.phoneRotationDeg = c.getPhoneRotationDeg();
+        t.apRangeMm = c.getApRangeMm();
+        t.mlRangeMm = c.getMlRangeMm();
+        t.rangeFlag = c.isSwayRangeFlag();
+    }
+
+    /** Copies the persisted diagnostics of a stored SensoryAtaxia trial. */
+    public static void fillDiagnostics(StoredTrialData t, SensoryAtaxiaAssessment c) {
+        t.diagnosticsRecorded = c.isDiagnosticsRecorded();
+        t.droppedFrames = c.getDroppedFrames();
+        t.interpolatedFrames = c.getInterpolatedFrames();
+        t.despikedFrames = c.getDespikedFrames();
+        t.fovUsedDegrees = c.getFovUsedDegrees();
+        t.anchorZ = c.getAnchorZ();
+        t.anchorSource = c.getAnchorSource();
+        t.calibFramesUsed = c.getCalibFramesUsed();
+        t.calibLowConfidence = c.isCalibLowConfidence();
+        t.anchorDisagreement = c.isAnchorDisagreement();
+        t.anchorClampedFrames = c.getAnchorClampedFrames();
+        t.phoneRotationDeg = c.getPhoneRotationDeg();
+        t.apRangeMm = c.getApRangeMm();
+        t.mlRangeMm = c.getMlRangeMm();
+        t.rangeFlag = c.isSwayRangeFlag();
     }
 
     /**
      * Builds a ZIP for one condition of one stored day, from data saved in
      * assessments. Contains the trajectory + a system log per trial (files
      * gain a _T&lt;n&gt; suffix when the day has several trials of the
-     * condition). Joint angles and frame counters are NOT part of stored
-     * assessments, so they exist only in the at-save export; the README
-     * in the zip says so.
+     * condition). Joint angles are NOT part of stored assessments, so
+     * they exist only in the at-save export; the trial diagnostics ARE
+     * stored and are reproduced in the system log. The README in the
+     * zip says so.
      *
      * @param dateStr yyyy-MM-dd of the chosen day
      * @return the zip file, or null on failure / nothing to export
@@ -198,6 +275,26 @@ public class TrialCsvExporter {
         if (t.cameraDistanceM > 0) sb.append(String.format(Locale.US, "%.2f", t.cameraDistanceM));
         sb.append('\n');
         sb.append("MetricsValid,").append(t.valid).append('\n');
+        if (t.diagnosticsRecorded) {
+            // The same diagnostic rows the at-save SystemLog carries,
+            // reproduced from the values stored with the assessment.
+            sb.append("DroppedFramesCount,").append(t.droppedFrames).append('\n');
+            sb.append("InterpolatedFramesCount,").append(t.interpolatedFrames).append('\n');
+            sb.append("DespikedFramesCount,").append(t.despikedFrames).append('\n');
+            sb.append("FOV_Used [deg],").append(String.format(Locale.US, "%.1f", t.fovUsedDegrees)).append('\n');
+            sb.append("AnchorZ [m],").append(String.format(Locale.US, "%.3f", t.anchorZ)).append('\n');
+            sb.append("AnchorSource,").append(t.anchorSource != null ? t.anchorSource : "none").append('\n');
+            sb.append("CalibFramesUsed,").append(t.calibFramesUsed).append('\n');
+            sb.append("CalibLowConfidence,").append(t.calibLowConfidence).append('\n');
+            sb.append("AnchorDisagreement,").append(t.anchorDisagreement).append('\n');
+            sb.append("AnchorClampedFrames,").append(t.anchorClampedFrames).append('\n');
+            sb.append("PhoneRotationMax [deg],").append(String.format(Locale.US, "%.2f", t.phoneRotationDeg)).append('\n');
+            sb.append("APRange [mm],").append(String.format(Locale.US, "%.1f", t.apRangeMm)).append('\n');
+            sb.append("MLRange [mm],").append(String.format(Locale.US, "%.1f", t.mlRangeMm)).append('\n');
+            sb.append("RangeFlag,").append(t.rangeFlag).append('\n');
+        } else {
+            sb.append("TrialDiagnostics,not recorded (this trial was saved before diagnostics were stored)\n");
+        }
         return sb.toString();
     }
 
@@ -209,10 +306,13 @@ public class TrialCsvExporter {
                 + "This package was rebuilt from the trial data saved in the app's\n"
                 + "reports. It contains the cleaned COM trajectory and the stored\n"
                 + "sway metrics for each trial of the chosen condition that day.\n\n"
-                + "Joint angles and the frame-quality counters (dropped /\n"
-                + "interpolated / despiked frames) are recorded only in the export\n"
-                + "created when the test was saved, because per-frame joint angles\n"
-                + "are not stored in reports.\n\n"
+                + "Joint angles are recorded only in the export created when the\n"
+                + "test was saved, because per-frame joint angles are not stored\n"
+                + "in reports. The trial diagnostics (frame counters, FOV, anchor\n"
+                + "and calibration details, phone rotation, sway ranges) ARE\n"
+                + "stored with each trial and appear in the SystemLog above;\n"
+                + "trials saved before diagnostics were stored say so there\n"
+                + "instead.\n\n"
                 + "Axes: CoM_x_Pos = mediolateral, CoM_z_Pos = anteroposterior.\n"
                 + "CoM_y_Pos (vertical) is not tracked by the app, so that column\n"
                 + "is intentionally empty.\n";
