@@ -50,4 +50,6 @@ public class SwayMetrics implements Serializable {
     public boolean anchorDisagreement = false;
     public int anchorClampedFrames = 0; // frames the +/-10% anchor clamp corrected
     public float phoneRotationDeg = 0f; // max device rotation during the trial (gyro audit)
+    public int droppedFrames = 0;       // frames where MediaPipe lost the patient (filled at export/save time)
+    public double fovUsedDegrees = 0;   // horizontal FOV actually used for the scale conversion (filled at export/save time)
 }

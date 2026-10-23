@@ -773,18 +773,21 @@ public class ReportFragment extends Fragment {
                         a.getBaseline().getSwayPathLength(), a.getBaseline().getSwayMeanVelocity(),
                         a.getBaseline().getSwayRmsAP(), a.getBaseline().getSwayRmsML(),
                         a.getBaseline().getCameraDistanceM(), a.getBaseline().isSwayMetricsValid());
+                TrialCsvExporter.fillDiagnostics(t, a.getBaseline());
             } else if ("DualTask".equals(condition) && hasDualTaskTrial(a)) {
                 t = toStoredTrial(a.getDualTask().getComTrajX(), a.getDualTask().getComTrajZ(),
                         a.getDualTask().getComFrameRate(), a.getDualTask().getBalanceScore(),
                         a.getDualTask().getSwayPathLength(), a.getDualTask().getSwayMeanVelocity(),
                         a.getDualTask().getSwayRmsAP(), a.getDualTask().getSwayRmsML(),
                         a.getDualTask().getCameraDistanceM(), a.getDualTask().isSwayMetricsValid());
+                TrialCsvExporter.fillDiagnostics(t, a.getDualTask());
             } else if ("SensoryAtaxia".equals(condition) && hasSensoryTrial(a)) {
                 t = toStoredTrial(a.getSensoryAtaxia().getComTrajX(), a.getSensoryAtaxia().getComTrajZ(),
                         a.getSensoryAtaxia().getComFrameRate(), a.getSensoryAtaxia().getBalanceScore(),
                         a.getSensoryAtaxia().getSwayPathLength(), a.getSensoryAtaxia().getSwayMeanVelocity(),
                         a.getSensoryAtaxia().getSwayRmsAP(), a.getSensoryAtaxia().getSwayRmsML(),
                         a.getSensoryAtaxia().getCameraDistanceM(), a.getSensoryAtaxia().isSwayMetricsValid());
+                TrialCsvExporter.fillDiagnostics(t, a.getSensoryAtaxia());
             }
             if (t != null) trials.add(t);
         }
