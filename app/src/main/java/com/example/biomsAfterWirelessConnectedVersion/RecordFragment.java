@@ -614,6 +614,23 @@ public class RecordFragment extends Fragment {
             // Defaults stay in effect.
         }
     }
+    /** The CameraFragment that ran the test, wherever it currently sits
+     *  in the fragment manager -- by save time it is not necessarily the
+     *  fragment in the container (this RecordFragment may be). */
+    private CameraFragment findCameraFragment() {
+        try {
+            if (getActivity() == null) return null;
+            for (Fragment f : getActivity().getSupportFragmentManager().getFragments()) {
+                if (f instanceof CameraFragment) {
+                    return (CameraFragment) f;
+                }
+            }
+        } catch (Exception ignored) {
+            // Fall through: audit fields keep their defaults.
+        }
+        return null;
+    }
+
     private void generateCsvExport(String conditionLabel, SwayMetrics metrics) {
         try {
             Map<String, List<Float>> jointSeries = new HashMap<>();
@@ -635,21 +652,35 @@ public class RecordFragment extends Fragment {
                 // Distance stays 0 = none entered.
             }
             double fov = PoseLandmarkerHelper.DEFAULT_FOV_H_DEGREES;
-            Fragment frag = getActivity() != null
-                    ? getActivity().getSupportFragmentManager().findFragmentById(R.id.fragment_container)
-                    : null;
-            if (frag instanceof CameraFragment) {
-                fov = ((CameraFragment) frag).getCurrentFovDegrees();
-                CameraFragment cam = (CameraFragment) frag;
-                fov = cam.getCurrentFovDegrees();
-                if (metrics != null) {
-                    // Anchor + phone-motion audit for the SystemLog.
-                    PoseLandmarkerHelper.AnchorDiagnostics diag = cam.getAnchorDiagnostics();
+            if (metrics != null) {
+                // Anchor + phone-motion audit for the SystemLog. The
+                // snapshot the pose helper took when THIS test ended is
+                // the trustworthy source: by save time the camera
+                // fragment may already be reset for the next test,
+                // replaced in the container, or destroyed -- reading it
+                // then produced the default tuple (0 / "none" / 0) and
+                // the fallback FOV in past exports.
+                PoseLandmarkerHelper.AnchorDiagnostics diag =
+                        PoseLandmarkerHelper.getLastTrialDiagnostics();
+                CameraFragment cam = findCameraFragment();
+                if (diag == null && cam != null) {
+                    diag = cam.getAnchorDiagnostics();
+                }
+                if (diag != null) {
                     metrics.anchorZ = diag.anchorZ;
                     metrics.anchorSource = diag.source;
                     metrics.calibFramesUsed = diag.calibFramesUsed;
                     metrics.calibLowConfidence = diag.lowConfidence;
                     metrics.anchorDisagreement = diag.disagreement;
+                    metrics.anchorClampedFrames = diag.clampedFrames;
+                    if (diag.fovDegrees > 0) {
+                        fov = diag.fovDegrees;
+                    }
+                }
+                if (cam != null) {
+                    if (diag == null || diag.fovDegrees <= 0) {
+                        fov = cam.getCurrentFovDegrees();
+                    }
                     metrics.phoneRotationDeg = cam.getMaxPhoneRotationDeg();
                 }
             }

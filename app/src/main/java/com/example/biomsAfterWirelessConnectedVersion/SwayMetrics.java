@@ -48,5 +48,6 @@ public class SwayMetrics implements Serializable {
     public int calibFramesUsed = 0;
     public boolean calibLowConfidence = false;
     public boolean anchorDisagreement = false;
+    public int anchorClampedFrames = 0; // frames the +/-10% anchor clamp corrected
     public float phoneRotationDeg = 0f; // max device rotation during the trial (gyro audit)
 }
