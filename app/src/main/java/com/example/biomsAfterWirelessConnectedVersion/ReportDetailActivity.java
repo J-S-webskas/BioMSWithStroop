@@ -234,24 +234,29 @@ public class ReportDetailActivity extends AppCompatActivity {
         if (trials == null || trials.isEmpty()) {
             return "N/A";
         }
+        // One trial per line. The horizontal flow used before let short
+        // values (e.g. RMS ML) sit two-to-a-line while long ones wrapped,
+        // and Android treats "/" as a line-break opportunity, so a
+        // wrapped "mm/s" could leave the "s" alone on the next line.
+        // Inside a line, non-breaking spaces and a word joiner after
+        // any "/" keep "Tn: value unit" together as one unbreakable
+        // chunk; the same protection covers the Avg line.
+        String displayUnit = unit.replace("/", "/\u2060");
         StringBuilder sb = new StringBuilder();
         double sum = 0;
         for (int i = 0; i < trials.size(); i++) {
-            // Trials flow horizontally and wrap as whole units (non-breaking
-            // spaces inside a trial) so the cell expands right before it
-            // ever grows taller.
             if (i > 0) {
-                sb.append("   ");
+                sb.append("\n");
             }
             sb.append("T").append(i + 1).append(":\u00A0")
                     .append(String.format(Locale.US, "%.2f", trials.get(i)))
-                    .append("\u00A0").append(unit);
+                    .append("\u00A0").append(displayUnit);
             sum += trials.get(i);
         }
         if (trials.size() >= 2) {
-            sb.append("\n").append("Avg: ")
+            sb.append("\n").append("Avg:\u00A0")
                     .append(String.format(Locale.US, "%.2f", sum / trials.size()))
-                    .append(" ").append(unit);
+                    .append("\u00A0").append(displayUnit);
         }
         return sb.toString();
     }
