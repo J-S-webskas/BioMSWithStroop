@@ -395,6 +395,7 @@ public class TrialCsvExporter {
             sb.append("CalibFramesUsed,").append(metrics.calibFramesUsed).append('\n');
             sb.append("CalibLowConfidence,").append(metrics.calibLowConfidence).append('\n');
             sb.append("AnchorDisagreement,").append(metrics.anchorDisagreement).append('\n');
+            sb.append("AnchorClampedFrames,").append(metrics.anchorClampedFrames).append('\n');
             sb.append("PhoneRotationMax [deg],").append(String.format(Locale.US, "%.2f", metrics.phoneRotationDeg)).append('\n');
             sb.append("APRange [mm],").append(String.format(Locale.US, "%.1f", metrics.apRangeMm)).append('\n');
             sb.append("MLRange [mm],").append(String.format(Locale.US, "%.1f", metrics.mlRangeMm)).append('\n');
@@ -436,6 +437,12 @@ public class TrialCsvExporter {
                 + "    camera calibration median, or both in agreement).\n"
                 + "  CalibFramesUsed / CalibLowConfidence / AnchorDisagreement:\n"
                 + "    quality indicators for that calibration.\n"
+                + "  AnchorClampedFrames: frames where the working distance hit\n"
+                + "    the +/-10% band around the frozen anchor and was held at\n"
+                + "    the band edge. A large count means the distance estimate\n"
+                + "    fought the anchor for much of the trial (for example the\n"
+                + "    subject was still moving into position); treat the\n"
+                + "    trial's absolute values with caution.\n"
                 + "  PhoneRotationMax: largest rotation of the phone itself during\n"
                 + "    the trial (gyroscope audit). Large values mean the camera\n"
                 + "    moved, and part of the measured sway may be camera motion.\n"

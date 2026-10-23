@@ -134,6 +134,25 @@ public class PoseLandmarkerHelper {
     private static final int ANCHOR_MIN_CALIBRATION_FRAMES = 15;
     private static final int ANCHOR_CALIBRATION_MAX = 300;
     private static final int ANCHOR_Z_WINDOW = 150; // ~5 s at 30 fps
+    // The first ~1 s of pose output after a (re)start is the detector
+    // still converging (and, for a self-recorded test, often the subject
+    // still walking to their mark): those distance estimates can sit a
+    // metre away from the settled value. They never enter calibration.
+    private static final long ANCHOR_SETTLE_MS = 1000;
+    // The frozen anchor is resolved from the most recent calibration
+    // samples only: the end of the countdown is when both the detector
+    // and the subject have settled.
+    private static final int ANCHOR_MEDIAN_TAIL = 30;
+    // During a test the sliding-median Z is clamped to +/-10% of the
+    // frozen anchor -- the same band the manual/camera cross-check
+    // uses. Quiet-standing AP translation is a few centimetres, so the
+    // band passes all real sway, while a scale sweep (the failure in
+    // trial 4 of the 2026-10-22 front-camera set, where the estimated
+    // distance swept 1.00 -> 1.76 m during the first second and inflated
+    // a ~200 mm^2 trial to 5,215 mm^2) cannot enter the metrics.
+    // Frames the clamp has to correct are counted, so a trial whose
+    // anchor fought the data is visible in its SystemLog.
+    private static final double ANCHOR_CLAMP_FRACTION = 0.10;
 
     private final List<Double> calibrationZ = new ArrayList<>();
     private final ArrayDeque<Double> anchorZWindow = new ArrayDeque<>();
@@ -143,14 +162,25 @@ public class PoseLandmarkerHelper {
     private int anchorCalibFramesUsed = 0;
     private boolean anchorLowConfidence = false;
     private boolean anchorDisagreement = false;
+    private int anchorClampedFrames = 0;
+    private long calibrationStartMs = 0;
 
-    /** Snapshot of how the current test's anchor was produced (export SystemLog). */
+    // Diagnostics of the most recently ENDED test, snapshotted at the
+    // moment the test ends. Exports happen later, when the helper may
+    // already be reset for the next test or destroyed entirely; reading
+    // the live fields then produced the default tuple (0 / "none" / 0)
+    // and the fallback FOV in past SystemLogs.
+    private static volatile AnchorDiagnostics lastTrialDiagnostics = null;
+
+    /** Snapshot of how a test's anchor was produced (export SystemLog). */
     public static class AnchorDiagnostics {
         public double anchorZ = 0;
         public String source = "none";
         public int calibFramesUsed = 0;
         public boolean lowConfidence = false;
         public boolean disagreement = false;
+        public int clampedFrames = 0;
+        public double fovDegrees = 0;
     }
 
     public synchronized AnchorDiagnostics getAnchorDiagnostics() {
@@ -160,7 +190,14 @@ public class PoseLandmarkerHelper {
         d.calibFramesUsed = anchorCalibFramesUsed;
         d.lowConfidence = anchorLowConfidence;
         d.disagreement = anchorDisagreement;
+        d.clampedFrames = anchorClampedFrames;
+        d.fovDegrees = getFovDegrees();
         return d;
+    }
+
+    /** Diagnostics of the most recently ended test, or null if none. */
+    public static AnchorDiagnostics getLastTrialDiagnostics() {
+        return lastTrialDiagnostics;
     }
 
     /** Start a fresh calibration (called when a new countdown is shown). */
@@ -173,15 +210,29 @@ public class PoseLandmarkerHelper {
         anchorCalibFramesUsed = 0;
         anchorLowConfidence = false;
         anchorDisagreement = false;
+        anchorClampedFrames = 0;
+        calibrationStartMs = 0;
     }
 
     /** End the anchor's life with the test (called when the camera stops). */
     public synchronized void releaseAnchor() {
+        if (anchorFrozen) {
+            // A test actually ran on this anchor: preserve how it was
+            // produced before the reset wipes the evidence.
+            lastTrialDiagnostics = getAnchorDiagnostics();
+        }
         resetCalibration();
     }
 
     private synchronized void addCalibrationSample(double zHip) {
         if (anchorFrozen) return;
+        long now = SystemClock.elapsedRealtime();
+        if (calibrationStartMs == 0) {
+            calibrationStartMs = now;
+        }
+        if (now - calibrationStartMs < ANCHOR_SETTLE_MS) {
+            return; // detector (or subject) still settling; discard
+        }
         calibrationZ.add(zHip);
         while (calibrationZ.size() > ANCHOR_CALIBRATION_MAX) {
             calibrationZ.remove(0);
@@ -205,7 +256,15 @@ public class PoseLandmarkerHelper {
         if (anchorFrozen) return;
         anchorFrozen = true;
         anchorCalibFramesUsed = calibrationZ.size();
-        double cameraMedian = medianOf(calibrationZ);
+        anchorClampedFrames = 0;
+        // Resolve from the most recent samples only: by the end of the
+        // countdown the detector has converged and the subject is at
+        // their mark; early samples may capture either still moving.
+        List<Double> tail = calibrationZ.size() > ANCHOR_MEDIAN_TAIL
+                ? calibrationZ.subList(calibrationZ.size() - ANCHOR_MEDIAN_TAIL,
+                        calibrationZ.size())
+                : calibrationZ;
+        double cameraMedian = medianOf(tail);
         double manual = 0;
         try {
             if (context != null) {
@@ -256,7 +315,21 @@ public class PoseLandmarkerHelper {
         while (anchorZWindow.size() > ANCHOR_Z_WINDOW) {
             anchorZWindow.removeFirst();
         }
-        return medianOf(new ArrayList<>(anchorZWindow));
+        double z = medianOf(new ArrayList<>(anchorZWindow));
+        if (frozenAnchorZ > 0) {
+            // Never let the working distance leave the +/-10% band
+            // around the frozen anchor (see ANCHOR_CLAMP_FRACTION).
+            double lo = frozenAnchorZ * (1.0 - ANCHOR_CLAMP_FRACTION);
+            double hi = frozenAnchorZ * (1.0 + ANCHOR_CLAMP_FRACTION);
+            if (z < lo) {
+                z = lo;
+                anchorClampedFrames++;
+            } else if (z > hi) {
+                z = hi;
+                anchorClampedFrames++;
+            }
+        }
+        return z;
     }
 
     /** Calibration frames must have clearly visible shoulders and hips. */
