@@ -6,6 +6,7 @@ import android.util.Log;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,6 +102,89 @@ public class TrialCsvExporter {
     }
 
     // ------------------------------------------------------------------
+    // Joint-angle sidecar files.
+    //
+    // Per-frame joint angles are deliberately NOT part of the stored
+    // assessment: reports load every assessment at once, and angle
+    // streams would bloat that load for data the reports never show.
+    // Instead, at save time the angles are written to a sidecar file
+    // per trial -- the exact JointAngles.csv content the at-save
+    // export carries -- under files/joint_angles/, named
+    // <sessionId>_<Condition>.csv (the session id is unique per
+    // trial). Stored exports attach the sidecar verbatim when one
+    // exists; trials recorded before sidecar storage have none.
+    // Deleting a trial's data deletes its sidecar (see
+    // DataStorageManager.deleteAssessment).
+    // ------------------------------------------------------------------
+
+    private static File jointAnglesDir(Context context) {
+        File dir = new File(context.getFilesDir(), "joint_angles");
+        if (!dir.exists()) dir.mkdirs();
+        return dir;
+    }
+
+    private static File jointAnglesFile(Context context, String sessionId, String conditionLabel) {
+        if (sessionId == null || conditionLabel == null) return null;
+        return new File(jointAnglesDir(context), sessionId + "_" + conditionLabel + ".csv");
+    }
+
+    /** Writes a trial's joint angles as its sidecar file. */
+    public static void saveJointAnglesSidecar(Context context, String sessionId,
+                                              String conditionLabel,
+                                              Map<String, List<Float>> jointSeries,
+                                              SwayMetrics metrics) {
+        try {
+            File f = jointAnglesFile(context, sessionId, conditionLabel);
+            if (f == null || jointSeries == null || jointSeries.isEmpty()) return;
+            String csv = buildJointAnglesCsv(jointSeries, metrics);
+            try (FileOutputStream fos = new FileOutputStream(f)) {
+                fos.write(csv.getBytes(StandardCharsets.UTF_8));
+            }
+            Log.d(TAG, "Joint-angle sidecar written: " + f.getName());
+        } catch (Exception e) {
+            Log.e(TAG, "Joint-angle sidecar write failed", e);
+        }
+    }
+
+    /** Returns a trial's stored joint-angles CSV, or null if none exists. */
+    public static String readJointAnglesSidecar(Context context, String sessionId,
+                                                String conditionLabel) {
+        try {
+            File f = jointAnglesFile(context, sessionId, conditionLabel);
+            if (f == null || !f.exists()) return null;
+            // Plain stream read (java.nio.file.Files needs API 26; the
+            // app supports API 24).
+            StringBuilder sb = new StringBuilder();
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(
+                            new java.io.FileInputStream(f), StandardCharsets.UTF_8))) {
+                char[] buf = new char[8192];
+                int n;
+                while ((n = reader.read(buf)) != -1) {
+                    sb.append(buf, 0, n);
+                }
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            Log.e(TAG, "Joint-angle sidecar read failed", e);
+            return null;
+        }
+    }
+
+    /** Deletes a trial's joint-angle sidecar, if it exists. */
+    public static void deleteJointAnglesSidecar(Context context, String sessionId,
+                                                String conditionLabel) {
+        try {
+            File f = jointAnglesFile(context, sessionId, conditionLabel);
+            if (f != null && f.exists() && !f.delete()) {
+                Log.e(TAG, "Could not delete joint-angle sidecar: " + f.getName());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Joint-angle sidecar delete failed", e);
+        }
+    }
+
+    // ------------------------------------------------------------------
     // On-demand exports, generated later from stored report data.
     // ------------------------------------------------------------------
 
@@ -116,6 +200,7 @@ public class TrialCsvExporter {
         public float rmsMLMm = 0f;
         public float cameraDistanceM = 0f;
         public boolean valid = false;
+        public String sessionId = null; // locates the trial's joint-angle sidecar
         // Trial diagnostics, persisted on the assessment at save time
         // so this export can reproduce the at-save SystemLog. Trials
         // saved before diagnostics were stored have
@@ -198,10 +283,11 @@ public class TrialCsvExporter {
      * Builds a ZIP for one condition of one stored day, from data saved in
      * assessments. Contains the trajectory + a system log per trial (files
      * gain a _T&lt;n&gt; suffix when the day has several trials of the
-     * condition). Joint angles are NOT part of stored assessments, so
-     * they exist only in the at-save export; the trial diagnostics ARE
-     * stored and are reproduced in the system log. The README in the
-     * zip says so.
+     * condition). Joint angles are stored per trial as sidecar files
+     * and are attached when present (trials recorded before sidecar
+     * storage have none); the trial diagnostics ARE stored in the
+     * assessment and are reproduced in the system log. The README in
+     * the zip says so.
      *
      * @param dateStr yyyy-MM-dd of the chosen day
      * @return the zip file, or null on failure / nothing to export
@@ -231,6 +317,13 @@ public class TrialCsvExporter {
                     writeEntry(zos, base + suffix + "_SystemLog.csv",
                             buildStoredSystemLogCsv(patientId, conditionLabel, dateStr,
                                     trials.get(i), i + 1, trials.size()));
+                    // The trial's joint angles, attached verbatim from
+                    // its sidecar file when one was stored.
+                    String anglesCsv = readJointAnglesSidecar(context,
+                            trials.get(i).sessionId, conditionLabel);
+                    if (anglesCsv != null) {
+                        writeEntry(zos, base + suffix + "_JointAngles.csv", anglesCsv);
+                    }
                 }
                 writeEntry(zos, "README.txt", buildStoredReadme(patientId, conditionLabel, dateStr));
             }
@@ -306,9 +399,11 @@ public class TrialCsvExporter {
                 + "This package was rebuilt from the trial data saved in the app's\n"
                 + "reports. It contains the cleaned COM trajectory and the stored\n"
                 + "sway metrics for each trial of the chosen condition that day.\n\n"
-                + "Joint angles are recorded only in the export created when the\n"
-                + "test was saved, because per-frame joint angles are not stored\n"
-                + "in reports. The trial diagnostics (frame counters, FOV, anchor\n"
+                + "Joint angles are stored per trial as sidecar files (not inside\n"
+                + "the report data) and are included here when the trial was\n"
+                + "recorded after sidecar storage was added; older trials have\n"
+                + "no stored angles -- theirs existed only in the export created\n"
+                + "when the test was saved. The trial diagnostics (frame counters, FOV, anchor\n"
                 + "and calibration details, phone rotation, sway ranges) ARE\n"
                 + "stored with each trial and appear in the SystemLog above;\n"
                 + "trials saved before diagnostics were stored say so there\n"
