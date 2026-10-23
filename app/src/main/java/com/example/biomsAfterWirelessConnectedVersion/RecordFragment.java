@@ -822,29 +822,39 @@ public class RecordFragment extends Fragment {
         // running at this point (it is stopped right after this save), so
         // stop the voice test here and store what it recorded.
         try {
-            // Find the camera fragment wherever it sits in the fragment
-            // manager: at save time the container usually holds THIS
-            // RecordFragment, so the old findFragmentById lookup missed
-            // the CameraFragment and the Stroop result was never
-            // captured -- reports always said "No Stroop results
-            // recorded" even though the test ran.
-            CameraFragment stroopFragment = findCameraFragment();
-            if (stroopFragment != null) {
-                StroopVoiceManager.VoiceStroopResult stroop =
-                        stroopFragment.stopVoiceStroop();
-                if (stroop != null && stroop.totalTrials > 0) {
-                    DualTaskAssessment dt = currentAssessment.getDualTask();
-                    dt.setStroopTotalTrials(stroop.totalTrials);
-                    dt.setStroopCorrectCount(stroop.correctCount);
-                    dt.setStroopAccuracyPercent(stroop.accuracyPercent);
-                    dt.setStroopAvgReactionMs(stroop.avgReactionTimeMs);
-                    List<StroopAnswerRecord> records = new ArrayList<>();
-                    for (StroopVoiceManager.StroopAnswer a : stroop.answers) {
-                        records.add(new StroopAnswerRecord(a.wordText, a.inkColorName,
-                                a.spokenText, a.correct, a.reactionTimeMs));
+            // Collect the Stroop result from whichever camera fragment
+            // actually ran the test: at save time the container usually
+            // holds THIS RecordFragment (the old findFragmentById lookup
+            // therefore missed the camera entirely and nothing was ever
+            // stored), and with several camera fragments in the manager
+            // the first one found may be a stale instance whose test
+            // never ran. stopTest() does not clear the manager's
+            // answers, so asking each fragment is safe; keep the
+            // fullest result.
+            StroopVoiceManager.VoiceStroopResult stroop = null;
+            if (getActivity() != null) {
+                for (Fragment f : getActivity().getSupportFragmentManager().getFragments()) {
+                    if (f instanceof CameraFragment) {
+                        StroopVoiceManager.VoiceStroopResult r =
+                                ((CameraFragment) f).stopVoiceStroop();
+                        if (r != null && (stroop == null || r.totalTrials > stroop.totalTrials)) {
+                            stroop = r;
+                        }
                     }
-                    dt.setStroopAnswers(records);
                 }
+            }
+            if (stroop != null && stroop.totalTrials > 0) {
+                DualTaskAssessment dt = currentAssessment.getDualTask();
+                dt.setStroopTotalTrials(stroop.totalTrials);
+                dt.setStroopCorrectCount(stroop.correctCount);
+                dt.setStroopAccuracyPercent(stroop.accuracyPercent);
+                dt.setStroopAvgReactionMs(stroop.avgReactionTimeMs);
+                List<StroopAnswerRecord> records = new ArrayList<>();
+                for (StroopVoiceManager.StroopAnswer a : stroop.answers) {
+                    records.add(new StroopAnswerRecord(a.wordText, a.inkColorName,
+                            a.spokenText, a.correct, a.reactionTimeMs));
+                }
+                dt.setStroopAnswers(records);
             }
         } catch (Exception e) {
             Log.e("RecordFragment", "Could not capture Stroop results", e);
