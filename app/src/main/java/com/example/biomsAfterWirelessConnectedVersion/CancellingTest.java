@@ -66,7 +66,7 @@ public class CancellingTest extends AppCompatActivity {
             return;
         }
         if (intent.getBooleanExtra("testSaved", false)) {
-            // A trial was just saved: no stopover on this screen.
+            // A trial was just saved: show the saved message for 1.5 s, then go.
             handleTestSaved(intent);
             return;
         }
@@ -106,20 +106,15 @@ public class CancellingTest extends AppCompatActivity {
     }
 
     /** A trial was just saved (the caller passes testSaved=true, and only
-     *  after the save has completed). There is no wait on this screen any
-     *  more — no stopover waiting for a tap, no 1.5 s auto-advance:
-     *  show the saved message and return to the main page
-     *  immediately. The toast carries the same message across the
-     *  transition so it stays readable once this screen is gone.
-     *  Exporting a saved trial stays available at any time from the
-     *  Report tab's Export CSV. */
+     *  after the save has completed). Like every other finish path, this
+     *  screen simply shows the saved message for 1.5 s and then goes away:
+     *  no buttons, no waiting for a tap. Exporting a saved trial stays
+     *  available at any time from the Report tab's Export CSV. */
     private void handleTestSaved(Intent intent) {
         cancellingTest.setText("Test saved.");
         dataNotSaved.setText("You can always delete this test if it is inaccurate");
-        Toast.makeText(this,
-                "Test saved. You can always delete this test if it is inaccurate",
-                Toast.LENGTH_LONG).show();
-        navigateToMain(intent);
+        boolean saving = intent.getBooleanExtra("Saving", false);
+        postDelayedNavigate(intent, saving);
     }
 
     /** The test ran to completion but no pose was ever detected (the
@@ -148,20 +143,6 @@ public class CancellingTest extends AppCompatActivity {
         }, 1500);
     }
 
-    /** The same return-to-main navigation the auto-advance handler performs. */
-    private void navigateToMain(Intent source) {
-        boolean saving = source != null && source.getBooleanExtra("Saving", false);
-        Intent resultIntent = new Intent();
-        resultIntent.putExtra("cancelled", true);
-        resultIntent.putExtra("Saving", saving);
-        setResult(RESULT_OK, resultIntent);
-        Intent intent1 = new Intent(this, MainActivity.class);
-        intent1.putExtra("navigate_to_assessment", true);
-        intent1.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(intent1);
-        finish();
-    }
-
     @SuppressLint("MissingSuperCall") // Specifically suppress "call super" warning
     @Override
     public void onBackPressed() {
@@ -185,7 +166,7 @@ public class CancellingTest extends AppCompatActivity {
             return;
         }
         if (intent.getBooleanExtra("testSaved", false)) {
-            // A trial was just saved: no stopover on this screen.
+            // A trial was just saved: show the saved message for 1.5 s, then go.
             handleTestSaved(intent);
             return;
         }
