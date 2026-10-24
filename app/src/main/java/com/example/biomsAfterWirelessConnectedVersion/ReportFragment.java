@@ -89,6 +89,12 @@ public class ReportFragment extends Fragment {
             showMultiExportDialog();
         });
 
+        Button btnExportReports = view.findViewById(R.id.btn_export_reports);
+        btnExportReports.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            showMultiReportDialog();
+        });
+
         noData = view.findViewById(R.id.noData);
 
         btnFilterDay = view.findViewById(R.id.btn_filter_day);
@@ -1068,7 +1074,6 @@ public class ReportFragment extends Fragment {
             CheckBox dayBox = new CheckBox(requireContext());
             dayBox.setText(label);
             dayBox.setTextSize(17);
-            dayBox.setTypeface(Typeface.DEFAULT_BOLD);
             dayRow.box = dayBox;
 
             int nBaseline = 0, nDual = 0, nSensory = 0;
@@ -1097,6 +1102,7 @@ public class ReportFragment extends Fragment {
             }
             container.addView(dayBox);
             firstDayAdded = true;
+            for (MultiExportRow child : dayRow.children) container.addView(child.box);
             for (MultiExportRow child : dayRow.children) {
                 child.box.setOnCheckedChangeListener((b, checked) -> {
                     if (syncing[0]) return;
@@ -1341,7 +1347,6 @@ public class ReportFragment extends Fragment {
             CheckBox dayBox = new CheckBox(requireContext());
             dayBox.setText(label);
             dayBox.setTextSize(17);
-            dayBox.setTypeface(Typeface.DEFAULT_BOLD);
             dayRow.box = dayBox;
 
             int n = 0;

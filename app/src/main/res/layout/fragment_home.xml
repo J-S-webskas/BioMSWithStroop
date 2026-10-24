@@ -50,15 +50,15 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/topBar">
 
-                <!--                <TextView-->
-<!--                    android:id="@+id/Greeting"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_margin="16sp"-->
-<!--                    android:textStyle="bold"-->
-<!--                    android:text="Hello and welcome back!"-->
-<!--                    app:layout_constraintStart_toStartOf="parent"-->
-<!--                    app:layout_constraintTop_toTopOf="parent"/>-->
+                <TextView
+                    android:id="@+id/uninstall_warning"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="16sp"
+                    android:fontFamily="@font/profile_pro"
+                    android:text="Do not uninstall the app, or else all data will be unrecoverably lost."
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"/>
 
                 <TextView
                     android:id="@+id/latestProgressionTitle"
@@ -70,7 +70,7 @@
                     android:textSize="17sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toBottomOf="@id/uninstall_warning" />
 
                 <androidx.cardview.widget.CardView
                     android:id="@+id/graphCard"

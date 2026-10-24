@@ -26,22 +26,22 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/topBar"
             android:layout_marginTop="20dp"
-            android:layout_marginStart="10dp"
+            android:layout_marginStart="5dp"
             android:fontFamily="@font/profile_pro_medi"
             android:text="New"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:backgroundTint="#FB3737"/>
 
         <Button
             android:id="@+id/btn_export_multiple"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="96dp"
+            android:layout_marginStart="5dp"
             android:backgroundTint="#FB3737"
             android:fontFamily="@font/profile_pro_medi"
             android:text="Export CSV"
-            android:textSize="18sp"
-            app:layout_constraintStart_toStartOf="@id/createNewReport"
+            android:textSize="16sp"
+            app:layout_constraintStart_toEndOf="@id/createNewReport"
             app:layout_constraintTop_toTopOf="@id/createNewReport"
             app:layout_constraintBottom_toBottomOf="@id/createNewReport" />
 
@@ -49,11 +49,12 @@
             android:id="@+id/btn_export_reports"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
+            android:layout_marginStart="5dp"
             android:backgroundTint="#FB3737"
             android:fontFamily="@font/profile_pro_medi"
             android:text="Export Reports"
-            android:textSize="18sp"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/btn_export_multiple"
             app:layout_constraintTop_toTopOf="@id/btn_export_multiple" />
 
@@ -135,26 +136,26 @@
             android:id="@+id/btn_delete_report"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
+            android:layout_marginEnd="5dp"
             android:backgroundTint="#D32F2F"
             android:fontFamily="@font/profile_pro_medi"
             android:text="Delete"
             android:textColor="@android:color/white"
-            android:textSize="18sp"
-            app:layout_constraintBottom_toBottomOf="@id/createNewReport"
-            app:layout_constraintEnd_toEndOf="parent" />
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="@id/btn_filter_day"
+            app:layout_constraintEnd_toStartOf="@id/btn_filter_day"/>
 
         <Button
             android:id="@+id/btn_filter_day"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
-            android:layout_marginBottom="36dp"
+            android:layout_marginBottom="21dp"
             android:backgroundTint="#FB3737"
             android:fontFamily="@font/profile_pro_medi"
             android:text="Filter by day"
             android:textSize="16sp"
-            app:layout_constraintBottom_toTopOf="@+id/btn_delete_report"
+            app:layout_constraintBottom_toTopOf="@+id/btn_export_reports"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
