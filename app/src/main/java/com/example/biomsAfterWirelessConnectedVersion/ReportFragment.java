@@ -46,6 +46,10 @@ public class ReportFragment extends Fragment {
     private List<ReportModel> reportList = new ArrayList<>();        // Stores all reports
     private Button createNewReport;          // Button to make new reports
     private TextView noData;
+    private Button btnFilterDay;
+    private Button btnClearFilter;
+    private TextView filterDayLabel;
+    private String filterDateStr = null; // "MMMM dd, yyyy" while a day filter is active, else null
 
     public ReportFragment() {
         // Required empty public constructor
@@ -78,6 +82,18 @@ public class ReportFragment extends Fragment {
         });
 
         noData = view.findViewById(R.id.noData);
+
+        btnFilterDay = view.findViewById(R.id.btn_filter_day);
+        btnFilterDay.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            showDayFilterPicker();
+        });
+        btnClearFilter = view.findViewById(R.id.btn_clear_filter);
+        btnClearFilter.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            applyDayFilter(null);
+        });
+        filterDayLabel = view.findViewById(R.id.filterDayLabel);
 
         // Load REAL data reports from storage
         List<ReportModel> reports = loadAllReports();
@@ -613,19 +629,72 @@ public class ReportFragment extends Fragment {
         reportList.clear();
         reportList.addAll(reports);
 
-        // Update adapter if it exists
-        if (adapter != null) {
-            adapter.updateData(reportList);
-        }
-
-        // HAS DATA - Create report from real data
-        if (!reports.isEmpty()) {
-            noData.setVisibility(View.GONE);
-        } else {
-            noData.setVisibility(View.VISIBLE);
-        }
+        // Re-apply the active day filter (or show everything) so every
+        // reload — new report, deletion, resume, broadcast — respects it.
+        applyDayFilter(filterDateStr);
 
         return reports;
+    }
+
+    /** Opens a date picker (same pattern as the New-report picker) and
+     *  filters the report list to that day. */
+    private void showDayFilterPicker() {
+        Calendar calendar = Calendar.getInstance();
+        DatePickerDialog datePicker = new DatePickerDialog(
+                requireContext(),
+                (view, year, month, dayOfMonth) -> {
+                    Calendar selectedCal = Calendar.getInstance();
+                    selectedCal.set(year, month, dayOfMonth);
+                    String selectedDateStr = new SimpleDateFormat("MMMM dd, yyyy", Locale.US)
+                            .format(selectedCal.getTime());
+                    applyDayFilter(selectedDateStr);
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+
+        datePicker.getDatePicker().setMaxDate(System.currentTimeMillis());
+
+        datePicker.show();
+    }
+
+    /** Shows only the reports for {@code dateStr} ("MMMM dd, yyyy"), or all
+     *  reports when {@code dateStr} is null. The stored order is preserved,
+     *  so all of a day's reports appear together in their usual order. */
+    private void applyDayFilter(String dateStr) {
+        filterDateStr = dateStr;
+        List<ReportModel> shown = new ArrayList<>();
+        if (dateStr == null) {
+            shown.addAll(reportList);
+        } else {
+            for (ReportModel report : reportList) {
+                if (dateStr.equals(report.getDate())) {
+                    shown.add(report);
+                }
+            }
+        }
+        if (adapter != null) {
+            adapter.updateData(shown);
+        }
+        if (filterDayLabel != null) {
+            filterDayLabel.setText(dateStr == null
+                    ? "Showing all reports"
+                    : "Showing reports for " + dateStr);
+        }
+        if (btnClearFilter != null) {
+            btnClearFilter.setVisibility(dateStr == null ? View.GONE : View.VISIBLE);
+        }
+        if (noData != null) {
+            if (shown.isEmpty()) {
+                noData.setText(dateStr == null
+                        ? "Finish a recording to create data!"
+                        : "No reports for " + dateStr);
+                noData.setVisibility(View.VISIBLE);
+            } else {
+                noData.setVisibility(View.GONE);
+            }
+        }
     }
 
     public float standardDeviation(ArrayList<Float> set) {

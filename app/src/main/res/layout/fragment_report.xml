@@ -44,6 +44,50 @@
             android:textSize="18sp"
             android:backgroundTint="#FB3737"/>
 
+        <LinearLayout
+            android:id="@+id/filterRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:layout_marginTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/endIsMostAccurate">
+
+            <Button
+                android:id="@+id/btn_filter_day"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/profile_pro_medi"
+                android:text="Filter by day"
+                android:textSize="16sp"
+                android:backgroundTint="#FB3737"/>
+
+            <TextView
+                android:id="@+id/filterDayLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingStart="10dp"
+                android:fontFamily="@font/profile_pro"
+                android:textSize="16sp"
+                android:text="Showing all reports" />
+
+            <Button
+                android:id="@+id/btn_clear_filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:fontFamily="@font/profile_pro_medi"
+                android:text="Show all"
+                android:textSize="16sp"
+                android:backgroundTint="#757575"/>
+
+        </LinearLayout>
+
         <TextView
             android:id="@+id/noData"
             android:layout_width="wrap_content"
@@ -55,7 +99,7 @@
             android:fontFamily="@font/profile_pro"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/endIsMostAccurate" />
+            app:layout_constraintTop_toBottomOf="@id/filterRow" />
 
         <TextView
             android:id="@+id/endIsMostAccurate"
