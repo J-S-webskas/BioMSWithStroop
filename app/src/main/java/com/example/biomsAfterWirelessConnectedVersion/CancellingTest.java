@@ -79,6 +79,11 @@ public class CancellingTest extends AppCompatActivity {
             postDelayedNavigate(intent, saving);
             return;
         }
+        if (intent.getBooleanExtra("testSaved", false)) {
+            // A trial was just saved: no stopover on this screen.
+            handleTestSaved(intent);
+            return;
+        }
         // A finished test with a CSV export package waits for the user:
         // they can tap "Export CSV" (or Continue) instead of being
         // auto-advanced past the button.
@@ -110,6 +115,24 @@ public class CancellingTest extends AppCompatActivity {
             }
             }, 1500); // Show the UI for 1.5 seconds
         }
+    }
+
+    /** A trial was just saved (the caller passes testSaved=true, and only
+     *  after the save has completed). There is no wait on this screen any
+     *  more — no export-mode stopover waiting for a tap, no 1.5 s
+     *  auto-advance: show the saved message and return to the main page
+     *  immediately. The toast carries the same message across the
+     *  transition so it stays readable once this screen is gone.
+     *  Exporting a saved trial stays available at any time from the
+     *  Report tab's Export CSV. */
+    private void handleTestSaved(Intent intent) {
+        cancellingTest.setText("Test saved.");
+        dataNotSaved.setText("You can always delete this test if it is inaccurate");
+        exportActions.setVisibility(View.GONE);
+        Toast.makeText(this,
+                "Test saved. You can always delete this test if it is inaccurate",
+                Toast.LENGTH_LONG).show();
+        navigateToMain(intent);
     }
 
     /** If the last finished test produced a CSV export package, switch this
@@ -191,6 +214,11 @@ public class CancellingTest extends AppCompatActivity {
             dataNotSaved.setText("Results not saved.");
             exportActions.setVisibility(View.GONE);
             postDelayedNavigate(intent, saving);
+            return;
+        }
+        if (intent.getBooleanExtra("testSaved", false)) {
+            // A trial was just saved: no stopover on this screen.
+            handleTestSaved(intent);
             return;
         }
         boolean exportMode = finished && showExportIfAvailable();

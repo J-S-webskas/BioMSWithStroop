@@ -801,11 +801,8 @@ public class RecordFragment extends Fragment {
 
         Intent intent = new Intent(getActivity(), CancellingTest.class);
         intent.putExtra("finished", true);
+        intent.putExtra("testSaved", true);
         startActivity(intent);
-
-        Toast.makeText(requireContext(),
-                "Sensory Ataxia test trial saved.",
-                Toast.LENGTH_LONG).show();
     }
 
     private void saveDualTaskResults() throws IOException {
@@ -926,11 +923,8 @@ public class RecordFragment extends Fragment {
 
         Intent intent = new Intent(getActivity(), CancellingTest.class);
         intent.putExtra("finished", true);
+        intent.putExtra("testSaved", true);
         startActivity(intent);
-
-        Toast.makeText(requireContext(),
-                "Dual task test trial saved.",
-                Toast.LENGTH_LONG).show();
     }
 
     private void saveSwayAreaAndBalanceResults() throws IOException {
@@ -981,11 +975,9 @@ public class RecordFragment extends Fragment {
         angleHistories.clear();
         BalanceHistories.clear();
 
-        Toast.makeText(requireContext(),
-                "Sway area and balance test trial saved.",
-                Toast.LENGTH_LONG).show();
         Intent intent = new Intent(getActivity(), CancellingTest.class);
         intent.putExtra("finished", true);
+        intent.putExtra("testSaved", true);
         startActivity(intent);
     }
 
@@ -1002,14 +994,12 @@ public class RecordFragment extends Fragment {
         angleHistories.clear();
         BalanceHistories.clear();
 
-        Toast.makeText(requireContext(),
-                "Speed and endurance test trial saved.",
-                Toast.LENGTH_LONG).show();
         if (getActivity() != null && isAdded()) {
             Intent intent = new Intent(getActivity(), CancellingTest.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             intent.putExtra("finished", true);
             intent.putExtra("Saving", true);
+            intent.putExtra("testSaved", true);
             startActivity(intent);
         }
     }
