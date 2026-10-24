@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.graphics.Typeface;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -1054,7 +1055,14 @@ public class ReportFragment extends Fragment {
         // not re-enter the day/trial sync below.
         final boolean[] syncing = {false};
 
+        CheckBox exportAllBox = new CheckBox(requireContext());
+        exportAllBox.setText("Export all CSV");
+        exportAllBox.setTextSize(17);
+        exportAllBox.setTypeface(Typeface.DEFAULT_BOLD);
+        container.addView(exportAllBox);
+
         List<MultiExportRow> dayRows = new ArrayList<>();
+        boolean firstDayAdded = false;
         for (Map.Entry<String, List<AssessmentData>> entry : byDate.entrySet()) {
             String dateKey = entry.getKey();
             List<AssessmentData> chronological = new ArrayList<>(entry.getValue());
@@ -1071,8 +1079,8 @@ public class ReportFragment extends Fragment {
             CheckBox dayBox = new CheckBox(requireContext());
             dayBox.setText(label);
             dayBox.setTextSize(17);
+            dayBox.setTypeface(Typeface.DEFAULT_BOLD);
             dayRow.box = dayBox;
-            container.addView(dayBox);
 
             int nBaseline = 0, nDual = 0, nSensory = 0;
             for (AssessmentData a : chronological) {
@@ -1090,9 +1098,16 @@ public class ReportFragment extends Fragment {
                 }
             }
             if (dayRow.children.isEmpty()) {
-                container.removeView(dayBox); // day with no completed trials: nothing to export
-                continue;
+                continue; // day with no completed trials: nothing to export
             }
+            if (firstDayAdded) {
+                View spacer = new View(requireContext());
+                spacer.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, (int) (12 * density)));
+                container.addView(spacer);
+            }
+            container.addView(dayBox);
+            firstDayAdded = true;
             for (MultiExportRow child : dayRow.children) {
                 child.box.setOnCheckedChangeListener((b, checked) -> {
                     if (syncing[0]) return;
@@ -1101,6 +1116,7 @@ public class ReportFragment extends Fragment {
                     for (MultiExportRow c : dayRow.children) allChecked &= c.box.isChecked();
                     dayRow.box.setChecked(allChecked);
                     syncing[0] = false;
+                    syncExportAllBox(exportAllBox, dayRows, syncing);
                 });
             }
             dayBox.setOnCheckedChangeListener((b, checked) -> {
@@ -1108,9 +1124,19 @@ public class ReportFragment extends Fragment {
                 syncing[0] = true;
                 for (MultiExportRow child : dayRow.children) child.box.setChecked(checked);
                 syncing[0] = false;
+                syncExportAllBox(exportAllBox, dayRows, syncing);
             });
             dayRows.add(dayRow);
         }
+        exportAllBox.setOnCheckedChangeListener((b, checked) -> {
+            if (syncing[0]) return;
+            syncing[0] = true;
+            for (MultiExportRow dayRow : dayRows) {
+                dayRow.box.setChecked(checked);
+                for (MultiExportRow child : dayRow.children) child.box.setChecked(checked);
+            }
+            syncing[0] = false;
+        });
         if (dayRows.isEmpty()) {
             Toast.makeText(requireContext(), "No recorded tests to export yet.", Toast.LENGTH_SHORT).show();
             return;
@@ -1120,7 +1146,8 @@ public class ReportFragment extends Fragment {
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle("Export multiple \u2014 choose days and trials")
                 .setView(scroll)
-                .setPositiveButton("Export", null)
+                .setPositiveButton("Export CSV", null)
+                .setNeutralButton("Export Reports", null)
                 .setNegativeButton("Cancel", null)
                 .show();
         // Override the positive button so an empty selection toasts and
@@ -1134,6 +1161,15 @@ public class ReportFragment extends Fragment {
             dialog.dismiss();
             exportMultiSelection(entries);
         });
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+            List<TrialCsvExporter.ReportDayExport> days = collectReportDays(dayRows);
+            if (days.isEmpty()) {
+                Toast.makeText(requireContext(), "Select at least one day.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            dialog.dismiss();
+            exportReportSelection(days);
+        });
     }
 
     private MultiExportRow makeTrialRow(LinearLayout container,
@@ -1145,7 +1181,7 @@ public class ReportFragment extends Fragment {
         row.assessment = assessment;
         row.trialNumber = trialNumber;
         CheckBox box = new CheckBox(requireContext());
-        box.setText(displayName + " \u2014 Trial " + trialNumber);
+        box.setText(displayName + " T" + trialNumber);
         box.setTextSize(16);
         box.setPadding((int) (32 * density), 0, 0, 0);
         row.box = box;
@@ -1183,6 +1219,64 @@ public class ReportFragment extends Fragment {
 
     private void exportMultiSelection(List<TrialCsvExporter.MultiExportEntry> entries) {
         File zip = TrialCsvExporter.exportSelectedTrials(requireContext(), entries);
+        if (zip == null) {
+            Toast.makeText(requireContext(), "Export failed.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        shareZip(zip);
+    }
+
+    /** Keeps the master "Export all CSV" checkbox in step with the day
+     *  boxes. Called with the sync guard released; it re-takes the guard
+     *  while setting the master box so the master listener cannot fire
+     *  and clobber the selection it is reflecting. */
+    private void syncExportAllBox(CheckBox exportAllBox, List<MultiExportRow> dayRows,
+            boolean[] syncing) {
+        boolean all = !dayRows.isEmpty();
+        for (MultiExportRow dayRow : dayRows) all &= dayRow.box.isChecked();
+        syncing[0] = true;
+        exportAllBox.setChecked(all);
+        syncing[0] = false;
+    }
+
+    /** Days to include in a report export: a day counts when its day box
+     *  is checked, or when any of its trials is checked. */
+    private List<TrialCsvExporter.ReportDayExport> collectReportDays(List<MultiExportRow> dayRows) {
+        List<ReportModel> allReports = DataStorageManager.loadAllReports(requireContext());
+        SimpleDateFormat keyFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        SimpleDateFormat dispFmt = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
+        List<TrialCsvExporter.ReportDayExport> days = new ArrayList<>();
+        for (MultiExportRow dayRow : dayRows) {
+            boolean anyChecked = dayRow.box.isChecked();
+            if (!anyChecked) {
+                for (MultiExportRow child : dayRow.children) {
+                    if (child.box.isChecked()) {
+                        anyChecked = true;
+                        break;
+                    }
+                }
+            }
+            if (!anyChecked) continue;
+            String displayDate = dayRow.dateKey;
+            try {
+                displayDate = dispFmt.format(keyFmt.parse(dayRow.dateKey));
+            } catch (Exception ignored) {
+            }
+            List<ReportModel> dayReports = new ArrayList<>();
+            for (ReportModel r : allReports) {
+                if (displayDate.equals(r.getDate())) dayReports.add(r);
+            }
+            if (dayReports.isEmpty()) continue;
+            TrialCsvExporter.ReportDayExport d = new TrialCsvExporter.ReportDayExport();
+            d.dateKey = dayRow.dateKey;
+            d.reports = dayReports;
+            days.add(d);
+        }
+        return days;
+    }
+
+    private void exportReportSelection(List<TrialCsvExporter.ReportDayExport> days) {
+        File zip = TrialCsvExporter.exportSelectedReports(requireContext(), days);
         if (zip == null) {
             Toast.makeText(requireContext(), "Export failed.", Toast.LENGTH_SHORT).show();
             return;
