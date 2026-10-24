@@ -409,6 +409,94 @@ public class TrialCsvExporter {
         return sb.toString();
     }
 
+    /** One day's reports inside a multi-report export. */
+    public static class ReportDayExport {
+        public String dateKey; // yyyy-MM-dd, used for the folder name
+        public List<ReportModel> reports;
+    }
+
+    /**
+     * Builds one ZIP of report summaries for the chosen days: one folder
+     * per day ("&lt;date&gt;/") holding that day's "Reports.csv" — one row
+     * per saved report, headline metrics only — plus a README listing
+     * the included days.
+     *
+     * @return the zip file, or null on failure / empty selection
+     */
+    public static File exportSelectedReports(Context context, List<ReportDayExport> days) {
+        if (days == null || days.isEmpty()) return null;
+        try {
+            String patientId = AnonymousIdManager.getId(context);
+            File dir = new File(context.getFilesDir(), "exports");
+            if (!dir.exists() && !dir.mkdirs()) {
+                Log.e(TAG, "Could not create exports directory");
+                return null;
+            }
+            SimpleDateFormat stampFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            String stamp = stampFmt.format(new Date());
+            File zip = new File(dir, patientId + "_Reports_" + stamp + ".zip");
+            int n = 2;
+            while (zip.exists()) {
+                zip = new File(dir, patientId + "_Reports_" + stamp + "_" + n + ".zip");
+                n++;
+            }
+            SimpleDateFormat timeFmt = new SimpleDateFormat("h:mm a", Locale.US);
+            try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zip))) {
+                for (ReportDayExport d : days) {
+                    if (d.reports == null || d.reports.isEmpty()) continue;
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("Date,Time,Sway Area [mm^2],Sway Velocity [mm/s],"
+                            + "Sway Path Length [mm],RMS AP [mm],RMS ML [mm],"
+                            + "Endurance [s],Walking Speed [m/s],"
+                            + "Dual Task Balance DTC [%],Sensory Ataxia Balance DTC [%],"
+                            + "Balance SD,Balance CV [%]\n");
+                    for (ReportModel r : d.reports) {
+                        sb.append(r.getDate()).append(',');
+                        sb.append(r.getTimeStamp() != null ? timeFmt.format(r.getTimeStamp()) : "").append(',');
+                        sb.append(fmt(r.getBalanceToday())).append(',');
+                        sb.append(fmt(r.getSwayVelocityToday())).append(',');
+                        sb.append(fmt(r.getSwayPathLengthToday())).append(',');
+                        sb.append(fmt(r.getSwayRmsAPToday())).append(',');
+                        sb.append(fmt(r.getSwayRmsMLToday())).append(',');
+                        sb.append(fmt(r.getEnduranceToday())).append(',');
+                        sb.append(fmt(r.getSpeedToday())).append(',');
+                        sb.append(fmt(r.getDualTaskDTCBalance())).append(',');
+                        sb.append(fmt(r.getSensoryAtaxiaDTCBalance())).append(',');
+                        sb.append(fmt(r.getBalanceSD())).append(',');
+                        sb.append(fmt(r.getBalanceCV())).append('\n');
+                    }
+                    writeEntry(zos, d.dateKey + "/Reports.csv", sb.toString());
+                }
+                writeEntry(zos, "README.txt", buildReportsReadme(patientId, days));
+            }
+            Log.d(TAG, "Reports export written: " + zip.getAbsolutePath());
+            return zip;
+        } catch (Exception e) {
+            Log.e(TAG, "Reports export failed", e);
+            return null;
+        }
+    }
+
+    private static String fmt(float v) {
+        return String.format(Locale.US, "%.2f", v);
+    }
+
+    private static String buildReportsReadme(String patientId, List<ReportDayExport> days) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("BioMS report export\n");
+        sb.append("PatientID,").append(patientId).append('\n');
+        sb.append("Source,Saved reports (export generated on demand)\n");
+        sb.append("Included days:\n");
+        for (ReportDayExport d : days) {
+            int count = d.reports == null ? 0 : d.reports.size();
+            sb.append(d.dateKey).append(",").append(count)
+                    .append(count == 1 ? " report" : " reports").append('\n');
+        }
+        sb.append("\nEach day's folder holds that day's Reports.csv with one row "
+                + "per saved report (headline metrics only).\n");
+        return sb.toString();
+    }
+
     private static String buildStoredTrajectoryCsv(StoredTrialData t) {
         StringBuilder sb = new StringBuilder();
         sb.append("time [s],CoM_x_Pos [m],CoM_y_Pos [m],CoM_z_Pos [m]\n");
