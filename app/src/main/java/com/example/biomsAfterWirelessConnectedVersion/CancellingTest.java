@@ -127,10 +127,10 @@ public class CancellingTest extends AppCompatActivity {
      *  Report tab's Export CSV. */
     private void handleTestSaved(Intent intent) {
         cancellingTest.setText("Test saved.");
-        dataNotSaved.setText("You can always delete this test if is inaccurate");
+        dataNotSaved.setText("You can always delete this test if it is inaccurate");
         exportActions.setVisibility(View.GONE);
         Toast.makeText(this,
-                "Test saved. You can always delete this test if is inaccurate",
+                "Test saved. You can always delete this test if it is inaccurate",
                 Toast.LENGTH_LONG).show();
         navigateToMain(intent);
     }
