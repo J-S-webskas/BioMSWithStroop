@@ -19,6 +19,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +33,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -79,6 +83,12 @@ public class ReportFragment extends Fragment {
         btnExportCsv.setOnClickListener(v -> {
             v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
             showExportCsvDialog();
+        });
+
+        Button btnExportMultiple = view.findViewById(R.id.btn_export_multiple);
+        btnExportMultiple.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            showMultiExportDialog();
         });
 
         noData = view.findViewById(R.id.noData);
@@ -948,32 +958,7 @@ public class ReportFragment extends Fragment {
         Collections.sort(chronological, (a1, a2) -> a1.getTimestamp().compareTo(a2.getTimestamp()));
         List<TrialCsvExporter.StoredTrialData> trials = new ArrayList<>();
         for (AssessmentData a : chronological) {
-            TrialCsvExporter.StoredTrialData t = null;
-            if ("Baseline".equals(condition) && hasBaselineTrial(a)) {
-                t = toStoredTrial(a.getBaseline().getComTrajX(), a.getBaseline().getComTrajZ(),
-                        a.getBaseline().getComFrameRate(), a.getBaseline().getBalanceScore(),
-                        a.getBaseline().getSwayPathLength(), a.getBaseline().getSwayMeanVelocity(),
-                        a.getBaseline().getSwayRmsAP(), a.getBaseline().getSwayRmsML(),
-                        a.getBaseline().getCameraDistanceM(), a.getBaseline().isSwayMetricsValid());
-                TrialCsvExporter.fillDiagnostics(t, a.getBaseline());
-                t.sessionId = a.getSessionId();
-            } else if ("DualTask".equals(condition) && hasDualTaskTrial(a)) {
-                t = toStoredTrial(a.getDualTask().getComTrajX(), a.getDualTask().getComTrajZ(),
-                        a.getDualTask().getComFrameRate(), a.getDualTask().getBalanceScore(),
-                        a.getDualTask().getSwayPathLength(), a.getDualTask().getSwayMeanVelocity(),
-                        a.getDualTask().getSwayRmsAP(), a.getDualTask().getSwayRmsML(),
-                        a.getDualTask().getCameraDistanceM(), a.getDualTask().isSwayMetricsValid());
-                TrialCsvExporter.fillDiagnostics(t, a.getDualTask());
-                t.sessionId = a.getSessionId();
-            } else if ("SensoryAtaxia".equals(condition) && hasSensoryTrial(a)) {
-                t = toStoredTrial(a.getSensoryAtaxia().getComTrajX(), a.getSensoryAtaxia().getComTrajZ(),
-                        a.getSensoryAtaxia().getComFrameRate(), a.getSensoryAtaxia().getBalanceScore(),
-                        a.getSensoryAtaxia().getSwayPathLength(), a.getSensoryAtaxia().getSwayMeanVelocity(),
-                        a.getSensoryAtaxia().getSwayRmsAP(), a.getSensoryAtaxia().getSwayRmsML(),
-                        a.getSensoryAtaxia().getCameraDistanceM(), a.getSensoryAtaxia().isSwayMetricsValid());
-                TrialCsvExporter.fillDiagnostics(t, a.getSensoryAtaxia());
-                t.sessionId = a.getSessionId();
-            }
+            TrialCsvExporter.StoredTrialData t = buildStoredTrialFor(a, condition);
             if (t != null) trials.add(t);
         }
         if (trials.isEmpty()) {
@@ -985,6 +970,11 @@ public class ReportFragment extends Fragment {
             Toast.makeText(requireContext(), "Export failed.", Toast.LENGTH_SHORT).show();
             return;
         }
+        shareZip(zip);
+    }
+
+    /** Hands a finished export ZIP to the system share sheet. */
+    private void shareZip(File zip) {
         Uri uri = FileProvider.getUriForFile(requireContext(),
                 requireContext().getPackageName() + ".fileprovider", zip);
         Intent share = new Intent(Intent.ACTION_SEND);
@@ -993,6 +983,211 @@ public class ReportFragment extends Fragment {
         share.putExtra(Intent.EXTRA_SUBJECT, zip.getName());
         share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         startActivity(Intent.createChooser(share, "Export CSV data"));
+    }
+
+    /** Builds the stored-trial record for one assessment's one condition,
+     *  or null when that assessment holds no such trial. Shared by the
+     *  single-condition export and the multi-export below. */
+    private TrialCsvExporter.StoredTrialData buildStoredTrialFor(AssessmentData a, String condition) {
+        TrialCsvExporter.StoredTrialData t = null;
+        if ("Baseline".equals(condition) && hasBaselineTrial(a)) {
+            t = toStoredTrial(a.getBaseline().getComTrajX(), a.getBaseline().getComTrajZ(),
+                    a.getBaseline().getComFrameRate(), a.getBaseline().getBalanceScore(),
+                    a.getBaseline().getSwayPathLength(), a.getBaseline().getSwayMeanVelocity(),
+                    a.getBaseline().getSwayRmsAP(), a.getBaseline().getSwayRmsML(),
+                    a.getBaseline().getCameraDistanceM(), a.getBaseline().isSwayMetricsValid());
+            TrialCsvExporter.fillDiagnostics(t, a.getBaseline());
+            t.sessionId = a.getSessionId();
+        } else if ("DualTask".equals(condition) && hasDualTaskTrial(a)) {
+            t = toStoredTrial(a.getDualTask().getComTrajX(), a.getDualTask().getComTrajZ(),
+                    a.getDualTask().getComFrameRate(), a.getDualTask().getBalanceScore(),
+                    a.getDualTask().getSwayPathLength(), a.getDualTask().getSwayMeanVelocity(),
+                    a.getDualTask().getSwayRmsAP(), a.getDualTask().getSwayRmsML(),
+                    a.getDualTask().getCameraDistanceM(), a.getDualTask().isSwayMetricsValid());
+            TrialCsvExporter.fillDiagnostics(t, a.getDualTask());
+            t.sessionId = a.getSessionId();
+        } else if ("SensoryAtaxia".equals(condition) && hasSensoryTrial(a)) {
+            t = toStoredTrial(a.getSensoryAtaxia().getComTrajX(), a.getSensoryAtaxia().getComTrajZ(),
+                    a.getSensoryAtaxia().getComFrameRate(), a.getSensoryAtaxia().getBalanceScore(),
+                    a.getSensoryAtaxia().getSwayPathLength(), a.getSensoryAtaxia().getSwayMeanVelocity(),
+                    a.getSensoryAtaxia().getSwayRmsAP(), a.getSensoryAtaxia().getSwayRmsML(),
+                    a.getSensoryAtaxia().getCameraDistanceM(), a.getSensoryAtaxia().isSwayMetricsValid());
+            TrialCsvExporter.fillDiagnostics(t, a.getSensoryAtaxia());
+            t.sessionId = a.getSessionId();
+        }
+        return t;
+    }
+
+    // ------------------------------------------------------------------
+    // Multi-day, multi-trial export: a separate button from the single
+    // Export CSV. Days and individual trials are picked with checkboxes;
+    // everything selected goes into one ZIP, grouped by day and test.
+    // ------------------------------------------------------------------
+
+    /** One checkbox row in the multi-export dialog. */
+    private static class MultiExportRow {
+        CheckBox box;
+        String dateKey;                 // yyyy-MM-dd
+        String condition;               // Baseline / DualTask / SensoryAtaxia, null for a day row
+        AssessmentData assessment;      // null for a day row
+        int trialNumber;                // 1-based within its day + condition
+        List<MultiExportRow> children = new ArrayList<>(); // trial rows under a day row
+    }
+
+    private void showMultiExportDialog() {
+        List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
+        Map<String, List<AssessmentData>> byDate = new TreeMap<>(Collections.reverseOrder());
+        SimpleDateFormat keyFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        for (AssessmentData a : all) {
+            if (a.getTimestamp() == null) continue;
+            String key = keyFmt.format(a.getTimestamp());
+            byDate.computeIfAbsent(key, k -> new ArrayList<>()).add(a);
+        }
+        SimpleDateFormat dispFmt = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
+        String todayKey = keyFmt.format(new Date());
+        float density = requireContext().getResources().getDisplayMetrics().density;
+        LinearLayout container = new LinearLayout(requireContext());
+        container.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * density);
+        container.setPadding(pad, pad, pad, pad);
+        // Guard against listener cascades: a programmatic setChecked must
+        // not re-enter the day/trial sync below.
+        final boolean[] syncing = {false};
+
+        List<MultiExportRow> dayRows = new ArrayList<>();
+        for (Map.Entry<String, List<AssessmentData>> entry : byDate.entrySet()) {
+            String dateKey = entry.getKey();
+            List<AssessmentData> chronological = new ArrayList<>(entry.getValue());
+            Collections.sort(chronological, (a1, a2) -> a1.getTimestamp().compareTo(a2.getTimestamp()));
+            String label = dateKey;
+            try {
+                label = dispFmt.format(keyFmt.parse(dateKey));
+            } catch (Exception ignored) {
+            }
+            if (dateKey.equals(todayKey)) label = "Today \u2014 " + label;
+
+            MultiExportRow dayRow = new MultiExportRow();
+            dayRow.dateKey = dateKey;
+            CheckBox dayBox = new CheckBox(requireContext());
+            dayBox.setText(label);
+            dayBox.setTextSize(17);
+            dayRow.box = dayBox;
+            container.addView(dayBox);
+
+            int nBaseline = 0, nDual = 0, nSensory = 0;
+            for (AssessmentData a : chronological) {
+                if (hasBaselineTrial(a)) {
+                    dayRow.children.add(makeTrialRow(container, dateKey,
+                            "Baseline", "Baseline", ++nBaseline, a, density));
+                }
+                if (hasDualTaskTrial(a)) {
+                    dayRow.children.add(makeTrialRow(container, dateKey,
+                            "DualTask", "Dual Task", ++nDual, a, density));
+                }
+                if (hasSensoryTrial(a)) {
+                    dayRow.children.add(makeTrialRow(container, dateKey,
+                            "SensoryAtaxia", "Sensory Ataxia", ++nSensory, a, density));
+                }
+            }
+            if (dayRow.children.isEmpty()) {
+                container.removeView(dayBox); // day with no completed trials: nothing to export
+                continue;
+            }
+            for (MultiExportRow child : dayRow.children) {
+                child.box.setOnCheckedChangeListener((b, checked) -> {
+                    if (syncing[0]) return;
+                    syncing[0] = true;
+                    boolean allChecked = true;
+                    for (MultiExportRow c : dayRow.children) allChecked &= c.box.isChecked();
+                    dayRow.box.setChecked(allChecked);
+                    syncing[0] = false;
+                });
+            }
+            dayBox.setOnCheckedChangeListener((b, checked) -> {
+                if (syncing[0]) return;
+                syncing[0] = true;
+                for (MultiExportRow child : dayRow.children) child.box.setChecked(checked);
+                syncing[0] = false;
+            });
+            dayRows.add(dayRow);
+        }
+        if (dayRows.isEmpty()) {
+            Toast.makeText(requireContext(), "No recorded tests to export yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        ScrollView scroll = new ScrollView(requireContext());
+        scroll.addView(container);
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle("Export multiple \u2014 choose days and trials")
+                .setView(scroll)
+                .setPositiveButton("Export", null)
+                .setNegativeButton("Cancel", null)
+                .show();
+        // Override the positive button so an empty selection toasts and
+        // keeps the dialog open instead of dismissing it.
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            List<TrialCsvExporter.MultiExportEntry> entries = collectMultiExportEntries(dayRows);
+            if (entries.isEmpty()) {
+                Toast.makeText(requireContext(), "Select at least one trial.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            dialog.dismiss();
+            exportMultiSelection(entries);
+        });
+    }
+
+    private MultiExportRow makeTrialRow(LinearLayout container,
+            String dateKey, String condition, String displayName, int trialNumber,
+            AssessmentData assessment, float density) {
+        MultiExportRow row = new MultiExportRow();
+        row.dateKey = dateKey;
+        row.condition = condition;
+        row.assessment = assessment;
+        row.trialNumber = trialNumber;
+        CheckBox box = new CheckBox(requireContext());
+        box.setText(displayName + " \u2014 Trial " + trialNumber);
+        box.setTextSize(16);
+        box.setPadding((int) (32 * density), 0, 0, 0);
+        row.box = box;
+        container.addView(box);
+        return row;
+    }
+
+    /** Turns the checked rows into exporter entries. Trial numbers and
+     *  "of N" counts follow the stored convention: position within the
+     *  trial's own day + condition, counting every trial of that day +
+     *  condition whether or not it was checked. */
+    private List<TrialCsvExporter.MultiExportEntry> collectMultiExportEntries(
+            List<MultiExportRow> dayRows) {
+        List<TrialCsvExporter.MultiExportEntry> entries = new ArrayList<>();
+        for (MultiExportRow dayRow : dayRows) {
+            Map<String, Integer> totals = new HashMap<>();
+            for (MultiExportRow child : dayRow.children) {
+                totals.put(child.condition, totals.getOrDefault(child.condition, 0) + 1);
+            }
+            for (MultiExportRow child : dayRow.children) {
+                if (!child.box.isChecked()) continue;
+                TrialCsvExporter.StoredTrialData t = buildStoredTrialFor(child.assessment, child.condition);
+                if (t == null) continue;
+                TrialCsvExporter.MultiExportEntry e = new TrialCsvExporter.MultiExportEntry();
+                e.dateStr = child.dateKey;
+                e.conditionLabel = child.condition;
+                e.trialIndex = child.trialNumber;
+                e.trialCount = totals.get(child.condition);
+                e.trial = t;
+                entries.add(e);
+            }
+        }
+        return entries;
+    }
+
+    private void exportMultiSelection(List<TrialCsvExporter.MultiExportEntry> entries) {
+        File zip = TrialCsvExporter.exportSelectedTrials(requireContext(), entries);
+        if (zip == null) {
+            Toast.makeText(requireContext(), "Export failed.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        shareZip(zip);
     }
 
     private TrialCsvExporter.StoredTrialData toStoredTrial(List<Float> trajX, List<Float> trajZ,
