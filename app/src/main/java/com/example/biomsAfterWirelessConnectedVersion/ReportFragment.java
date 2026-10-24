@@ -863,12 +863,6 @@ public class ReportFragment extends Fragment {
         return sum / set.size();
     }
 
-    // ------------------------------------------------------------------
-    // Standalone CSV export: pick a day, then a test that was actually
-    // completed that day; the ZIP is generated on the fly from the
-    // stored assessment data and handed to the share sheet.
-    // ------------------------------------------------------------------
-
     private void showExportCsvDialog() {
         List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
         Map<String, List<AssessmentData>> byDate = new TreeMap<>(Collections.reverseOrder());
@@ -1157,9 +1151,7 @@ public class ReportFragment extends Fragment {
         });
     }
 
-    private MultiExportRow makeTrialRow(LinearLayout container,
-                                        String dateKey, String condition, String displayName, int trialNumber,
-                                        AssessmentData assessment, float density) {
+    private MultiExportRow makeTrialRow(String dateKey, String condition, String displayName, int trialNumber, AssessmentData assessment, float density) {
         MultiExportRow row = new MultiExportRow();
         row.dateKey = dateKey;
         row.condition = condition;
@@ -1170,7 +1162,6 @@ public class ReportFragment extends Fragment {
         box.setTextSize(16);
         box.setPadding((int) (32 * density), 0, 0, 0);
         row.box = box;
-        container.addView(box);
         return row;
     }
 
@@ -1219,42 +1210,6 @@ public class ReportFragment extends Fragment {
         syncing[0] = true;
         exportAllBox.setChecked(all);
         syncing[0] = false;
-    }
-
-    /** Days to include in a report export: a day counts when its day box
-     *  is checked, or when any of its trials is checked. */
-    private List<TrialCsvExporter.ReportDayExport> collectReportDays(List<MultiExportRow> dayRows) {
-        List<ReportModel> allReports = DataStorageManager.loadAllReports(requireContext());
-        SimpleDateFormat keyFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-        SimpleDateFormat dispFmt = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
-        List<TrialCsvExporter.ReportDayExport> days = new ArrayList<>();
-        for (MultiExportRow dayRow : dayRows) {
-            boolean anyChecked = dayRow.box.isChecked();
-            if (!anyChecked) {
-                for (MultiExportRow child : dayRow.children) {
-                    if (child.box.isChecked()) {
-                        anyChecked = true;
-                        break;
-                    }
-                }
-            }
-            if (!anyChecked) continue;
-            String displayDate = dayRow.dateKey;
-            try {
-                displayDate = dispFmt.format(keyFmt.parse(dayRow.dateKey));
-            } catch (Exception ignored) {
-            }
-            List<ReportModel> dayReports = new ArrayList<>();
-            for (ReportModel r : allReports) {
-                if (displayDate.equals(r.getDate())) dayReports.add(r);
-            }
-            if (dayReports.isEmpty()) continue;
-            TrialCsvExporter.ReportDayExport d = new TrialCsvExporter.ReportDayExport();
-            d.dateKey = dayRow.dateKey;
-            d.reports = dayReports;
-            days.add(d);
-        }
-        return days;
     }
 
     private void exportReportSelection(List<TrialCsvExporter.ReportDayExport> days) {
@@ -1321,5 +1276,162 @@ public class ReportFragment extends Fragment {
             requireContext().unregisterReceiver(reportUpdateReceiver);
         } catch (IllegalArgumentException e) {
         }
+    }
+
+
+    /** Report picker behind the screen's Export Reports button: the same
+     * checkbox format as the trial picker (Export-all master, bold dates,
+     * a blank line between dates), but one child per saved report of the
+     * day, numbered chronologically, with its time to tell regenerations
+     * apart. Exports exactly the checked reports. */
+    private void showMultiReportDialog() {
+        List<ReportModel> all = DataStorageManager.loadAllReports(requireContext());
+        if (all == null || all.isEmpty()) {
+            Toast.makeText(requireContext(), "No reports to export yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        SimpleDateFormat keyFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        SimpleDateFormat dispFmt = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
+        SimpleDateFormat timeFmt = new SimpleDateFormat("h:mm a", Locale.US);
+        String todayKey = keyFmt.format(new Date());
+
+        Map<String, List<ReportModel>> byDate = new TreeMap<>(Collections.reverseOrder());
+        Map<String, String> labelByKey = new HashMap<>();
+        for (ReportModel r : all) {
+            if (r.getDate() == null) continue;
+            String key = r.getDate();
+            try {
+                key = keyFmt.format(dispFmt.parse(r.getDate()));
+            } catch (Exception ignored) {
+            }
+            byDate.computeIfAbsent(key, k -> new ArrayList<>()).add(r);
+            labelByKey.put(key, r.getDate());
+        }
+        for (List<ReportModel> day : byDate.values()) {
+            day.sort((a, b) -> {
+                if (a.getTimeStamp() == null && b.getTimeStamp() == null) return 0;
+                if (a.getTimeStamp() == null) return 1;
+                if (b.getTimeStamp() == null) return -1;
+                return a.getTimeStamp().compareTo(b.getTimeStamp());
+            });
+        }
+
+        float density = requireContext().getResources().getDisplayMetrics().density;
+        LinearLayout container = new LinearLayout(requireContext());
+        container.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * density);
+        container.setPadding(pad, pad, pad, pad);
+        final boolean[] syncing = {false};
+
+        CheckBox exportAllBox = new CheckBox(requireContext());
+        exportAllBox.setText("Export all reports");
+        exportAllBox.setTextSize(17);
+        exportAllBox.setTypeface(Typeface.DEFAULT_BOLD);
+        container.addView(exportAllBox);
+
+        List<MultiExportRow> dayRows = new ArrayList<>();
+        boolean firstDayAdded = false;
+        for (Map.Entry<String, List<ReportModel>> entry : byDate.entrySet()) {
+            String dateKey = entry.getKey();
+            String label = labelByKey.get(dateKey);
+            if (dateKey.equals(todayKey)) label = "Today \u2014 " + label;
+
+            MultiExportRow dayRow = new MultiExportRow();
+            dayRow.dateKey = dateKey;
+            CheckBox dayBox = new CheckBox(requireContext());
+            dayBox.setText(label);
+            dayBox.setTextSize(17);
+            dayBox.setTypeface(Typeface.DEFAULT_BOLD);
+            dayRow.box = dayBox;
+
+            int n = 0;
+            for (ReportModel r : entry.getValue()) {
+                n++;
+                MultiExportRow child = new MultiExportRow();
+                child.dateKey = dateKey;
+                child.report = r;
+                CheckBox box = new CheckBox(requireContext());
+                String time = r.getTimeStamp() != null ? timeFmt.format(r.getTimeStamp()) : "";
+                box.setText("Report " + n + (time.isEmpty() ? "" : " (" + time + ")"));
+                box.setTextSize(16);
+                box.setPadding((int) (32 * density), 0, 0, 0);
+                child.box = box;
+                dayRow.children.add(child);
+            }
+            if (firstDayAdded) {
+                View spacer = new View(requireContext());
+                spacer.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, (int) (12 * density)));
+                container.addView(spacer);
+            }
+            container.addView(dayBox);
+            firstDayAdded = true;
+            for (MultiExportRow child : dayRow.children) container.addView(child.box);
+            for (MultiExportRow child : dayRow.children) {
+                child.box.setOnCheckedChangeListener((b, checked) -> {
+                    if (syncing[0]) return;
+                    syncing[0] = true;
+                    boolean allChecked = true;
+                    for (MultiExportRow c : dayRow.children) allChecked &= c.box.isChecked();
+                    dayRow.box.setChecked(allChecked);
+                    syncing[0] = false;
+                    syncExportAllBox(exportAllBox, dayRows, syncing);
+                });
+            }
+            dayBox.setOnCheckedChangeListener((b, checked) -> {
+                if (syncing[0]) return;
+                syncing[0] = true;
+                for (MultiExportRow child : dayRow.children) child.box.setChecked(checked);
+                syncing[0] = false;
+                syncExportAllBox(exportAllBox, dayRows, syncing);
+            });
+            dayRows.add(dayRow);
+        }
+        exportAllBox.setOnCheckedChangeListener((b, checked) -> {
+            if (syncing[0]) return;
+            syncing[0] = true;
+            for (MultiExportRow dayRow : dayRows) {
+                dayRow.box.setChecked(checked);
+                for (MultiExportRow child : dayRow.children) child.box.setChecked(checked);
+            }
+            syncing[0] = false;
+        });
+
+        ScrollView scroll = new ScrollView(requireContext());
+        scroll.addView(container);
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle("Export reports \u2014 choose days and reports")
+                .setView(scroll)
+                .setPositiveButton("Export Reports", null)
+                .setNegativeButton("Cancel", null)
+                .show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            List<TrialCsvExporter.ReportDayExport> days = collectReportSelection(dayRows);
+            if (days.isEmpty()) {
+                Toast.makeText(requireContext(), "Select at least one report.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            dialog.dismiss();
+            exportReportSelection(days);
+        });
+    }
+
+    /** Checked reports only: a checked day box checks all its children
+     *  through the listener, so collecting checked children covers both
+     *  day-level and single-report selection. */
+    private List<TrialCsvExporter.ReportDayExport> collectReportSelection(List<MultiExportRow> dayRows) {
+        List<TrialCsvExporter.ReportDayExport> days = new ArrayList<>();
+        for (MultiExportRow dayRow : dayRows) {
+            List<ReportModel> checked = new ArrayList<>();
+            for (MultiExportRow child : dayRow.children) {
+                if (child.box.isChecked() && child.report != null) checked.add(child.report);
+            }
+            if (checked.isEmpty()) continue;
+            TrialCsvExporter.ReportDayExport d = new TrialCsvExporter.ReportDayExport();
+            d.dateKey = dayRow.dateKey;
+            d.reports = checked;
+            days.add(d);
+        }
+        return days;
     }
 }
