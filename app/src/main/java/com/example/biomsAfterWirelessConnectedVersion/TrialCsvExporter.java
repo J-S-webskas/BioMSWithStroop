@@ -330,6 +330,85 @@ public class TrialCsvExporter {
         }
     }
 
+    /** One selected trial inside a multi-day export. */
+    public static class MultiExportEntry {
+        public String dateStr;          // yyyy-MM-dd of the trial's day
+        public String conditionLabel;   // Baseline / DualTask / SensoryAtaxia
+        public int trialIndex;          // 1-based within its day + condition
+        public int trialCount;          // trials of that day + condition
+        public StoredTrialData trial;
+    }
+
+    /**
+     * Builds one ZIP for an arbitrary selection of stored trials spanning
+     * several days and conditions. Files are grouped into folders
+     * "<date>_<Condition>/" and named like the single-day export, with a
+     * _T&lt;n&gt; suffix that always counts within the trial's own day and
+     * condition. Joint angles are attached from the sidecar when present;
+     * the README lists everything included.
+     *
+     * @return the zip file, or null on failure / empty selection
+     */
+    public static File exportSelectedTrials(Context context, List<MultiExportEntry> entries) {
+        if (entries == null || entries.isEmpty()) return null;
+        try {
+            String patientId = AnonymousIdManager.getId(context);
+            File dir = new File(context.getFilesDir(), "exports");
+            if (!dir.exists() && !dir.mkdirs()) {
+                Log.e(TAG, "Could not create exports directory");
+                return null;
+            }
+            SimpleDateFormat stampFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            String stamp = stampFmt.format(new Date());
+            File zip = new File(dir, patientId + "_MultiExport_" + stamp + ".zip");
+            int n = 2;
+            while (zip.exists()) {
+                zip = new File(dir, patientId + "_MultiExport_" + stamp + "_" + n + ".zip");
+                n++;
+            }
+            try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zip))) {
+                for (MultiExportEntry e : entries) {
+                    String folder = e.dateStr + "_" + e.conditionLabel + "/";
+                    String base = patientId + "_" + e.conditionLabel + "_T" + e.trialIndex;
+                    writeEntry(zos, folder + base + "_CoM_Trajectory.csv",
+                            buildStoredTrajectoryCsv(e.trial));
+                    writeEntry(zos, folder + base + "_SystemLog.csv",
+                            buildStoredSystemLogCsv(patientId, e.conditionLabel, e.dateStr,
+                                    e.trial, e.trialIndex, e.trialCount));
+                    String anglesCsv = readJointAnglesSidecar(context,
+                            e.trial.sessionId, e.conditionLabel);
+                    if (anglesCsv != null) {
+                        writeEntry(zos, folder + base + "_JointAngles.csv", anglesCsv);
+                    }
+                }
+                writeEntry(zos, "README.txt", buildMultiReadme(patientId, entries));
+            }
+            Log.d(TAG, "Multi export written: " + zip.getAbsolutePath());
+            return zip;
+        } catch (Exception e) {
+            Log.e(TAG, "Multi export failed", e);
+            return null;
+        }
+    }
+
+    private static String buildMultiReadme(String patientId, List<MultiExportEntry> entries) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("BioMS multi-day export\n");
+        sb.append("PatientID,").append(patientId).append('\n');
+        sb.append("Source,Stored report data (export generated on demand)\n");
+        sb.append("Included trials:\n");
+        for (MultiExportEntry e : entries) {
+            sb.append(e.dateStr).append(",").append(e.conditionLabel)
+                    .append(",Trial ").append(e.trialIndex)
+                    .append(" of ").append(e.trialCount).append('\n');
+        }
+        sb.append("\nEach trial contributes a CoM trajectory CSV and a system log; "
+                + "joint angles are included only when a sidecar file was stored for "
+                + "that trial. Trials saved before diagnostics were stored say so in "
+                + "their system log.\n");
+        return sb.toString();
+    }
+
     private static String buildStoredTrajectoryCsv(StoredTrialData t) {
         StringBuilder sb = new StringBuilder();
         sb.append("time [s],CoM_x_Pos [m],CoM_y_Pos [m],CoM_z_Pos [m]\n");
