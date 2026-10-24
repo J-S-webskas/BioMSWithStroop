@@ -328,6 +328,7 @@ public class RecordFragment extends Fragment {
 //        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("finished", true);
         intent.putExtra("Saving", false);
+        intent.putExtra("noPoseDetected", true);
         startActivity(intent);
         setNavigationVisible(true);
     }
