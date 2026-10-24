@@ -57,6 +57,18 @@
             android:textSize="18sp"
             android:backgroundTint="#FB3737"/>
 
+        <Button
+            android:id="@+id/btn_export_reports"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/btn_export_multiple"
+            app:layout_constraintTop_toTopOf="@id/btn_export_multiple"
+            android:layout_marginStart="10dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:text="Export Reports"
+            android:textSize="18sp"
+            android:backgroundTint="#FB3737"/>
+
         <LinearLayout
             android:id="@+id/filterRow"
             android:layout_width="match_parent"
