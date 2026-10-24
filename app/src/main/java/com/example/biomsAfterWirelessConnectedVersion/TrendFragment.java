@@ -155,7 +155,7 @@ public class TrendFragment extends Fragment {
             cal.add(Calendar.DAY_OF_YEAR, 1);
         }
 
-        EnduranceChart chart = new EnduranceChart(3, "Endurance", baselineData);
+        EnduranceChart chart = new EnduranceChart(3, "Distance", baselineData);
         chart.setDualTaskData(dualTaskData);
         chart.setSensoryAtaxiaData(sensoryAtaxiaData);
 
@@ -300,7 +300,7 @@ public class TrendFragment extends Fragment {
 
     private EnduranceChart createEmptyEnduranceChart() {
         Map<Date, Float> emptyData = new HashMap<>();
-        EnduranceChart chart = new EnduranceChart(3, "Endurance", emptyData);
+        EnduranceChart chart = new EnduranceChart(3, "Distance", emptyData);
         return chart;
     }
 
@@ -460,7 +460,7 @@ public class TrendFragment extends Fragment {
             condition = determineEnduranceCondition(latestValue);
         }
 
-        EnduranceChart chart = new EnduranceChart(3, "Endurance", baselineData);
+        EnduranceChart chart = new EnduranceChart(3, "Distance", baselineData);
 
         if (!dualTaskData.isEmpty()) {
             chart.setDualTaskData(dualTaskData);

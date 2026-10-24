@@ -584,7 +584,7 @@ public class AutoReportGenerationService extends Service {
         newReport.setTimeStamp(targetDate);
 
         String preview = String.format(Locale.US,
-                "Speed: %f m/s | Sway Area: %f mm² | ARJ: %f m/s³ | Endurance: %f s",
+                "Speed: %f m/s | Sway Area: %f mm² | ARJ: %f m/s³ | Distance: %f m",
                 newReport.getSpeedToday(), newReport.getBalanceToday(),
                 newReport.getArjRightKneeToday(), newReport.getEnduranceToday());
         newReport.setPreview(preview);

@@ -147,7 +147,7 @@ public class AssessmentFragment extends Fragment {
         titleView.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black));
         builder.setCustomTitle(titleView);
 
-        String[] types = {"Sway area and balance", "Dual Task", "Sensory Ataxia", "Speed and endurance"};
+        String[] types = {"Sway area and balance", "Dual Task", "Sensory Ataxia", "Speed and distance"};
 
         // Custom adapter with your font
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(
@@ -213,7 +213,7 @@ public class AssessmentFragment extends Fragment {
                         matches = true;
                     }
                     break;
-                case "Speed and endurance":
+                case "Speed and distance":
                     if (assessment.getWSAndEnduranceTestDate() != null ||
                             (assessment.getBaseline() != null && (assessment.getBaseline().getWalkingSpeed() > 0 || assessment.getBaseline().getEnduranceScore() > 0))) {
                         matches = true;
@@ -247,8 +247,8 @@ public class AssessmentFragment extends Fragment {
                 case "Sensory Ataxia":
                     valStr = String.format(Locale.US, "%.2f mm²", trial.getSensoryAtaxia().getBalanceScore());
                     break;
-                case "Speed and endurance":
-                    valStr = String.format(Locale.US, "%.2f m/s, %.2f s", trial.getBaseline().getWalkingSpeed(), trial.getBaseline().getEnduranceScore());
+                case "Speed and distance":
+                    valStr = String.format(Locale.US, "%.2f m/s, %.2f m", trial.getBaseline().getWalkingSpeed(), trial.getBaseline().getEnduranceScore());
                     break;
             }
             trialLabels[i] = "T" + (i + 1) + ": " + valStr;

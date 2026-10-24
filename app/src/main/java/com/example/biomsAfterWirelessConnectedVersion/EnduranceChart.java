@@ -5,13 +5,13 @@ import java.util.Date;
 import java.util.Map;
 
 /**
- * Chart for displaying Endurance data (distance traveled)
+ * Chart for displaying Distance data (distance traveled)
  */
 public class EnduranceChart extends BiomechanicalChart {
     private String condition;
 
     public EnduranceChart(int id, String title, Map<Date, Float> historicalData) {
-        super(id, title, "km", historicalData);
+        super(id, title, "m", historicalData);
     }
 
     public String getCondition() {
@@ -23,7 +23,7 @@ public class EnduranceChart extends BiomechanicalChart {
     }
 
     /**
-     * Get formatted entries for endurance data
+     * Get formatted entries for distance data
      */
     public Entry[] getFormattedEntries(String timeRange) {
         java.util.List<Entry> entries = getDataForTimeRangeSolid(baselineData, timeRange);

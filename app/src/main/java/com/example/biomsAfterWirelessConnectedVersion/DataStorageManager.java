@@ -250,7 +250,7 @@ public class DataStorageManager {
                         assessmentDate = sdf.format(assessment.getSensoryAtaxiaTestDate());
                     }
                     break;
-                case "Speed and endurance":
+                case "Speed and distance":
                     if (assessment.getWSAndEnduranceTestDate() != null) {
                         assessmentDate = sdf.format(assessment.getWSAndEnduranceTestDate());
                     }
@@ -318,7 +318,7 @@ public class DataStorageManager {
                 }
                 break;
 
-            case "Speed and endurance":
+            case "Speed and distance":
                 // Clear ONLY Speed data
                 targetAssessment.getBaseline().setWalkingSpeed(0f);
                 targetAssessment.getBaseline().setEnduranceScore(0f);
@@ -519,11 +519,11 @@ public class DataStorageManager {
                 Toast.makeText(context, "Sensory Ataxia data cleared for " + dateStr, Toast.LENGTH_SHORT).show();
                 break;
 
-            case "Speed and endurance":
+            case "Speed and distance":
                 targetAssessment.getBaseline().setWalkingSpeed(0f);
                 targetAssessment.getBaseline().setEnduranceScore(0f);
                 targetAssessment.setWSAndEnduranceTestDate(null);
-                Toast.makeText(context, "Speed and endurance data cleared for " + dateStr, Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Speed and distance data cleared for " + dateStr, Toast.LENGTH_SHORT).show();
                 break;
 
             default:

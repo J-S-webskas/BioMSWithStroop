@@ -144,7 +144,7 @@ public class HomeFragment extends Fragment {
             float endurance = bestEndurance != null ? bestEndurance : 0f;
 
             latestProgression.setText(String.format(Locale.US,
-                    "Speed: %f m/s\nSway Area: %f mm²\nEndurance: %f s",
+                    "Speed: %f m/s\nSway Area: %f mm²\nDistance: %f m",
                     ws, balance, endurance));
         }
 
@@ -161,7 +161,7 @@ public class HomeFragment extends Fragment {
 //            float arjRightToday = latestReport.getARJRightCV();
             float enduranceToday = latestReport.getEnduranceCV();
             reportPreview.setText(String.format(Locale.US,
-                    "Speed: %f %%\nSway Area: %f %%\nEndurance: %f %%",
+                    "Speed: %f %%\nSway Area: %f %%\nDistance: %f %%",
                     speedToday, balanceToday, enduranceToday));
         }
 
