@@ -2,7 +2,6 @@ package com.example.biomsAfterWirelessConnectedVersion;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,24 +9,17 @@ import android.os.Looper;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentManager;
-
-import java.io.File;
 
 public class CancellingTest extends AppCompatActivity {
 
     private TextView cancellingTest;
     private TextView dataNotSaved;
-    private LinearLayout exportActions;
-    private File pendingExport;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,11 +28,6 @@ public class CancellingTest extends AppCompatActivity {
 
         cancellingTest = findViewById(R.id.cancellingTest);
         dataNotSaved = findViewById(R.id.dataNotSaved);
-        exportActions = findViewById(R.id.exportActions);
-        Button btnExportCsv = findViewById(R.id.btnExportCsv);
-        Button btnContinueTest = findViewById(R.id.btnContinueTest);
-        btnExportCsv.setOnClickListener(v -> shareExport());
-        btnContinueTest.setOnClickListener(v -> navigateToMain(getIntent()));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Window window = getWindow();
@@ -71,11 +58,10 @@ public class CancellingTest extends AppCompatActivity {
         boolean cancelledMidway = intent.getBooleanExtra("cancelledMidway", false);
         if (cancelledMidway) {
             // User cancelled mid-test. The discard path never saves, so
-            // there is nothing to export and no save to undo: show the
-            // message and navigate away after 1.5 seconds.
+            // there is no save to undo: show the message and navigate
+            // away after 1.5 seconds.
             cancellingTest.setText("Test Cancelled.");
             dataNotSaved.setText("Results not saved.");
-            exportActions.setVisibility(View.GONE);
             postDelayedNavigate(intent, saving);
             return;
         }
@@ -84,10 +70,12 @@ public class CancellingTest extends AppCompatActivity {
             handleTestSaved(intent);
             return;
         }
-        // A finished test with a CSV export package waits for the user:
-        // they can tap "Export CSV" (or Continue) instead of being
-        // auto-advanced past the button.
-        boolean exportMode = finished && showExportIfAvailable();
+        if (intent.getBooleanExtra("noPoseDetected", false)) {
+            // The test ran but the user never appeared on camera:
+            // nothing was saved, so present it like a cancellation.
+            handleNoPoseDetected(intent, saving);
+            return;
+        }
         if (saving) {
             dataNotSaved.setText("If this is a mistake, you can always delete the test");
             cancellingTest.setText("Saving Test");
@@ -96,7 +84,7 @@ public class CancellingTest extends AppCompatActivity {
             dataNotSaved.setText("Will ye not navigate out of the rainbow load page mid-way? :)");
             cancellingTest.setText("Simply navigating to main page");
         }
-        if ((finished || simplyNavigatingToMainPage) && !exportMode) {
+        if (finished || simplyNavigatingToMainPage) {
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
             // Set result to indicate cancellation
             Intent resultIntent = new Intent();
@@ -119,8 +107,8 @@ public class CancellingTest extends AppCompatActivity {
 
     /** A trial was just saved (the caller passes testSaved=true, and only
      *  after the save has completed). There is no wait on this screen any
-     *  more — no export-mode stopover waiting for a tap, no 1.5 s
-     *  auto-advance: show the saved message and return to the main page
+     *  more — no stopover waiting for a tap, no 1.5 s auto-advance:
+     *  show the saved message and return to the main page
      *  immediately. The toast carries the same message across the
      *  transition so it stays readable once this screen is gone.
      *  Exporting a saved trial stays available at any time from the
@@ -128,23 +116,20 @@ public class CancellingTest extends AppCompatActivity {
     private void handleTestSaved(Intent intent) {
         cancellingTest.setText("Test saved.");
         dataNotSaved.setText("You can always delete this test if it is inaccurate");
-        exportActions.setVisibility(View.GONE);
         Toast.makeText(this,
                 "Test saved. You can always delete this test if it is inaccurate",
                 Toast.LENGTH_LONG).show();
         navigateToMain(intent);
     }
 
-    /** If the last finished test produced a CSV export package, switch this
-     *  screen to export mode (Export CSV / Continue buttons, no auto-advance)
-     *  and return true. */
-    private boolean showExportIfAvailable() {
-        pendingExport = TrialCsvExporter.getPendingExport(this);
-        if (pendingExport == null) return false;
-        cancellingTest.setText("Test Complete");
-        dataNotSaved.setText("Your results are saved.\nExport the CSV data, or continue.");
-        exportActions.setVisibility(View.VISIBLE);
-        return true;
+    /** The test ran to completion but no pose was ever detected (the
+     *  user let it run without stepping into the camera's view), so
+     *  nothing was saved. Present it exactly like a cancellation: a
+     *  "not saved" message and the same 1.5 s auto-exit. */
+    private void handleNoPoseDetected(Intent intent, boolean saving) {
+        cancellingTest.setText("Test Not Saved.");
+        dataNotSaved.setText("No pose detected. Results not saved.");
+        postDelayedNavigate(intent, saving);
     }
 
     /** Auto-navigate back to MainActivity after 1.5 s — used by the
@@ -161,22 +146,6 @@ public class CancellingTest extends AppCompatActivity {
             startActivity(intent1);
             finish();
         }, 1500);
-    }
-
-    /** Shares the export zip (e.g. via Gmail) through the system share sheet. */
-    private void shareExport() {
-        if (pendingExport == null) {
-            Toast.makeText(this, "No export available", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        Uri uri = FileProvider.getUriForFile(this,
-                getPackageName() + ".fileprovider", pendingExport);
-        Intent share = new Intent(Intent.ACTION_SEND);
-        share.setType("application/zip");
-        share.putExtra(Intent.EXTRA_STREAM, uri);
-        share.putExtra(Intent.EXTRA_SUBJECT, pendingExport.getName());
-        share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        startActivity(Intent.createChooser(share, "Export CSV data"));
     }
 
     /** The same return-to-main navigation the auto-advance handler performs. */
@@ -212,7 +181,6 @@ public class CancellingTest extends AppCompatActivity {
         if (cancelledMidway) {
             cancellingTest.setText("Test Cancelled.");
             dataNotSaved.setText("Results not saved.");
-            exportActions.setVisibility(View.GONE);
             postDelayedNavigate(intent, saving);
             return;
         }
@@ -221,12 +189,17 @@ public class CancellingTest extends AppCompatActivity {
             handleTestSaved(intent);
             return;
         }
-        boolean exportMode = finished && showExportIfAvailable();
+        if (intent.getBooleanExtra("noPoseDetected", false)) {
+            // The test ran but the user never appeared on camera:
+            // nothing was saved, so present it like a cancellation.
+            handleNoPoseDetected(intent, saving);
+            return;
+        }
         if (saving) {
             dataNotSaved.setText("If this is a mistake, you can always delete the test");
             cancellingTest.setText("Saving Test");
         }
-        if (finished && !exportMode) {
+        if (finished) {
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 // Set result to indicate cancellation
                 Intent resultIntent = new Intent();

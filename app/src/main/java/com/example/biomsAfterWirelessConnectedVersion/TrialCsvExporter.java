@@ -40,14 +40,11 @@ import java.util.zip.ZipOutputStream;
 public class TrialCsvExporter {
 
     private static final String TAG = "TrialCsvExporter";
-    public static final String PREFS = "csv_export";
-    public static final String KEY_LAST_ZIP_PATH = "last_zip_path";
 
     private TrialCsvExporter() { /* static helpers only */ }
 
     /**
-     * Writes the export zip into the app's files/exports directory and
-     * remembers it as the pending export for the finish screen.
+     * Writes the export zip into the app's files/exports directory.
      *
      * @param conditionLabel Baseline / DualTask / SensoryAtaxia
      * @param metrics        the trial's computed sway metrics (trajectory + cleaning counters)
@@ -91,8 +88,6 @@ public class TrialCsvExporter {
                 writeEntry(zos, "README.txt", buildReadme(patientId, conditionLabel, dateStr));
             }
 
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                    .edit().putString(KEY_LAST_ZIP_PATH, zip.getAbsolutePath()).apply();
             Log.d(TAG, "Export written: " + zip.getAbsolutePath());
             return zip;
         } catch (Exception e) {
@@ -492,15 +487,6 @@ public class TrialCsvExporter {
             return "\"" + s.replace("\"", "\"\"") + "\"";
         }
         return s;
-    }
-
-    /** The pending export recorded by the most recent test, if it still exists. */
-    public static File getPendingExport(Context context) {
-        String path = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_LAST_ZIP_PATH, null);
-        if (path == null) return null;
-        File f = new File(path);
-        return f.exists() ? f : null;
     }
 
     private static void writeEntry(ZipOutputStream zos, String name, String content) throws IOException {
