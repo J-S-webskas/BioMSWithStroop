@@ -6,10 +6,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -19,16 +22,24 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class ReportFragment extends Fragment {
 
@@ -37,6 +48,10 @@ public class ReportFragment extends Fragment {
     private List<ReportModel> reportList = new ArrayList<>();        // Stores all reports
     private Button createNewReport;          // Button to make new reports
     private TextView noData;
+    private Button btnFilterDay;
+    private Button btnClearFilter;
+    private TextView filterDayLabel;
+    private String filterDateStr = null; // "MMMM dd, yyyy" while a day filter is active, else null
 
     public ReportFragment() {
         // Required empty public constructor
@@ -62,11 +77,30 @@ public class ReportFragment extends Fragment {
             showDeleteReportDialog();
         });
 
+        Button btnExportCsv = view.findViewById(R.id.btn_export_csv);
+        btnExportCsv.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            showExportCsvDialog();
+        });
+
+        Button btnExportMultiple = view.findViewById(R.id.btn_export_multiple);
+        btnExportMultiple.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            showMultiExportDialog();
+        });
+
         noData = view.findViewById(R.id.noData);
 
-        // Load REAL data reports from storage
-        List<ReportModel> reports = loadAllReports();
-
+        btnFilterDay = view.findViewById(R.id.btn_filter_day);
+        btnFilterDay.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            showDayFilterPicker();
+        });
+        btnClearFilter = view.findViewById(R.id.btn_clear_filter);
+        btnClearFilter.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            applyDayFilter(null);
+        });
         // Create sample reports
         Button btnNew = view.findViewById(R.id.createNewReport);
 
@@ -262,6 +296,21 @@ public class ReportFragment extends Fragment {
         ArrayList<Float> saVelocityDTCTrials = new ArrayList<>();
         ArrayList<Float> saPathLengthDTCTrials = new ArrayList<>();
 
+        // Timestamped trial points for report-time DTC computation
+        // (see computeDtcTrials). Chronological, like the trial lists.
+        ArrayList<Long> baseTimes = new ArrayList<>();
+        ArrayList<Float> baseBalPts = new ArrayList<>();
+        ArrayList<Float> baseVelPts = new ArrayList<>();
+        ArrayList<Float> basePathPts = new ArrayList<>();
+        ArrayList<Long> dtTimes = new ArrayList<>();
+        ArrayList<Float> dtBalPts = new ArrayList<>();
+        ArrayList<Float> dtVelPts = new ArrayList<>();
+        ArrayList<Float> dtPathPts = new ArrayList<>();
+        ArrayList<Long> saTimes = new ArrayList<>();
+        ArrayList<Float> saBalPts = new ArrayList<>();
+        ArrayList<Float> saVelPts = new ArrayList<>();
+        ArrayList<Float> saPathPts = new ArrayList<>();
+
         for (AssessmentData assessment : chronologicalAssessments) {
             String currentDate = sdf.format(assessment.getTimestamp());
             long currentTimestamp = assessment.getTimestamp().getTime();
@@ -276,6 +325,10 @@ public class ReportFragment extends Fragment {
                 if (balance > 0) {
                     balanceTrials.add(balance);
                     allBalanceValues.add(balance);
+                    baseTimes.add(currentTimestamp);
+                    baseBalPts.add(balance);
+                    baseVelPts.add(assessment.getBaseline().getSwayMeanVelocity());
+                    basePathPts.add(assessment.getBaseline().getSwayPathLength());
                 }
                 if (assessment.getBaseline().getSwayPathLength() > 0) {
                     swayPathLengthTrials.add(assessment.getBaseline().getSwayPathLength());
@@ -333,6 +386,12 @@ public class ReportFragment extends Fragment {
                 }
                 float dtBalance = dualTask.getBalanceScore();
                 if (assessment.getDualTaskTestDate() != null || dtBalance > 0) {
+                    if (dtBalance > 0 || dualTask.getSwayPathLength() > 0) {
+                        dtTimes.add(currentTimestamp);
+                        dtBalPts.add(dtBalance);
+                        dtVelPts.add(dualTask.getSwayMeanVelocity());
+                        dtPathPts.add(dualTask.getSwayPathLength());
+                    }
                     if (dtBalance > 0) dtBalanceTrials.add(dtBalance);
                     if (dualTask.getSwayPathLength() > 0) {
                         dtSwayPathLengthTrials.add(dualTask.getSwayPathLength());
@@ -360,6 +419,12 @@ public class ReportFragment extends Fragment {
             if (sensory != null) {
                 float saBalance = sensory.getBalanceScore();
                 if (assessment.getSensoryAtaxiaTestDate() != null || saBalance > 0) {
+                    if (saBalance > 0 || sensory.getSwayPathLength() > 0) {
+                        saTimes.add(currentTimestamp);
+                        saBalPts.add(saBalance);
+                        saVelPts.add(sensory.getSwayMeanVelocity());
+                        saPathPts.add(sensory.getSwayPathLength());
+                    }
                     if (saBalance > 0) saBalanceTrials.add(saBalance);
                     if (sensory.getSwayPathLength() > 0) {
                         saSwayPathLengthTrials.add(sensory.getSwayPathLength());
@@ -402,6 +467,43 @@ public class ReportFragment extends Fragment {
             }
         }
 
+        // Report-time DTC: compute each condition trial's percent change
+        // against the most recent baseline trial at or before it, from
+        // the stored trial values themselves. The save-time comparisons
+        // collected above are only a fallback (used when a trial has no
+        // pairable baseline this day, e.g. its baseline was recorded on
+        // another day): builds before PR #25 never stored velocity/path
+        // DTC at all, so reading the stored comparisons alone left
+        // those DTCs at 0 for every older trial.
+        ArrayList<Float> computedDtBalDTC = new ArrayList<>();
+        ArrayList<Float> computedDtVelDTC = new ArrayList<>();
+        ArrayList<Float> computedDtPathDTC = new ArrayList<>();
+        ArrayList<Float> computedSaBalDTC = new ArrayList<>();
+        ArrayList<Float> computedSaVelDTC = new ArrayList<>();
+        ArrayList<Float> computedSaPathDTC = new ArrayList<>();
+        computeDtcTrials(baseTimes, baseBalPts, baseVelPts, basePathPts,
+                dtTimes, dtBalPts, dtVelPts, dtPathPts,
+                computedDtBalDTC, computedDtVelDTC, computedDtPathDTC);
+        computeDtcTrials(baseTimes, baseBalPts, baseVelPts, basePathPts,
+                saTimes, saBalPts, saVelPts, saPathPts,
+                computedSaBalDTC, computedSaVelDTC, computedSaPathDTC);
+        if (!computedDtBalDTC.isEmpty()) dtDTCTrials = computedDtBalDTC;
+        if (!computedDtVelDTC.isEmpty()) dtVelocityDTCTrials = computedDtVelDTC;
+        if (!computedDtPathDTC.isEmpty()) dtPathLengthDTCTrials = computedDtPathDTC;
+        if (!computedSaBalDTC.isEmpty()) saDTCTrials = computedSaBalDTC;
+        if (!computedSaVelDTC.isEmpty()) saVelocityDTCTrials = computedSaVelDTC;
+        if (!computedSaPathDTC.isEmpty()) saPathLengthDTCTrials = computedSaPathDTC;
+        // The headline DTC for each metric is the most recent trial's
+        // value in the final list (computed where available, stored
+        // fallback otherwise). The velocity/path headline values were
+        // previously never assigned here at all, so they always read 0.
+        DTBalanceDTC = dtDTCTrials.isEmpty() ? 0 : dtDTCTrials.get(dtDTCTrials.size() - 1);
+        DTVelocityDTC = dtVelocityDTCTrials.isEmpty() ? 0 : dtVelocityDTCTrials.get(dtVelocityDTCTrials.size() - 1);
+        DTPathDTC = dtPathLengthDTCTrials.isEmpty() ? 0 : dtPathLengthDTCTrials.get(dtPathLengthDTCTrials.size() - 1);
+        SABalanceDTC = saDTCTrials.isEmpty() ? 0 : saDTCTrials.get(saDTCTrials.size() - 1);
+        SAVelocityDTC = saVelocityDTCTrials.isEmpty() ? 0 : saVelocityDTCTrials.get(saVelocityDTCTrials.size() - 1);
+        SAPathDTC = saPathLengthDTCTrials.isEmpty() ? 0 : saPathLengthDTCTrials.get(saPathLengthDTCTrials.size() - 1);
+
         if (!hasDataForDate) {
             Toast.makeText(requireContext(), "No assessment data found for " + targetDateStr, Toast.LENGTH_SHORT).show();
             return;
@@ -432,7 +534,11 @@ public class ReportFragment extends Fragment {
         newReport.setDualTaskBalanceToday(DTbalanceToday);
         // DTC
         newReport.setDualTaskDTCBalance(DTBalanceDTC);
+        newReport.setDualTaskDTCSwayVelocity(DTVelocityDTC);
+        newReport.setDualTaskDTCSwayPathLength(DTPathDTC);
         newReport.setSensoryAtaxiaDTCBalance(SABalanceDTC);
+        newReport.setSensoryAtaxiaDTCSwayVelocity(SAVelocityDTC);
+        newReport.setSensoryAtaxiaDTCSwayPathLength(SAPathDTC);
         // SD & CV
         newReport.setBalanceSD(BalanceSD);
         newReport.setEnduranceSD(EnduranceSD);
@@ -526,19 +632,72 @@ public class ReportFragment extends Fragment {
         reportList.clear();
         reportList.addAll(reports);
 
-        // Update adapter if it exists
-        if (adapter != null) {
-            adapter.updateData(reportList);
-        }
-
-        // HAS DATA - Create report from real data
-        if (!reports.isEmpty()) {
-            noData.setVisibility(View.GONE);
-        } else {
-            noData.setVisibility(View.VISIBLE);
-        }
+        // Re-apply the active day filter (or show everything) so every
+        // reload — new report, deletion, resume, broadcast — respects it.
+        applyDayFilter(filterDateStr);
 
         return reports;
+    }
+
+    /** Opens a date picker (same pattern as the New-report picker) and
+     *  filters the report list to that day. */
+    private void showDayFilterPicker() {
+        Calendar calendar = Calendar.getInstance();
+        DatePickerDialog datePicker = new DatePickerDialog(
+                requireContext(),
+                (view, year, month, dayOfMonth) -> {
+                    Calendar selectedCal = Calendar.getInstance();
+                    selectedCal.set(year, month, dayOfMonth);
+                    String selectedDateStr = new SimpleDateFormat("MMMM dd, yyyy", Locale.US)
+                            .format(selectedCal.getTime());
+                    applyDayFilter(selectedDateStr);
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+
+        datePicker.getDatePicker().setMaxDate(System.currentTimeMillis());
+
+        datePicker.show();
+    }
+
+    /** Shows only the reports for {@code dateStr} ("MMMM dd, yyyy"), or all
+     *  reports when {@code dateStr} is null. The stored order is preserved,
+     *  so all of a day's reports appear together in their usual order. */
+    private void applyDayFilter(String dateStr) {
+        filterDateStr = dateStr;
+        List<ReportModel> shown = new ArrayList<>();
+        if (dateStr == null) {
+            shown.addAll(reportList);
+        } else {
+            for (ReportModel report : reportList) {
+                if (dateStr.equals(report.getDate())) {
+                    shown.add(report);
+                }
+            }
+        }
+        if (adapter != null) {
+            adapter.updateData(shown);
+        }
+        if (filterDayLabel != null) {
+            filterDayLabel.setText(dateStr == null
+                    ? "Showing all reports"
+                    : "Showing reports for " + dateStr);
+        }
+        if (btnClearFilter != null) {
+            btnClearFilter.setVisibility(dateStr == null ? View.GONE : View.VISIBLE);
+        }
+        if (noData != null) {
+            if (shown.isEmpty()) {
+                noData.setText(dateStr == null
+                        ? "Finish a recording to create data!"
+                        : "No reports for " + dateStr);
+                noData.setVisibility(View.VISIBLE);
+            } else {
+                noData.setVisibility(View.GONE);
+            }
+        }
     }
 
     public float standardDeviation(ArrayList<Float> set) {
@@ -653,6 +812,48 @@ public class ReportFragment extends Fragment {
             return dateStr;
         }
     }
+
+    /**
+     * Report-time dual task cost. For each condition trial (chronological),
+     * finds the most recent baseline trial recorded at or before it and
+     * appends the percent change ((trial - baseline) / baseline) x 100 for
+     * each metric both sides recorded (> 0). Trials with no pairable
+     * baseline contribute nothing; callers fall back to the save-time
+     * comparisons in that case. Computing DTC here, from the stored trial
+     * values, keeps reports correct for trials whose save-time
+     * comparisons were never stored (builds before PR #25 stored no
+     * velocity/path DTC) and makes the result independent of the order
+     * in which assessment files happen to be read.
+     */
+    private static void computeDtcTrials(
+            ArrayList<Long> baseTimes, ArrayList<Float> baseBal,
+            ArrayList<Float> baseVel, ArrayList<Float> basePath,
+            ArrayList<Long> condTimes, ArrayList<Float> condBal,
+            ArrayList<Float> condVel, ArrayList<Float> condPath,
+            ArrayList<Float> outBal, ArrayList<Float> outVel,
+            ArrayList<Float> outPath) {
+        for (int i = 0; i < condTimes.size(); i++) {
+            int b = -1;
+            for (int j = 0; j < baseTimes.size(); j++) {
+                if (baseTimes.get(j) <= condTimes.get(i)) {
+                    b = j;
+                } else {
+                    break;
+                }
+            }
+            if (b < 0) continue;
+            if (condBal.get(i) > 0 && baseBal.get(b) > 0) {
+                outBal.add(((condBal.get(i) - baseBal.get(b)) / baseBal.get(b)) * 100f);
+            }
+            if (condVel.get(i) > 0 && baseVel.get(b) > 0) {
+                outVel.add(((condVel.get(i) - baseVel.get(b)) / baseVel.get(b)) * 100f);
+            }
+            if (condPath.get(i) > 0 && basePath.get(b) > 0) {
+                outPath.add(((condPath.get(i) - basePath.get(b)) / basePath.get(b)) * 100f);
+            }
+        }
+    }
+
     private float getMean(ArrayList<Float> set) {
         if (set == null || set.isEmpty()) return 1f; // Avoid division by zero
         float sum = 0;
@@ -661,6 +862,427 @@ public class ReportFragment extends Fragment {
         }
         return sum / set.size();
     }
+
+    // ------------------------------------------------------------------
+    // Standalone CSV export: pick a day, then a test that was actually
+    // completed that day; the ZIP is generated on the fly from the
+    // stored assessment data and handed to the share sheet.
+    // ------------------------------------------------------------------
+
+    private void showExportCsvDialog() {
+        List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
+        Map<String, List<AssessmentData>> byDate = new TreeMap<>(Collections.reverseOrder());
+        SimpleDateFormat keyFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        for (AssessmentData a : all) {
+            if (a.getTimestamp() == null) continue;
+            String key = keyFmt.format(a.getTimestamp());
+            byDate.computeIfAbsent(key, k -> new ArrayList<>()).add(a);
+        }
+        if (byDate.isEmpty()) {
+            Toast.makeText(requireContext(), "No recorded tests to export yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<String> keys = new ArrayList<>(byDate.keySet());
+        String todayKey = keyFmt.format(new Date());
+        SimpleDateFormat dispFmt = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
+        String[] labels = new String[keys.size()];
+        for (int i = 0; i < keys.size(); i++) {
+            String label = keys.get(i);
+            try {
+                label = dispFmt.format(keyFmt.parse(keys.get(i)));
+            } catch (Exception ignored) {
+            }
+            labels[i] = (keys.get(i).equals(todayKey) ? "Today \u2014 " : "") + label;
+        }
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Export CSV \u2014 choose a day")
+                .setItems(labels, (d, which) ->
+                        showExportConditionDialog(keys.get(which), byDate.get(keys.get(which))))
+                .show();
+    }
+
+    private void showExportConditionDialog(String dateKey, List<AssessmentData> day) {
+        int nBaseline = 0, nDual = 0, nSensory = 0;
+        for (AssessmentData a : day) {
+            if (hasBaselineTrial(a)) nBaseline++;
+            if (hasDualTaskTrial(a)) nDual++;
+            if (hasSensoryTrial(a)) nSensory++;
+        }
+        List<String> labels = new ArrayList<>();
+        List<String> conditions = new ArrayList<>();
+        if (nBaseline > 0) {
+            labels.add("Baseline (" + nBaseline + (nBaseline == 1 ? " trial" : " trials") + ")");
+            conditions.add("Baseline");
+        }
+        if (nDual > 0) {
+            labels.add("Dual Task (" + nDual + (nDual == 1 ? " trial" : " trials") + ")");
+            conditions.add("DualTask");
+        }
+        if (nSensory > 0) {
+            labels.add("Sensory Ataxia (" + nSensory + (nSensory == 1 ? " trial" : " trials") + ")");
+            conditions.add("SensoryAtaxia");
+        }
+        if (conditions.isEmpty()) {
+            Toast.makeText(requireContext(), "No completed tests on this day.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Export CSV \u2014 choose a test")
+                .setItems(labels.toArray(new String[0]), (d, which) ->
+                        exportStoredCondition(dateKey, conditions.get(which), day))
+                .show();
+    }
+
+    private boolean hasBaselineTrial(AssessmentData a) {
+        return a.getSwayAreaAndBalanceTestDate() != null || a.getBaseline().getBalanceScore() > 0;
+    }
+
+    private boolean hasDualTaskTrial(AssessmentData a) {
+        return a.getDualTask() != null && (a.getDualTaskTestDate() != null
+                || a.getDualTask().getBalanceScore() > 0
+                || a.getDualTask().getStroopTotalTrials() > 0);
+    }
+
+    private boolean hasSensoryTrial(AssessmentData a) {
+        return a.getSensoryAtaxia() != null && (a.getSensoryAtaxiaTestDate() != null
+                || a.getSensoryAtaxia().getBalanceScore() > 0);
+    }
+
+    private void exportStoredCondition(String dateKey, String condition, List<AssessmentData> day) {
+        List<AssessmentData> chronological = new ArrayList<>(day);
+        Collections.sort(chronological, (a1, a2) -> a1.getTimestamp().compareTo(a2.getTimestamp()));
+        List<TrialCsvExporter.StoredTrialData> trials = new ArrayList<>();
+        for (AssessmentData a : chronological) {
+            TrialCsvExporter.StoredTrialData t = buildStoredTrialFor(a, condition);
+            if (t != null) trials.add(t);
+        }
+        if (trials.isEmpty()) {
+            Toast.makeText(requireContext(), "Nothing to export for that test.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        File zip = TrialCsvExporter.exportStoredTrials(requireContext(), dateKey, condition, trials);
+        if (zip == null) {
+            Toast.makeText(requireContext(), "Export failed.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        shareZip(zip);
+    }
+
+    /** Hands a finished export ZIP to the system share sheet. */
+    private void shareZip(File zip) {
+        Uri uri = FileProvider.getUriForFile(requireContext(),
+                requireContext().getPackageName() + ".fileprovider", zip);
+        Intent share = new Intent(Intent.ACTION_SEND);
+        share.setType("application/zip");
+        share.putExtra(Intent.EXTRA_STREAM, uri);
+        share.putExtra(Intent.EXTRA_SUBJECT, zip.getName());
+        share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(Intent.createChooser(share, "Export CSV data"));
+    }
+
+    /** Builds the stored-trial record for one assessment's one condition,
+     *  or null when that assessment holds no such trial. Shared by the
+     *  single-condition export and the multi-export below. */
+    private TrialCsvExporter.StoredTrialData buildStoredTrialFor(AssessmentData a, String condition) {
+        TrialCsvExporter.StoredTrialData t = null;
+        if ("Baseline".equals(condition) && hasBaselineTrial(a)) {
+            t = toStoredTrial(a.getBaseline().getComTrajX(), a.getBaseline().getComTrajZ(),
+                    a.getBaseline().getComFrameRate(), a.getBaseline().getBalanceScore(),
+                    a.getBaseline().getSwayPathLength(), a.getBaseline().getSwayMeanVelocity(),
+                    a.getBaseline().getSwayRmsAP(), a.getBaseline().getSwayRmsML(),
+                    a.getBaseline().getCameraDistanceM(), a.getBaseline().isSwayMetricsValid());
+            TrialCsvExporter.fillDiagnostics(t, a.getBaseline());
+            t.sessionId = a.getSessionId();
+        } else if ("DualTask".equals(condition) && hasDualTaskTrial(a)) {
+            t = toStoredTrial(a.getDualTask().getComTrajX(), a.getDualTask().getComTrajZ(),
+                    a.getDualTask().getComFrameRate(), a.getDualTask().getBalanceScore(),
+                    a.getDualTask().getSwayPathLength(), a.getDualTask().getSwayMeanVelocity(),
+                    a.getDualTask().getSwayRmsAP(), a.getDualTask().getSwayRmsML(),
+                    a.getDualTask().getCameraDistanceM(), a.getDualTask().isSwayMetricsValid());
+            TrialCsvExporter.fillDiagnostics(t, a.getDualTask());
+            t.sessionId = a.getSessionId();
+        } else if ("SensoryAtaxia".equals(condition) && hasSensoryTrial(a)) {
+            t = toStoredTrial(a.getSensoryAtaxia().getComTrajX(), a.getSensoryAtaxia().getComTrajZ(),
+                    a.getSensoryAtaxia().getComFrameRate(), a.getSensoryAtaxia().getBalanceScore(),
+                    a.getSensoryAtaxia().getSwayPathLength(), a.getSensoryAtaxia().getSwayMeanVelocity(),
+                    a.getSensoryAtaxia().getSwayRmsAP(), a.getSensoryAtaxia().getSwayRmsML(),
+                    a.getSensoryAtaxia().getCameraDistanceM(), a.getSensoryAtaxia().isSwayMetricsValid());
+            TrialCsvExporter.fillDiagnostics(t, a.getSensoryAtaxia());
+            t.sessionId = a.getSessionId();
+        }
+        return t;
+    }
+
+    // ------------------------------------------------------------------
+    // Multi-day, multi-trial export: a separate button from the single
+    // Export CSV. Days and individual trials are picked with checkboxes;
+    // everything selected goes into one ZIP, grouped by day and test.
+    // ------------------------------------------------------------------
+
+    /** One checkbox row in the multi-export dialog. */
+    private static class MultiExportRow {
+        CheckBox box;
+        String dateKey;                 // yyyy-MM-dd
+        String condition;               // Baseline / DualTask / SensoryAtaxia, null for a day row
+        AssessmentData assessment;      // null for a day row
+        ReportModel report;             // null except for a report row under a day row
+        int trialNumber;                // 1-based within its day + condition
+        List<MultiExportRow> children = new ArrayList<>(); // trial/report rows under a day row
+    }
+
+    private void showMultiExportDialog() {
+        List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
+        Map<String, List<AssessmentData>> byDate = new TreeMap<>(Collections.reverseOrder());
+        SimpleDateFormat keyFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        for (AssessmentData a : all) {
+            if (a.getTimestamp() == null) continue;
+            String key = keyFmt.format(a.getTimestamp());
+            byDate.computeIfAbsent(key, k -> new ArrayList<>()).add(a);
+        }
+        SimpleDateFormat dispFmt = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
+        String todayKey = keyFmt.format(new Date());
+        float density = requireContext().getResources().getDisplayMetrics().density;
+        LinearLayout container = new LinearLayout(requireContext());
+        container.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * density);
+        container.setPadding(pad, pad, pad, pad);
+        // Guard against listener cascades: a programmatic setChecked must
+        // not re-enter the day/trial sync below.
+        final boolean[] syncing = {false};
+
+        CheckBox exportAllBox = new CheckBox(requireContext());
+        exportAllBox.setText("Export all CSV");
+        exportAllBox.setTextSize(17);
+        exportAllBox.setTypeface(Typeface.DEFAULT_BOLD);
+        container.addView(exportAllBox);
+
+        List<MultiExportRow> dayRows = new ArrayList<>();
+        boolean firstDayAdded = false;
+        for (Map.Entry<String, List<AssessmentData>> entry : byDate.entrySet()) {
+            String dateKey = entry.getKey();
+            List<AssessmentData> chronological = new ArrayList<>(entry.getValue());
+            Collections.sort(chronological, (a1, a2) -> a1.getTimestamp().compareTo(a2.getTimestamp()));
+            String label = dateKey;
+            try {
+                label = dispFmt.format(keyFmt.parse(dateKey));
+            } catch (Exception ignored) {
+            }
+            if (dateKey.equals(todayKey)) label = "Today \u2014 " + label;
+
+            MultiExportRow dayRow = new MultiExportRow();
+            dayRow.dateKey = dateKey;
+            CheckBox dayBox = new CheckBox(requireContext());
+            dayBox.setText(label);
+            dayBox.setTextSize(17);
+            dayBox.setTypeface(Typeface.DEFAULT_BOLD);
+            dayRow.box = dayBox;
+
+            int nBaseline = 0, nDual = 0, nSensory = 0;
+            for (AssessmentData a : chronological) {
+                if (hasBaselineTrial(a)) {
+                    dayRow.children.add(makeTrialRow(dateKey,
+                            "Baseline", "Baseline", ++nBaseline, a, density));
+                }
+                if (hasDualTaskTrial(a)) {
+                    dayRow.children.add(makeTrialRow(dateKey,
+                            "DualTask", "Dual Task", ++nDual, a, density));
+                }
+                if (hasSensoryTrial(a)) {
+                    dayRow.children.add(makeTrialRow(dateKey,
+                            "SensoryAtaxia", "Sensory Ataxia", ++nSensory, a, density));
+                }
+            }
+            if (dayRow.children.isEmpty()) {
+                continue;
+            }
+            if (firstDayAdded) {
+                View spacer = new View(requireContext());
+                spacer.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, (int) (12 * density)));
+                container.addView(spacer);
+            }
+            container.addView(dayBox);
+            firstDayAdded = true;
+            for (MultiExportRow child : dayRow.children) {
+                child.box.setOnCheckedChangeListener((b, checked) -> {
+                    if (syncing[0]) return;
+                    syncing[0] = true;
+                    boolean allChecked = true;
+                    for (MultiExportRow c : dayRow.children) allChecked &= c.box.isChecked();
+                    dayRow.box.setChecked(allChecked);
+                    syncing[0] = false;
+                    syncExportAllBox(exportAllBox, dayRows, syncing);
+                });
+            }
+            dayBox.setOnCheckedChangeListener((b, checked) -> {
+                if (syncing[0]) return;
+                syncing[0] = true;
+                for (MultiExportRow child : dayRow.children) child.box.setChecked(checked);
+                syncing[0] = false;
+                syncExportAllBox(exportAllBox, dayRows, syncing);
+            });
+            dayRows.add(dayRow);
+        }
+        exportAllBox.setOnCheckedChangeListener((b, checked) -> {
+            if (syncing[0]) return;
+            syncing[0] = true;
+            for (MultiExportRow dayRow : dayRows) {
+                dayRow.box.setChecked(checked);
+                for (MultiExportRow child : dayRow.children) child.box.setChecked(checked);
+            }
+            syncing[0] = false;
+        });
+        if (dayRows.isEmpty()) {
+            Toast.makeText(requireContext(), "No recorded tests to export yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        ScrollView scroll = new ScrollView(requireContext());
+        scroll.addView(container);
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle("Export multiple \u2014 choose days and trials")
+                .setView(scroll)
+                .setPositiveButton("Export CSV", null)
+                .setNegativeButton("Cancel", null)
+                .show();
+        // Override the positive button so an empty selection toasts and
+        // keeps the dialog open instead of dismissing it.
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            List<TrialCsvExporter.MultiExportEntry> entries = collectMultiExportEntries(dayRows);
+            if (entries.isEmpty()) {
+                Toast.makeText(requireContext(), "Select at least one trial.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            dialog.dismiss();
+            exportMultiSelection(entries);
+        });
+    }
+
+    private MultiExportRow makeTrialRow(LinearLayout container,
+                                        String dateKey, String condition, String displayName, int trialNumber,
+                                        AssessmentData assessment, float density) {
+        MultiExportRow row = new MultiExportRow();
+        row.dateKey = dateKey;
+        row.condition = condition;
+        row.assessment = assessment;
+        row.trialNumber = trialNumber;
+        CheckBox box = new CheckBox(requireContext());
+        box.setText(displayName + " T" + trialNumber);
+        box.setTextSize(16);
+        box.setPadding((int) (32 * density), 0, 0, 0);
+        row.box = box;
+        container.addView(box);
+        return row;
+    }
+
+
+    private List<TrialCsvExporter.MultiExportEntry> collectMultiExportEntries(
+            List<MultiExportRow> dayRows) {
+        List<TrialCsvExporter.MultiExportEntry> entries = new ArrayList<>();
+        for (MultiExportRow dayRow : dayRows) {
+            Map<String, Integer> totals = new HashMap<>();
+            for (MultiExportRow child : dayRow.children) {
+                totals.put(child.condition, totals.getOrDefault(child.condition, 0) + 1);
+            }
+            for (MultiExportRow child : dayRow.children) {
+                if (!child.box.isChecked()) continue;
+                TrialCsvExporter.StoredTrialData t = buildStoredTrialFor(child.assessment, child.condition);
+                if (t == null) continue;
+                TrialCsvExporter.MultiExportEntry e = new TrialCsvExporter.MultiExportEntry();
+                e.dateStr = child.dateKey;
+                e.conditionLabel = child.condition;
+                e.trialIndex = child.trialNumber;
+                e.trialCount = totals.get(child.condition);
+                e.trial = t;
+                entries.add(e);
+            }
+        }
+        return entries;
+    }
+
+    private void exportMultiSelection(List<TrialCsvExporter.MultiExportEntry> entries) {
+        File zip = TrialCsvExporter.exportSelectedTrials(requireContext(), entries);
+        if (zip == null) {
+            Toast.makeText(requireContext(), "Export failed.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        shareZip(zip);
+    }
+
+    /** Keeps the master "Export all CSV" checkbox in step with the day
+     *  boxes. Called with the sync guard released; it re-takes the guard
+     *  while setting the master box so the master listener cannot fire
+     *  and clobber the selection it is reflecting. */
+    private void syncExportAllBox(CheckBox exportAllBox, List<MultiExportRow> dayRows,
+                                  boolean[] syncing) {
+        boolean all = !dayRows.isEmpty();
+        for (MultiExportRow dayRow : dayRows) all &= dayRow.box.isChecked();
+        syncing[0] = true;
+        exportAllBox.setChecked(all);
+        syncing[0] = false;
+    }
+
+    /** Days to include in a report export: a day counts when its day box
+     *  is checked, or when any of its trials is checked. */
+    private List<TrialCsvExporter.ReportDayExport> collectReportDays(List<MultiExportRow> dayRows) {
+        List<ReportModel> allReports = DataStorageManager.loadAllReports(requireContext());
+        SimpleDateFormat keyFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        SimpleDateFormat dispFmt = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
+        List<TrialCsvExporter.ReportDayExport> days = new ArrayList<>();
+        for (MultiExportRow dayRow : dayRows) {
+            boolean anyChecked = dayRow.box.isChecked();
+            if (!anyChecked) {
+                for (MultiExportRow child : dayRow.children) {
+                    if (child.box.isChecked()) {
+                        anyChecked = true;
+                        break;
+                    }
+                }
+            }
+            if (!anyChecked) continue;
+            String displayDate = dayRow.dateKey;
+            try {
+                displayDate = dispFmt.format(keyFmt.parse(dayRow.dateKey));
+            } catch (Exception ignored) {
+            }
+            List<ReportModel> dayReports = new ArrayList<>();
+            for (ReportModel r : allReports) {
+                if (displayDate.equals(r.getDate())) dayReports.add(r);
+            }
+            if (dayReports.isEmpty()) continue;
+            TrialCsvExporter.ReportDayExport d = new TrialCsvExporter.ReportDayExport();
+            d.dateKey = dayRow.dateKey;
+            d.reports = dayReports;
+            days.add(d);
+        }
+        return days;
+    }
+
+    private void exportReportSelection(List<TrialCsvExporter.ReportDayExport> days) {
+        File zip = TrialCsvExporter.exportSelectedReports(requireContext(), days);
+        if (zip == null) {
+            Toast.makeText(requireContext(), "Export failed.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        shareZip(zip);
+    }
+
+    private TrialCsvExporter.StoredTrialData toStoredTrial(List<Float> trajX, List<Float> trajZ,
+                                                           float frameRate, float area, float path, float vel, float rmsAP, float rmsML,
+                                                           float cameraDistanceM, boolean valid) {
+        TrialCsvExporter.StoredTrialData t = new TrialCsvExporter.StoredTrialData();
+        if (trajX != null) t.trajX = trajX;
+        if (trajZ != null) t.trajZ = trajZ;
+        t.frameRate = frameRate;
+        t.swayAreaMm2 = area;
+        t.pathLengthMm = path;
+        t.meanVelocityMmS = vel;
+        t.rmsAPMm = rmsAP;
+        t.rmsMLMm = rmsML;
+        t.cameraDistanceM = cameraDistanceM;
+        t.valid = valid;
+        return t;
+    }
+
     private final BroadcastReceiver reportUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {

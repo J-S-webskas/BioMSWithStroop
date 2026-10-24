@@ -245,7 +245,31 @@ class BaselineAssessment implements Serializable {
     private List<Float> comTrajZ;
     private float comFrameRate;     // mean true sampling rate of the raw trial (fps)
     private boolean swayMetricsValid; // false = too few samples; sway zeros then mean "no measurement"
+    private float cameraDistanceM; // camera distance (m) entered for this trial; 0 = none entered
     private boolean swayRangeFlag; // plausibility gate: COM range exceeded the base-of-support bounds
+
+    // Trial diagnostics, persisted so an export generated later from
+    // stored data can reproduce the at-save SystemLog in full. These
+    // used to exist only in the export created when the test was
+    // saved: they were read from live objects (the just-computed
+    // metrics and the pose helper's end-of-test snapshot) and were
+    // never written to storage, so on-demand exports could not show
+    // them. Joint angles remain at-save-only by design (per-frame
+    // streams for 10 joints are an export artifact, not report data).
+    private boolean diagnosticsRecorded; // false for trials saved before diagnostics were stored
+    private int droppedFrames;
+    private int interpolatedFrames;
+    private int despikedFrames;
+    private double fovUsedDegrees;
+    private double anchorZ;              // frozen camera-distance anchor (m)
+    private String anchorSource;
+    private int calibFramesUsed;
+    private boolean calibLowConfidence;
+    private boolean anchorDisagreement;
+    private int anchorClampedFrames;
+    private float phoneRotationDeg;      // max phone rotation during the trial (gyro audit)
+    private float apRangeMm;
+    private float mlRangeMm;
 
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
@@ -285,8 +309,40 @@ class BaselineAssessment implements Serializable {
     public boolean isSwayMetricsValid() { return swayMetricsValid; }
     public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
 
+    public float getCameraDistanceM() { return cameraDistanceM; }
+    public void setCameraDistanceM(float v) { this.cameraDistanceM = v; }
+
     public boolean isSwayRangeFlag() { return swayRangeFlag; }
     public void setSwayRangeFlag(boolean v) { this.swayRangeFlag = v; }
+
+    public boolean isDiagnosticsRecorded() { return diagnosticsRecorded; }
+    public void setDiagnosticsRecorded(boolean v) { this.diagnosticsRecorded = v; }
+    public int getDroppedFrames() { return droppedFrames; }
+    public void setDroppedFrames(int v) { this.droppedFrames = v; }
+    public int getInterpolatedFrames() { return interpolatedFrames; }
+    public void setInterpolatedFrames(int v) { this.interpolatedFrames = v; }
+    public int getDespikedFrames() { return despikedFrames; }
+    public void setDespikedFrames(int v) { this.despikedFrames = v; }
+    public double getFovUsedDegrees() { return fovUsedDegrees; }
+    public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
+    public double getAnchorZ() { return anchorZ; }
+    public void setAnchorZ(double v) { this.anchorZ = v; }
+    public String getAnchorSource() { return anchorSource; }
+    public void setAnchorSource(String v) { this.anchorSource = v; }
+    public int getCalibFramesUsed() { return calibFramesUsed; }
+    public void setCalibFramesUsed(int v) { this.calibFramesUsed = v; }
+    public boolean isCalibLowConfidence() { return calibLowConfidence; }
+    public void setCalibLowConfidence(boolean v) { this.calibLowConfidence = v; }
+    public boolean isAnchorDisagreement() { return anchorDisagreement; }
+    public void setAnchorDisagreement(boolean v) { this.anchorDisagreement = v; }
+    public int getAnchorClampedFrames() { return anchorClampedFrames; }
+    public void setAnchorClampedFrames(int v) { this.anchorClampedFrames = v; }
+    public float getPhoneRotationDeg() { return phoneRotationDeg; }
+    public void setPhoneRotationDeg(float v) { this.phoneRotationDeg = v; }
+    public float getApRangeMm() { return apRangeMm; }
+    public void setApRangeMm(float v) { this.apRangeMm = v; }
+    public float getMlRangeMm() { return mlRangeMm; }
+    public void setMlRangeMm(float v) { this.mlRangeMm = v; }
 
     /** Reset all sway fields (used when this test's data is deleted). */
     public void clearSwayMetrics() {
@@ -299,7 +355,22 @@ class BaselineAssessment implements Serializable {
         comTrajZ = null;
         comFrameRate = 0f;
         swayMetricsValid = false;
+        cameraDistanceM = 0f;
         swayRangeFlag = false;
+        diagnosticsRecorded = false;
+        droppedFrames = 0;
+        interpolatedFrames = 0;
+        despikedFrames = 0;
+        fovUsedDegrees = 0;
+        anchorZ = 0;
+        anchorSource = null;
+        calibFramesUsed = 0;
+        calibLowConfidence = false;
+        anchorDisagreement = false;
+        anchorClampedFrames = 0;
+        phoneRotationDeg = 0f;
+        apRangeMm = 0f;
+        mlRangeMm = 0f;
     }
 }
 
@@ -320,7 +391,31 @@ class DualTaskAssessment implements Serializable {
     private List<Float> comTrajZ;
     private float comFrameRate;     // mean true sampling rate of the raw trial (fps)
     private boolean swayMetricsValid; // false = too few samples; sway zeros then mean "no measurement"
+    private float cameraDistanceM; // camera distance (m) entered for this trial; 0 = none entered
     private boolean swayRangeFlag; // plausibility gate: COM range exceeded the base-of-support bounds
+
+    // Trial diagnostics, persisted so an export generated later from
+    // stored data can reproduce the at-save SystemLog in full. These
+    // used to exist only in the export created when the test was
+    // saved: they were read from live objects (the just-computed
+    // metrics and the pose helper's end-of-test snapshot) and were
+    // never written to storage, so on-demand exports could not show
+    // them. Joint angles remain at-save-only by design (per-frame
+    // streams for 10 joints are an export artifact, not report data).
+    private boolean diagnosticsRecorded; // false for trials saved before diagnostics were stored
+    private int droppedFrames;
+    private int interpolatedFrames;
+    private int despikedFrames;
+    private double fovUsedDegrees;
+    private double anchorZ;              // frozen camera-distance anchor (m)
+    private String anchorSource;
+    private int calibFramesUsed;
+    private boolean calibLowConfidence;
+    private boolean anchorDisagreement;
+    private int anchorClampedFrames;
+    private float phoneRotationDeg;      // max phone rotation during the trial (gyro audit)
+    private float apRangeMm;
+    private float mlRangeMm;
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
 
@@ -359,8 +454,39 @@ class DualTaskAssessment implements Serializable {
     public boolean isSwayMetricsValid() { return swayMetricsValid; }
     public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
 
+    public float getCameraDistanceM() { return cameraDistanceM; }
+    public void setCameraDistanceM(float v) { this.cameraDistanceM = v; }
+
     public boolean isSwayRangeFlag() { return swayRangeFlag; }
     public void setSwayRangeFlag(boolean v) { this.swayRangeFlag = v; }
+    public boolean isDiagnosticsRecorded() { return diagnosticsRecorded; }
+    public void setDiagnosticsRecorded(boolean v) { this.diagnosticsRecorded = v; }
+    public int getDroppedFrames() { return droppedFrames; }
+    public void setDroppedFrames(int v) { this.droppedFrames = v; }
+    public int getInterpolatedFrames() { return interpolatedFrames; }
+    public void setInterpolatedFrames(int v) { this.interpolatedFrames = v; }
+    public int getDespikedFrames() { return despikedFrames; }
+    public void setDespikedFrames(int v) { this.despikedFrames = v; }
+    public double getFovUsedDegrees() { return fovUsedDegrees; }
+    public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
+    public double getAnchorZ() { return anchorZ; }
+    public void setAnchorZ(double v) { this.anchorZ = v; }
+    public String getAnchorSource() { return anchorSource; }
+    public void setAnchorSource(String v) { this.anchorSource = v; }
+    public int getCalibFramesUsed() { return calibFramesUsed; }
+    public void setCalibFramesUsed(int v) { this.calibFramesUsed = v; }
+    public boolean isCalibLowConfidence() { return calibLowConfidence; }
+    public void setCalibLowConfidence(boolean v) { this.calibLowConfidence = v; }
+    public boolean isAnchorDisagreement() { return anchorDisagreement; }
+    public void setAnchorDisagreement(boolean v) { this.anchorDisagreement = v; }
+    public int getAnchorClampedFrames() { return anchorClampedFrames; }
+    public void setAnchorClampedFrames(int v) { this.anchorClampedFrames = v; }
+    public float getPhoneRotationDeg() { return phoneRotationDeg; }
+    public void setPhoneRotationDeg(float v) { this.phoneRotationDeg = v; }
+    public float getApRangeMm() { return apRangeMm; }
+    public void setApRangeMm(float v) { this.apRangeMm = v; }
+    public float getMlRangeMm() { return mlRangeMm; }
+    public void setMlRangeMm(float v) { this.mlRangeMm = v; }
 
     // Stroop voice test recorded during this dual-task trial. Until now the
     // result of CameraFragment.stopVoiceStroop() was discarded; it is now
@@ -393,7 +519,22 @@ class DualTaskAssessment implements Serializable {
         comTrajZ = null;
         comFrameRate = 0f;
         swayMetricsValid = false;
+        cameraDistanceM = 0f;
         swayRangeFlag = false;
+        diagnosticsRecorded = false;
+        droppedFrames = 0;
+        interpolatedFrames = 0;
+        despikedFrames = 0;
+        fovUsedDegrees = 0;
+        anchorZ = 0;
+        anchorSource = null;
+        calibFramesUsed = 0;
+        calibLowConfidence = false;
+        anchorDisagreement = false;
+        anchorClampedFrames = 0;
+        phoneRotationDeg = 0f;
+        apRangeMm = 0f;
+        mlRangeMm = 0f;
         stroopTotalTrials = 0;
         stroopCorrectCount = 0;
         stroopAccuracyPercent = 0f;
@@ -420,8 +561,30 @@ class SensoryAtaxiaAssessment implements Serializable {
     private List<Float> comTrajZ;
     private float comFrameRate;     // mean true sampling rate of the raw trial (fps)
     private boolean swayMetricsValid; // false = too few samples; sway zeros then mean "no measurement"
+    private float cameraDistanceM; // camera distance (m) entered for this trial; 0 = none entered
     private boolean swayRangeFlag; // plausibility gate: COM range exceeded the base-of-support bounds
-
+    // Trial diagnostics, persisted so an export generated later from
+    // stored data can reproduce the at-save SystemLog in full. These
+    // used to exist only in the export created when the test was
+    // saved: they were read from live objects (the just-computed
+    // metrics and the pose helper's end-of-test snapshot) and were
+    // never written to storage, so on-demand exports could not show
+    // them. Joint angles remain at-save-only by design (per-frame
+    // streams for 10 joints are an export artifact, not report data).
+    private boolean diagnosticsRecorded; // false for trials saved before diagnostics were stored
+    private int droppedFrames;
+    private int interpolatedFrames;
+    private int despikedFrames;
+    private double fovUsedDegrees;
+    private double anchorZ;              // frozen camera-distance anchor (m)
+    private String anchorSource;
+    private int calibFramesUsed;
+    private boolean calibLowConfidence;
+    private boolean anchorDisagreement;
+    private int anchorClampedFrames;
+    private float phoneRotationDeg;      // max phone rotation during the trial (gyro audit)
+    private float apRangeMm;
+    private float mlRangeMm;
     private Map<String, Float> ARJ = new HashMap<>();
     private Map<String, Float> asymmetry = new HashMap<>();
 
@@ -460,8 +623,39 @@ class SensoryAtaxiaAssessment implements Serializable {
     public void setComFrameRate(float v) { this.comFrameRate = v; }
     public boolean isSwayMetricsValid() { return swayMetricsValid; }
     public void setSwayMetricsValid(boolean v) { this.swayMetricsValid = v; }
+    public float getCameraDistanceM() { return cameraDistanceM; }
+    public void setCameraDistanceM(float v) { this.cameraDistanceM = v; }
     public boolean isSwayRangeFlag() { return swayRangeFlag; }
     public void setSwayRangeFlag(boolean v) { this.swayRangeFlag = v; }
+    public boolean isDiagnosticsRecorded() { return diagnosticsRecorded; }
+    public void setDiagnosticsRecorded(boolean v) { this.diagnosticsRecorded = v; }
+    public int getDroppedFrames() { return droppedFrames; }
+    public void setDroppedFrames(int v) { this.droppedFrames = v; }
+    public int getInterpolatedFrames() { return interpolatedFrames; }
+    public void setInterpolatedFrames(int v) { this.interpolatedFrames = v; }
+    public int getDespikedFrames() { return despikedFrames; }
+    public void setDespikedFrames(int v) { this.despikedFrames = v; }
+    public double getFovUsedDegrees() { return fovUsedDegrees; }
+    public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
+    public double getAnchorZ() { return anchorZ; }
+    public void setAnchorZ(double v) { this.anchorZ = v; }
+    public String getAnchorSource() { return anchorSource; }
+    public void setAnchorSource(String v) { this.anchorSource = v; }
+    public int getCalibFramesUsed() { return calibFramesUsed; }
+    public void setCalibFramesUsed(int v) { this.calibFramesUsed = v; }
+    public boolean isCalibLowConfidence() { return calibLowConfidence; }
+    public void setCalibLowConfidence(boolean v) { this.calibLowConfidence = v; }
+    public boolean isAnchorDisagreement() { return anchorDisagreement; }
+    public void setAnchorDisagreement(boolean v) { this.anchorDisagreement = v; }
+    public int getAnchorClampedFrames() { return anchorClampedFrames; }
+    public void setAnchorClampedFrames(int v) { this.anchorClampedFrames = v; }
+    public float getPhoneRotationDeg() { return phoneRotationDeg; }
+    public void setPhoneRotationDeg(float v) { this.phoneRotationDeg = v; }
+    public float getApRangeMm() { return apRangeMm; }
+    public void setApRangeMm(float v) { this.apRangeMm = v; }
+    public float getMlRangeMm() { return mlRangeMm; }
+    public void setMlRangeMm(float v) { this.mlRangeMm = v; }
+
 
     /** Reset all sway fields (used when this test's data is deleted). */
     public void clearSwayMetrics() {
@@ -474,7 +668,22 @@ class SensoryAtaxiaAssessment implements Serializable {
         comTrajZ = null;
         comFrameRate = 0f;
         swayMetricsValid = false;
+        cameraDistanceM = 0f;
         swayRangeFlag = false;
+        diagnosticsRecorded = false;
+        droppedFrames = 0;
+        interpolatedFrames = 0;
+        despikedFrames = 0;
+        fovUsedDegrees = 0;
+        anchorZ = 0;
+        anchorSource = null;
+        calibFramesUsed = 0;
+        calibLowConfidence = false;
+        anchorDisagreement = false;
+        anchorClampedFrames = 0;
+        phoneRotationDeg = 0f;
+        apRangeMm = 0f;
+        mlRangeMm = 0f;
     }
 }
 

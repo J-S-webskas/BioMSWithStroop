@@ -234,24 +234,29 @@ public class ReportDetailActivity extends AppCompatActivity {
         if (trials == null || trials.isEmpty()) {
             return "N/A";
         }
+        // One trial per line. The horizontal flow used before let short
+        // values (e.g. RMS ML) sit two-to-a-line while long ones wrapped,
+        // and Android treats "/" as a line-break opportunity, so a
+        // wrapped "mm/s" could leave the "s" alone on the next line.
+        // Inside a line, non-breaking spaces and a word joiner after
+        // any "/" keep "Tn: value unit" together as one unbreakable
+        // chunk; the same protection covers the Avg line.
+        String displayUnit = unit.replace("/", "/\u2060");
         StringBuilder sb = new StringBuilder();
         double sum = 0;
         for (int i = 0; i < trials.size(); i++) {
-            // Trials flow horizontally and wrap as whole units (non-breaking
-            // spaces inside a trial) so the cell expands right before it
-            // ever grows taller.
             if (i > 0) {
-                sb.append("   ");
+                sb.append("\n");
             }
             sb.append("T").append(i + 1).append(":\u00A0")
                     .append(String.format(Locale.US, "%.2f", trials.get(i)))
-                    .append("\u00A0").append(unit);
+                    .append("\u00A0").append(displayUnit);
             sum += trials.get(i);
         }
         if (trials.size() >= 2) {
-            sb.append("\n").append("Avg: ")
+            sb.append("\n").append("Avg:\u00A0")
                     .append(String.format(Locale.US, "%.2f", sum / trials.size()))
-                    .append(" ").append(unit);
+                    .append("\u00A0").append(displayUnit);
         }
         return sb.toString();
     }
@@ -363,11 +368,13 @@ public class ReportDetailActivity extends AppCompatActivity {
         // Dual Task, showcased separately from the sway table)
         TextView stroopSummary = findViewById(R.id.stroopSummary);
         Button btnViewStroopResults = findViewById(R.id.btnViewStroopResults);
+        Button btnExportStroopResults = findViewById(R.id.btnExportStroopResults);
         if (reportModel != null && btnViewStroopResults != null) {
             java.util.List<ReportModel.StroopTrialData> stroopTrials =
                     reportModel.getDualTaskStroopTrials();
             if (stroopTrials == null || stroopTrials.isEmpty()) {
                 btnViewStroopResults.setEnabled(false);
+                if (btnExportStroopResults != null) btnExportStroopResults.setEnabled(false);
             } else {
                 ReportModel.StroopTrialData latest = stroopTrials.get(stroopTrials.size() - 1);
                 if (stroopSummary != null) {
@@ -383,6 +390,28 @@ public class ReportDetailActivity extends AppCompatActivity {
                     intent.putExtra("date", reportModel.getDate());
                     startActivity(intent);
                 });
+                if (btnExportStroopResults != null) {
+                    btnExportStroopResults.setOnClickListener(v -> {
+                        String dateStr = reportModel.getTimeStamp() != null
+                                ? new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(reportModel.getTimeStamp())
+                                : "unknown-date";
+                        File zip = TrialCsvExporter.exportStroopResults(
+                                ReportDetailActivity.this, dateStr, stroopTrials);
+                        if (zip == null) {
+                            Toast.makeText(ReportDetailActivity.this,
+                                    "Could not create the Stroop export", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        Uri uri = FileProvider.getUriForFile(ReportDetailActivity.this,
+                                getPackageName() + ".fileprovider", zip);
+                        Intent share = new Intent(Intent.ACTION_SEND);
+                        share.setType("application/zip");
+                        share.putExtra(Intent.EXTRA_STREAM, uri);
+                        share.putExtra(Intent.EXTRA_SUBJECT, zip.getName());
+                        share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        startActivity(Intent.createChooser(share, "Export Stroop results"));
+                    });
+                }
             }
         }
         sensoryAtaxiaBalanceTrialsTextView = findViewById(R.id.SensoryAtaxiaBalanceTrials);

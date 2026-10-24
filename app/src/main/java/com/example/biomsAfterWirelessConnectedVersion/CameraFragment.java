@@ -77,6 +77,11 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private static final String TAG = "Pose Landmarker";
     private static final int REQUEST_CODE_CANCEL_TEST = 200;
     private FragmentCameraBinding _fragmentCameraBinding;
+    // Start-button funnel only: what the get-ready countdown's end
+    // action runs right after its start sequence (create the hidden
+    // RecordFragment and start its test timer). Set at click time,
+    // consumed and cleared by the end action, dropped on cancel.
+    private Runnable pendingStartAction;
     private RecordFragment recordFragment;
     private FragmentCameraBinding getFragmentCameraBinding() {
         return _fragmentCameraBinding;
@@ -92,6 +97,16 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private boolean isCountdownActive = false;
     private TextView countdownTextView;
     private View countdownOverlay;
+    // Countdown lifecycle token. Every showCountdown()/cancelCountdown()
+    // bumps it; ticks and animation end-actions capture the generation
+    // they belong to and no-op once it has moved on. Without this, the
+    // PREVIEW countdown's final animation end-action -- which the
+    // handler-based cancel cannot retract -- fires after the Start Test
+    // handler has already built the TEST countdown, and removes/nulls
+    // the shared fields, etc the new countdown's views: the test
+    // countdown visibly disappears (the race behind the old "must wait
+    // before hitting Start Test" workaround).
+    private int countdownGeneration = 0;
     private String assessmentType = "";
     private Handler countdownHandler = new Handler(Looper.getMainLooper());
     private boolean isPreviewMode = true;
@@ -99,6 +114,11 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     Button btnCancel;
 
     private StroopVoiceManager stroopVoiceManager;
+    // Set when a dual task wants the Stroop test but the microphone
+    // permission is still outstanding; onRequestPermissionsResult
+    // starts the test the moment the permission lands.
+    private boolean pendingStroopStart = false;
+    private boolean dualTaskStroopActive = false;
 
     // Phone-motion (gyro) audit: max rotation of the device itself since
     // the current test started -- read by the export's SystemLog so a
@@ -126,6 +146,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     public void onDualTaskStarted() {
+        dualTaskStroopActive = true;
         if (stroopVoiceContainer != null) {
             stroopVoiceContainer.setVisibility(View.VISIBLE);
         }
@@ -136,14 +157,33 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         // where it actually matters.
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
+            pendingStroopStart = true;
             ActivityCompat.requestPermissions(requireActivity(),
                     new String[]{Manifest.permission.RECORD_AUDIO}, 2001);
             if (tvVoiceStatus != null) {
-                tvVoiceStatus.setText("Microphone permission needed — grant it, then restart the test");
+                tvVoiceStatus.setText("Microphone permission needed — grant it and the voice test will start");
             }
             return;
         }
 
+        startStroopVoiceTest();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 2001 && pendingStroopStart && dualTaskStroopActive
+                && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // The permission arrived mid-test: start the voice test now
+            // instead of losing this trial's Stroop result entirely.
+            pendingStroopStart = false;
+            startStroopVoiceTest();
+        }
+    }
+
+    private void startStroopVoiceTest() {
         stroopVoiceManager = new StroopVoiceManager(requireContext(), new StroopVoiceManager.StroopVoiceListener() {
             @Override
             public void onNewTrial(String wordText, int colorInt) {
@@ -178,6 +218,8 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     public StroopVoiceManager.VoiceStroopResult stopVoiceStroop() {
+        dualTaskStroopActive = false;
+        pendingStroopStart = false;
         if (stroopVoiceContainer != null) {
             stroopVoiceContainer.setVisibility(View.GONE);
         }
@@ -228,52 +270,73 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
 
-        // Start countdown from 3
-        startCountdownSequence(3);
+        // Start countdown from 3. Capture the views and this countdown's
+        // generation: everything this countdown has pending (handler
+        // ticks, the final animation's end action) acts on the captured
+        // views and only while its generation is still current.
+        final View overlayView = countdownOverlay;
+        final TextView textView = countdownTextView;
+        final int generation = ++countdownGeneration;
+        startCountdownSequence(3, generation, overlayView, textView);
     }
 
-    private void startCountdownSequence(int count) {
+    private void startCountdownSequence(int count, int generation,
+                                        View overlayView, TextView textView) {
+        if (generation != countdownGeneration) {
+            // A newer countdown (or a cancel) owns the screen now.
+            return;
+        }
         if (!isAdded() || _fragmentCameraBinding == null) {
             Log.e(TAG, "Fragment not ready, stopping countdown");
             isCountdownActive = false;
             return;
         }
-        if (countdownTextView == null) {
+        if (textView == null) {
             Log.e(TAG, "Countdown TextView is null");
             isCountdownActive = false;
             return;
         }
         if (count > 0) {
-            countdownTextView.setText(String.valueOf(count));
+            textView.setText(String.valueOf(count));
             // Animation
-            countdownTextView.setScaleX(1.5f);
-            countdownTextView.setScaleY(1.5f);
-            countdownTextView.animate()
+            textView.setScaleX(1.5f);
+            textView.setScaleY(1.5f);
+            textView.animate()
                     .scaleX(1f)
                     .scaleY(1f)
                     .setDuration(500)
                     .start();
 
             // Schedule next count
-            countdownHandler.postDelayed(() -> startCountdownSequence(count - 1), 1000);
+            countdownHandler.postDelayed(
+                    () -> startCountdownSequence(count - 1, generation, overlayView, textView),
+                    1000);
         } else {
-            countdownTextView.animate()
+            textView.animate()
                     .scaleX(1.5f)
                     .scaleY(1.5f)
                     .setDuration(500)
                     .withEndAction(() -> {
-                        // Remove countdown UI
-                        if (_fragmentCameraBinding != null && countdownOverlay != null && countdownTextView != null) {
+                        if (generation != countdownGeneration) {
+                            // Superseded while the final animation was
+                            // running (e.g. Start Test was tapped): the
+                            // views below belong to a newer countdown.
+                            return;
+                        }
+                        // Remove THIS countdown's UI (captured views --
+                        // never the shared fields, which may already
+                        // point at a successor's views).
+                        if (_fragmentCameraBinding != null) {
                             try {
                                 ViewGroup container = (ViewGroup) getFragmentCameraBinding().getRoot();
-                                container.removeView(countdownOverlay);
-                                container.removeView(countdownTextView);
+                                container.removeView(overlayView);
+                                container.removeView(textView);
                             } catch (Exception e) {
                                 Log.e(TAG, "Error removing countdown views: " + e.getMessage());
                             }
                         }
-                        countdownOverlay = null;
-                        countdownTextView = null;
+                        if (countdownOverlay == overlayView) countdownOverlay = null;
+                        if (countdownTextView == textView) countdownTextView = null;
 
                         // Start the actual test
                         isCountdownActive = false;
@@ -289,6 +352,16 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         lockFocusForTest();
                         if ("DualTask".equals(assessmentType)) {
                             onDualTaskStarted();
+                        }
+                        // Start-button funnel: create the RecordFragment
+                        // and start its test timer now, at the true
+                        // start (see pendingStartAction). Null on the
+                        // auto-countdown funnel, where the host
+                        // RecordFragment already runs the test.
+                        if (pendingStartAction != null) {
+                            Runnable startAction = pendingStartAction;
+                            pendingStartAction = null;
+                            startAction.run();
                         }
                     })
                     .start();
@@ -555,30 +628,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 btnCancel.setAlpha(1.0f);
             }, 3000);
 
-            // todo: Must wait for 1 second before hitting btn Start test, or else the preview countdown is frozen on screen..unfixable yikes
             btnCancel.setOnClickListener(v -> {
-                if (poseLandmarkerHelper != null) {
-                    poseLandmarkerHelper.freezeAnchorForTest();
-                }
-                startPhoneMotionTracking();
-                RecordFragment.setTestStarted(true);
-                // This is in test view
-
-                RecordFragment recordFragment = new RecordFragment();
-                FragmentManager fm = getParentFragmentManager();
-                FragmentTransaction transaction = fm.beginTransaction();
-
-                // Add the new fragment but hide it immediately
-                transaction.add(R.id.fragment_container, recordFragment);
-                transaction.hide(recordFragment);  // Hidden but running
-                transaction.addToBackStack(null);
-                transaction.commit();
-                recordFragment.setViewModel(viewModel);
-                recordFragment.setContext(requireContext());
-                recordFragment.setActivity(requireActivity());
-                recordFragment.startTest(assessmentType, requireContext());
-                Log.d("CameraFragment", "Background recording started!");
-
                 // Switch to TEST MODE
                 isPreviewMode = false;
 
@@ -594,6 +644,27 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
                 // Start a fresh countdown
                 showCountdown();
+            // What the countdown's end action runs immediately
+            // after its start sequence: create the hidden
+            // RecordFragment and start its test timer, so the
+            // trial window is exactly the test duration measured
+            // from the true start.
+            FragmentManager fm = getParentFragmentManager();
+            pendingStartAction = () -> {
+                recordFragment = new RecordFragment();
+                FragmentTransaction transaction = fm.beginTransaction();
+
+                // Add the new fragment but hide it immediately
+                transaction.add(R.id.fragment_container, recordFragment);
+                transaction.hide(recordFragment);  // Hidden but running
+                transaction.addToBackStack(null);
+                transaction.commit();
+                recordFragment.setViewModel(viewModel);
+                recordFragment.setContext(requireContext());
+                recordFragment.setActivity(requireActivity());
+                recordFragment.startTest(assessmentType, requireContext());
+                Log.d("CameraFragment", "Background recording started!");
+            };
                 btnCancel.setEnabled(false);
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     btnCancel.setEnabled(true);
@@ -601,6 +672,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 }, 3000);
 
                 btnCancel.setOnClickListener(v2 -> {
+                    pendingStartAction = null;
                     RecordFragment.setTestStarted(false);
                      Fragment fragment = fm.findFragmentById(R.id.fragment_container);
                      if (fragment instanceof CameraFragment) {
@@ -649,6 +721,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     private void cancelTest() {
+        pendingStartAction = null;
         FragmentManager fm = getParentFragmentManager();
         FragmentTransaction transaction = fm.beginTransaction();
         RecordFragment.setTestStarted(false);
@@ -677,7 +750,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     private void cancelCountdown() {
+        // Invalidate the current countdown FIRST: its final animation's
+        // end action is not a handler callback and cannot be retracted
+        // below, so the generation bump is what guarantees it no-ops.
+        countdownGeneration++;
         countdownHandler.removeCallbacksAndMessages(null);
+        if (countdownTextView != null) {
+            countdownTextView.animate().cancel();
+        }
 
         // Remove the countdown UI if it exists
         if (countdownOverlay != null && countdownTextView != null) {

@@ -48,7 +48,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/trendTitle"
-            android:text="Table of Variation: unstressed"
+            android:text="Baseline Table of Variation for Today"
             android:textSize="20sp"
             android:fontFamily="@font/profile_pro_bold"
             android:paddingStart="20dp"
@@ -232,7 +232,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/trendTitle4"
-            android:text="Table of measurement: all trials"
+            android:text="Baseline Table of Measurement"
             android:textSize="20sp"
             android:fontFamily="@font/profile_pro_bold"
             android:paddingStart="20dp"
@@ -591,7 +591,8 @@
             android:paddingEnd="20dp"
             android:paddingTop="20dp"
             android:textStyle="bold"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="12dp"
+            android:visibility="gone"/>
 
         <TextView
             android:layout_width="wrap_content"
@@ -601,7 +602,8 @@
             android:textSize="16sp"
             android:fontFamily="@font/profile_pro"
             android:paddingStart="20dp"
-            android:paddingEnd="20dp"/>
+            android:paddingEnd="20dp"
+            android:visibility="gone"/>
 
         <Button
             android:id="@+id/btnViewStroopResults"
@@ -612,7 +614,20 @@
             android:fontFamily="@font/profile_pro_medi"
             android:text="View Stroop Results"
             android:textSize="18sp"
-            android:backgroundTint="#FB3737"/>
+            android:backgroundTint="#FB3737"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btnExportStroopResults"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="10dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:text="Export Stroop Results (ZIP)"
+            android:textSize="18sp"
+            android:backgroundTint="#FB3737"
+            android:visibility="gone"/>
 
         <TextView
             android:layout_width="wrap_content"

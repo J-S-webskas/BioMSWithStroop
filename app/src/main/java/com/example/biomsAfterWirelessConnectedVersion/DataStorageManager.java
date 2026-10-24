@@ -325,6 +325,19 @@ public class DataStorageManager {
                 targetAssessment.setWSAndEnduranceTestDate(null);
                 break;
         }
+
+        // The cleared condition's joint-angle sidecar goes with its
+        // data (walking-speed data has no sidecar).
+        String sidecarCondition = null;
+        switch (assessmentType) {
+            case "ARJ and balance": sidecarCondition = "Baseline"; break;
+            case "Dual Task": sidecarCondition = "DualTask"; break;
+            case "Sensory Ataxia": sidecarCondition = "SensoryAtaxia"; break;
+        }
+        if (sidecarCondition != null) {
+            TrialCsvExporter.deleteJointAnglesSidecar(context,
+                    targetAssessment.getSessionId(), sidecarCondition);
+        }
         return true;
     }
 

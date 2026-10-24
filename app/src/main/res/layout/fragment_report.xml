@@ -32,18 +32,80 @@
             android:textSize="18sp"
             android:backgroundTint="#FB3737"/>
 
+        <Button
+            android:id="@+id/btn_export_multiple"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="96dp"
+            android:backgroundTint="#FB3737"
+            android:fontFamily="@font/profile_pro_medi"
+            android:text="Export CSV"
+            android:textSize="18sp"
+            app:layout_constraintStart_toStartOf="@id/createNewReport"
+            app:layout_constraintTop_toTopOf="@id/createNewReport"
+            app:layout_constraintBottom_toBottomOf="@id/createNewReport" />
+
+        <Button
+            android:id="@+id/btn_export_reports"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:backgroundTint="#FB3737"
+            android:fontFamily="@font/profile_pro_medi"
+            android:text="Export Reports"
+            android:textSize="18sp"
+            app:layout_constraintStart_toEndOf="@id/btn_export_multiple"
+            app:layout_constraintTop_toTopOf="@id/btn_export_multiple" />
+
+        <LinearLayout
+            android:id="@+id/filterRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:layout_marginTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/endIsMostAccurate">
+
+            <Button
+                android:id="@+id/btn_clear_filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:fontFamily="@font/profile_pro_medi"
+                android:text="Show all"
+                android:textSize="16sp"
+                android:backgroundTint="#757575"/>
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_export_csv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/createNewReport"
+            app:layout_constraintBottom_toBottomOf="@id/createNewReport"
+            android:layout_marginStart="10dp"
+            android:fontFamily="@font/profile_pro_medi"
+            android:text="Export CSV"
+            android:textSize="18sp"
+            android:backgroundTint="#FB3737"
+            android:visibility="gone"/>
+
         <TextView
             android:id="@+id/noData"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
             android:text="Finish a recording to create data!"
             android:textSize="16sp"
             android:paddingStart="20dp"
             android:fontFamily="@font/profile_pro"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/endIsMostAccurate" />
+            app:layout_constraintTop_toBottomOf="@id/filterRow" />
 
         <TextView
             android:id="@+id/endIsMostAccurate"
@@ -55,10 +117,10 @@
             android:textAlignment="center"
             android:paddingEnd="20dp"
             android:paddingTop="10dp"
-            android:text="The topmost report at the end of each day will always reflects your actual tracked symptoms"
+            android:text="The topmost report at 11:59pm each day will always reflects your actual tracked symptoms"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/createNewReport"/>
+            app:layout_constraintTop_toBottomOf="@id/btn_export_multiple"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
@@ -73,15 +135,28 @@
             android:id="@+id/btn_delete_report"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:backgroundTint="#D32F2F"
-            app:layout_constraintBottom_toBottomOf="@id/createNewReport"
-            android:text="Delete"
-            android:fontFamily="@font/profile_pro_medi"
-            android:textSize="18sp"
             android:layout_marginEnd="10dp"
+            android:backgroundTint="#D32F2F"
+            android:fontFamily="@font/profile_pro_medi"
+            android:text="Delete"
             android:textColor="@android:color/white"
+            android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="@id/createNewReport"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <Button
+            android:id="@+id/btn_filter_day"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="36dp"
+            android:backgroundTint="#FB3737"
+            android:fontFamily="@font/profile_pro_medi"
+            android:text="Filter by day"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toTopOf="@+id/btn_delete_report"
             app:layout_constraintEnd_toEndOf="parent"
-            tools:layout_editor_absoluteY="618dp" />
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

@@ -34,6 +34,9 @@ public class SwayMetrics implements Serializable {
     public List<Float> trajX = new ArrayList<>();  // filtered COM trajectory
     public List<Float> trajZ = new ArrayList<>();
 
+    public float cameraDistanceM = 0f;  // camera distance (m) the user recorded
+    // this trial with; 0 = none entered
+
     public float apRangeMm = 0f;        // max-min of the filtered AP (z) series
     public float mlRangeMm = 0f;        // max-min of the filtered ML (x) series
     public boolean rangeFlag = false;   // plausibility gate: range beyond the stance's base of support
@@ -45,5 +48,8 @@ public class SwayMetrics implements Serializable {
     public int calibFramesUsed = 0;
     public boolean calibLowConfidence = false;
     public boolean anchorDisagreement = false;
+    public int anchorClampedFrames = 0; // frames the +/-10% anchor clamp corrected
     public float phoneRotationDeg = 0f; // max device rotation during the trial (gyro audit)
+    public int droppedFrames = 0;       // frames where MediaPipe lost the patient (filled at export/save time)
+    public double fovUsedDegrees = 0;   // horizontal FOV actually used for the scale conversion (filled at export/save
 }

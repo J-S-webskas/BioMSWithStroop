@@ -238,6 +238,8 @@ public class RecordFragment extends Fragment {
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("finished", true);
         intent.putExtra("Saving", false);
+        intent.putExtra("noPoseDetected", true);
+        intent.putExtra("cancelledMidway", true);
         startActivity(intent);
         setNavigationVisible(true);
     }
@@ -594,6 +596,31 @@ public class RecordFragment extends Fragment {
         return 0f;
     }
 
+    /** Mean velocity of the most recent stored Baseline trial (the same
+     *  trial getLatestBaselineBalance reads), for DTC comparisons. The
+     *  per-trial saves used to read this from the fresh assessment's own
+     *  empty Baseline slot, so velocity/path DTCs were never stored. */
+    private float getLatestBaselineVelocity() {
+        List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
+        for (AssessmentData a : all) {
+            if (a.getBaseline() != null && a.getBaseline().getBalanceScore() > 0) {
+                return a.getBaseline().getSwayMeanVelocity();
+            }
+        }
+        return 0f;
+    }
+
+    /** Path length of the most recent stored Baseline trial. */
+    private float getLatestBaselinePathLength() {
+        List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
+        for (AssessmentData a : all) {
+            if (a.getBaseline() != null && a.getBaseline().getBalanceScore() > 0) {
+                return a.getBaseline().getSwayPathLength();
+            }
+        }
+        return 0f;
+    }
+
     /**
      * Builds the CSV export package for the trial being saved (see
      * TrialCsvExporter). Must run while the trial's in-memory series still
@@ -613,6 +640,24 @@ public class RecordFragment extends Fragment {
             // Defaults stay in effect.
         }
     }
+
+    /** The CameraFragment that ran the test, wherever it currently sits
+     *  in the fragment manager -- by save time it is not necessarily the
+     *  fragment in the container (this RecordFragment may be). */
+    private CameraFragment findCameraFragment() {
+        try {
+            if (getActivity() == null) return null;
+            for (Fragment f : getActivity().getSupportFragmentManager().getFragments()) {
+                if (f instanceof CameraFragment) {
+                    return (CameraFragment) f;
+                }
+            }
+        } catch (Exception ignored) {
+            // Fall through: audit fields keep their defaults.
+        }
+        return null;
+    }
+
     private void generateCsvExport(String conditionLabel, SwayMetrics metrics) {
         try {
             Map<String, List<Float>> jointSeries = new HashMap<>();
@@ -622,27 +667,67 @@ public class RecordFragment extends Fragment {
             for (Map.Entry<String, ArrayDeque<Float>> e : BalanceHistories.entrySet()) {
                 jointSeries.putIfAbsent(e.getKey(), new ArrayList<>(e.getValue()));
             }
+            // The camera distance the user recorded this trial with
+            // (entered + confirmed before the test); exported in the
+            // SystemLog and stored on the assessment.
+            try {
+                SharedPreferences setupPrefs = requireContext().getSharedPreferences(
+                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE);
+                metrics.cameraDistanceM = setupPrefs.getFloat(
+                        PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M, 0f);
+            } catch (Exception ignored) {
+                // Distance stays 0 = none entered.
+            }
             double fov = PoseLandmarkerHelper.DEFAULT_FOV_H_DEGREES;
-            Fragment frag = getActivity() != null
-                    ? getActivity().getSupportFragmentManager().findFragmentById(R.id.fragment_container)
-                    : null;
-            if (frag instanceof CameraFragment) {
-                fov = ((CameraFragment) frag).getCurrentFovDegrees();
-                CameraFragment cam = (CameraFragment) frag;
-                fov = cam.getCurrentFovDegrees();
-                if (metrics != null) {
-                    // Anchor + phone-motion audit for the SystemLog.
-                    PoseLandmarkerHelper.AnchorDiagnostics diag = cam.getAnchorDiagnostics();
+            if (metrics != null) {
+                // Anchor + phone-motion audit for the SystemLog. The
+                // snapshot the pose helper took when THIS test ended is
+                // the trustworthy source: by save time the camera
+                // fragment may already be reset for the next test,
+                // replaced in the container, or destroyed -- reading it
+                // then produced the default tuple (0 / "none" / 0) and
+                // the fallback FOV in past exports.
+                PoseLandmarkerHelper.AnchorDiagnostics diag =
+                        PoseLandmarkerHelper.getLastTrialDiagnostics();
+                CameraFragment cam = findCameraFragment();
+                if (diag == null && cam != null) {
+                    diag = cam.getAnchorDiagnostics();
+                }
+                if (diag != null) {
                     metrics.anchorZ = diag.anchorZ;
                     metrics.anchorSource = diag.source;
                     metrics.calibFramesUsed = diag.calibFramesUsed;
                     metrics.calibLowConfidence = diag.lowConfidence;
-                    metrics.anchorDisagreement = diag.disagreement;
+                    metrics.anchorClampedFrames = diag.clampedFrames;
+                    if (diag.fovDegrees > 0) {
+                        fov = diag.fovDegrees;
+                    }
+                }
+                if (cam != null) {
+                    if (diag == null || diag.fovDegrees <= 0) {
+                        fov = cam.getCurrentFovDegrees();
+                    }
                     metrics.phoneRotationDeg = cam.getMaxPhoneRotationDeg();
                 }
             }
+            // Record the dropped-frame count and the FOV actually used
+            // on the metrics object itself, so the save methods can
+            // persist them with the assessment (an export generated
+            // later from stored data then shows the same SystemLog as
+            // this at-save export).
+            metrics.droppedFrames = PoseLandmarkerHelper.getDroppedFrameCount();
+            metrics.fovUsedDegrees = fov;
             TrialCsvExporter.exportTrial(requireContext(), conditionLabel, metrics,
-                    jointSeries, PoseLandmarkerHelper.getDroppedFrameCount(), fov);
+                    jointSeries, metrics.droppedFrames, metrics.fovUsedDegrees);
+            // Also store the joint angles as this trial's sidecar file,
+            // so an export generated later from stored data can include
+            // them (they are not part of the assessment itself -- see
+            // TrialCsvExporter's sidecar note).
+            if (currentAssessment != null) {
+                TrialCsvExporter.saveJointAnglesSidecar(requireContext(),
+                        currentAssessment.getSessionId(), conditionLabel,
+                        jointSeries, metrics);
+            }
         } catch (Exception e) {
             Log.e("RecordFragment", "CSV export failed", e);
         }
@@ -664,12 +749,12 @@ public class RecordFragment extends Fragment {
             currentAssessment.getComparisons().setSensoryAtaxiaBalanceChange(balanceChange);
         }
 
-        float baselineVel = currentAssessment.getBaseline().getSwayMeanVelocity();
+        float baselineVel = getLatestBaselineVelocity();
         if (baselineVel > 0) {
             float vChange = ((metrics.meanVelocityMmS - baselineVel) / baselineVel) * 100f;
             currentAssessment.getComparisons().setSensoryAtaxiaVelocityChange(vChange);
         }
-        float baselinePath = currentAssessment.getBaseline().getSwayPathLength();
+        float baselinePath = getLatestBaselinePathLength();
         if (baselinePath > 0) {
             float pChange = ((metrics.pathLengthMm - baselinePath) / baselinePath) * 100f;
             currentAssessment.getComparisons().setSensoryAtaxiaPathLengthChange(pChange);
@@ -690,6 +775,26 @@ public class RecordFragment extends Fragment {
         currentAssessment.setSensoryAtaxiaTestDate(new Date());
 
         generateCsvExport("SensoryAtaxia", metrics);
+        currentAssessment.getSensoryAtaxia().setCameraDistanceM(metrics.cameraDistanceM);
+        // Persist the trial diagnostics with the assessment, so an
+        // export generated later from stored data reproduces the full
+        // at-save SystemLog. generateCsvExport has just enriched
+        // `metrics` with the end-of-test anchor snapshot, the
+        // dropped-frame count and the FOV actually used.
+        currentAssessment.getSensoryAtaxia().setDiagnosticsRecorded(true);
+        currentAssessment.getSensoryAtaxia().setDroppedFrames(metrics.droppedFrames);
+        currentAssessment.getSensoryAtaxia().setInterpolatedFrames(metrics.interpolatedFrames);
+        currentAssessment.getSensoryAtaxia().setDespikedFrames(metrics.despikedFrames);
+        currentAssessment.getSensoryAtaxia().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getSensoryAtaxia().setAnchorZ(metrics.anchorZ);
+        currentAssessment.getSensoryAtaxia().setAnchorSource(metrics.anchorSource);
+        currentAssessment.getSensoryAtaxia().setCalibFramesUsed(metrics.calibFramesUsed);
+        currentAssessment.getSensoryAtaxia().setCalibLowConfidence(metrics.calibLowConfidence);
+        currentAssessment.getSensoryAtaxia().setAnchorDisagreement(metrics.anchorDisagreement);
+        currentAssessment.getSensoryAtaxia().setAnchorClampedFrames(metrics.anchorClampedFrames);
+        currentAssessment.getSensoryAtaxia().setPhoneRotationDeg(metrics.phoneRotationDeg);
+        currentAssessment.getSensoryAtaxia().setApRangeMm(metrics.apRangeMm);
+        currentAssessment.getSensoryAtaxia().setMlRangeMm(metrics.mlRangeMm);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();
@@ -697,16 +802,19 @@ public class RecordFragment extends Fragment {
 
         Intent intent = new Intent(getActivity(), CancellingTest.class);
         intent.putExtra("finished", true);
+        intent.putExtra("testSaved", true);
         startActivity(intent);
-
-        Toast.makeText(requireContext(),
-                "Sensory Ataxia test trial saved.",
-                Toast.LENGTH_LONG).show();
     }
 
     private void saveDualTaskResults() throws IOException {
-        AssessmentData todayAssessment = DataStorageManager.getOrCreateTodayAssessment(requireContext(), username);
-        currentAssessment = todayAssessment;
+        // One assessment file per trial, exactly like the Baseline and
+        // Sensory Ataxia saves. This method used to load the shared
+        // "today" assessment and write into its single DualTask slot,
+        // so every dual-task recording of the day overwrote the same
+        // slot of the same file -- reports, which collect one trial per
+        // file, could only ever show a single dual-task trial per day.
+        AssessmentData trialAssessment = new AssessmentData(username);
+        currentAssessment = trialAssessment;
 
         BalanceCalculator bc = new BalanceCalculator();
         applyPlausibilityGateConfig();
@@ -719,12 +827,12 @@ public class RecordFragment extends Fragment {
             float balanceChange = ((swayArea - baselineBalance) / baselineBalance) * 100f;
             currentAssessment.getComparisons().setDualTaskBalanceChange(balanceChange);
         }
-        float baselineVel = currentAssessment.getBaseline().getSwayMeanVelocity();
+        float baselineVel = getLatestBaselineVelocity();
         if (baselineVel > 0) {
             float vChange = ((metrics.meanVelocityMmS - baselineVel) / baselineVel) * 100f;
             currentAssessment.getComparisons().setDualTaskVelocityChange(vChange);
         }
-        float baselinePath = currentAssessment.getBaseline().getSwayPathLength();
+        float baselinePath = getLatestBaselinePathLength();
         if (baselinePath > 0) {
             float pChange = ((metrics.pathLengthMm - baselinePath) / baselinePath) * 100f;
             currentAssessment.getComparisons().setDualTaskPathLengthChange(pChange);
@@ -747,25 +855,39 @@ public class RecordFragment extends Fragment {
         // running at this point (it is stopped right after this save), so
         // stop the voice test here and store what it recorded.
         try {
-            Fragment stroopFragment = getActivity() != null
-                    ? getActivity().getSupportFragmentManager().findFragmentById(R.id.fragment_container)
-                    : null;
-            if (stroopFragment instanceof CameraFragment) {
-                StroopVoiceManager.VoiceStroopResult stroop =
-                        ((CameraFragment) stroopFragment).stopVoiceStroop();
-                if (stroop != null && stroop.totalTrials > 0) {
-                    DualTaskAssessment dt = currentAssessment.getDualTask();
-                    dt.setStroopTotalTrials(stroop.totalTrials);
-                    dt.setStroopCorrectCount(stroop.correctCount);
-                    dt.setStroopAccuracyPercent(stroop.accuracyPercent);
-                    dt.setStroopAvgReactionMs(stroop.avgReactionTimeMs);
-                    List<StroopAnswerRecord> records = new ArrayList<>();
-                    for (StroopVoiceManager.StroopAnswer a : stroop.answers) {
-                        records.add(new StroopAnswerRecord(a.wordText, a.inkColorName,
-                                a.spokenText, a.correct, a.reactionTimeMs));
+            // Collect the Stroop result from whichever camera fragment
+            // actually ran the test: at save time the container usually
+            // holds THIS RecordFragment (the old findFragmentById lookup
+            // therefore missed the camera entirely and nothing was ever
+            // stored), and with several camera fragments in the manager
+            // the first one found may be a stale instance whose test
+            // never ran. stopTest() does not clear the manager's
+            // answers, so asking each fragment is safe; keep the
+            // fullest result.
+            StroopVoiceManager.VoiceStroopResult stroop = null;
+            if (getActivity() != null) {
+                for (Fragment f : getActivity().getSupportFragmentManager().getFragments()) {
+                    if (f instanceof CameraFragment) {
+                        StroopVoiceManager.VoiceStroopResult r =
+                                ((CameraFragment) f).stopVoiceStroop();
+                        if (r != null && (stroop == null || r.totalTrials > stroop.totalTrials)) {
+                            stroop = r;
+                        }
                     }
-                    dt.setStroopAnswers(records);
                 }
+            }
+            if (stroop != null && stroop.totalTrials > 0) {
+                DualTaskAssessment dt = currentAssessment.getDualTask();
+                dt.setStroopTotalTrials(stroop.totalTrials);
+                dt.setStroopCorrectCount(stroop.correctCount);
+                dt.setStroopAccuracyPercent(stroop.accuracyPercent);
+                dt.setStroopAvgReactionMs(stroop.avgReactionTimeMs);
+                List<StroopAnswerRecord> records = new ArrayList<>();
+                for (StroopVoiceManager.StroopAnswer a : stroop.answers) {
+                    records.add(new StroopAnswerRecord(a.wordText, a.inkColorName,
+                            a.spokenText, a.correct, a.reactionTimeMs));
+                }
+                dt.setStroopAnswers(records);
             }
         } catch (Exception e) {
             Log.e("RecordFragment", "Could not capture Stroop results", e);
@@ -775,6 +897,27 @@ public class RecordFragment extends Fragment {
         currentAssessment.setDualTaskTestDate(new Date());
 
         generateCsvExport("DualTask", metrics);
+        currentAssessment.getDualTask().setCameraDistanceM(metrics.cameraDistanceM);
+        // Persist the trial diagnostics with the assessment, so an
+        // export generated later from stored data reproduces the full
+        // at-save SystemLog. generateCsvExport has just enriched
+        // `metrics` with the end-of-test anchor snapshot, the
+        // dropped-frame count and the FOV actually used.
+        currentAssessment.getDualTask().setDiagnosticsRecorded(true);
+        currentAssessment.getDualTask().setDroppedFrames(metrics.droppedFrames);
+        currentAssessment.getDualTask().setInterpolatedFrames(metrics.interpolatedFrames);
+        currentAssessment.getDualTask().setDespikedFrames(metrics.despikedFrames);
+        currentAssessment.getDualTask().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getDualTask().setAnchorZ(metrics.anchorZ);
+        currentAssessment.getDualTask().setAnchorSource(metrics.anchorSource);
+        currentAssessment.getDualTask().setCalibFramesUsed(metrics.calibFramesUsed);
+        currentAssessment.getDualTask().setCalibLowConfidence(metrics.calibLowConfidence);
+        currentAssessment.getDualTask().setAnchorDisagreement(metrics.anchorDisagreement);
+        currentAssessment.getDualTask().setAnchorClampedFrames(metrics.anchorClampedFrames);
+        currentAssessment.getDualTask().setPhoneRotationDeg(metrics.phoneRotationDeg);
+        currentAssessment.getDualTask().setApRangeMm(metrics.apRangeMm);
+        currentAssessment.getDualTask().setMlRangeMm(metrics.mlRangeMm);
+        DataStorageManager.saveAssessment(requireContext(), currentAssessment);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();
@@ -782,11 +925,8 @@ public class RecordFragment extends Fragment {
 
         Intent intent = new Intent(getActivity(), CancellingTest.class);
         intent.putExtra("finished", true);
+        intent.putExtra("testSaved", true);
         startActivity(intent);
-
-        Toast.makeText(requireContext(),
-                "Dual task test trial saved.",
-                Toast.LENGTH_LONG).show();
     }
 
     private void saveSwayAreaAndBalanceResults() throws IOException {
@@ -812,16 +952,33 @@ public class RecordFragment extends Fragment {
 
         recalculateComparisons(currentAssessment);
         generateCsvExport("Baseline", metrics);
+        currentAssessment.getBaseline().setCameraDistanceM(metrics.cameraDistanceM);
+        // Persist the trial diagnostics with the assessment, so an
+        // export generated later from stored data reproduces the full
+        // at-save SystemLog. generateCsvExport has just enriched
+        // `metrics` with the end-of-test anchor snapshot, the
+        // dropped-frame count and the FOV actually used.
+        currentAssessment.getBaseline().setDiagnosticsRecorded(true);
+        currentAssessment.getBaseline().setDroppedFrames(metrics.droppedFrames);
+        currentAssessment.getBaseline().setInterpolatedFrames(metrics.interpolatedFrames);
+        currentAssessment.getBaseline().setDespikedFrames(metrics.despikedFrames);
+        currentAssessment.getBaseline().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getBaseline().setAnchorZ(metrics.anchorZ);
+        currentAssessment.getBaseline().setAnchorSource(metrics.anchorSource);
+        currentAssessment.getBaseline().setCalibFramesUsed(metrics.calibFramesUsed);
+        currentAssessment.getBaseline().setCalibLowConfidence(metrics.calibLowConfidence);
+        currentAssessment.getBaseline().setAnchorDisagreement(metrics.anchorDisagreement);
+        currentAssessment.getBaseline().setAnchorClampedFrames(metrics.anchorClampedFrames);
+        currentAssessment.getBaseline().setPhoneRotationDeg(metrics.phoneRotationDeg);
+        currentAssessment.getBaseline().setApRangeMm(metrics.apRangeMm);
+        currentAssessment.getBaseline().setMlRangeMm(metrics.mlRangeMm);
         DataStorageManager.saveAssessment(requireContext(), currentAssessment);
 
         angleHistories.clear();
         BalanceHistories.clear();
-
-        Toast.makeText(requireContext(),
-                "Sway area and balance test trial saved.",
-                Toast.LENGTH_LONG).show();
         Intent intent = new Intent(getActivity(), CancellingTest.class);
         intent.putExtra("finished", true);
+        intent.putExtra("testSaved", true);
         startActivity(intent);
     }
 
@@ -837,15 +994,12 @@ public class RecordFragment extends Fragment {
 
         angleHistories.clear();
         BalanceHistories.clear();
-
-        Toast.makeText(requireContext(),
-                "Speed and endurance test trial saved.",
-                Toast.LENGTH_LONG).show();
         if (getActivity() != null && isAdded()) {
             Intent intent = new Intent(getActivity(), CancellingTest.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             intent.putExtra("finished", true);
             intent.putExtra("Saving", true);
+            intent.putExtra("testSaved", true);
             startActivity(intent);
         }
     }
