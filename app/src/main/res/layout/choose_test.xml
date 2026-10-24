@@ -194,7 +194,7 @@
                 android:layout_gravity="center"
                 android:fontFamily="@font/profile_pro_bold"
                 android:padding="10dp"
-                android:text="Walking Speed and Endurance"
+                android:text="Walking Speed and Distance"
                 android:textColor="@color/black"
                 android:textSize="20sp" />
 
