@@ -869,6 +869,12 @@ public class ReportFragment extends Fragment {
         return sum / set.size();
     }
 
+    // ------------------------------------------------------------------
+    // Standalone CSV export: pick a day, then a test that was actually
+    // completed that day; the ZIP is generated on the fly from the
+    // stored assessment data and handed to the share sheet.
+    // ------------------------------------------------------------------
+
     private void showExportCsvDialog() {
         List<AssessmentData> all = DataStorageManager.loadAllAssessments(requireContext());
         Map<String, List<AssessmentData>> byDate = new TreeMap<>(Collections.reverseOrder());
@@ -1157,7 +1163,9 @@ public class ReportFragment extends Fragment {
         });
     }
 
-    private MultiExportRow makeTrialRow(String dateKey, String condition, String displayName, int trialNumber, AssessmentData assessment, float density) {
+    private MultiExportRow makeTrialRow(
+            String dateKey, String condition, String displayName, int trialNumber,
+            AssessmentData assessment, float density) {
         MultiExportRow row = new MultiExportRow();
         row.dateKey = dateKey;
         row.condition = condition;
@@ -1422,8 +1430,8 @@ public class ReportFragment extends Fragment {
     }
 
     /** Checked reports only: a checked day box checks all its children
-     *  through the listener, so collecting checked children covers both
-     *  day-level and single-report selection. */
+     * through the listener, so collecting checked children covers both
+     * day-level and single-report selection. */
     private List<TrialCsvExporter.ReportDayExport> collectReportSelection(List<MultiExportRow> dayRows) {
         List<TrialCsvExporter.ReportDayExport> days = new ArrayList<>();
         for (MultiExportRow dayRow : dayRows) {
