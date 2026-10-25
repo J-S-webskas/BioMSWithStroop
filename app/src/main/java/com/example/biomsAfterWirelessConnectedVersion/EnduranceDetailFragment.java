@@ -18,7 +18,7 @@ public class EnduranceDetailFragment extends Fragment {
                              Bundle savedInstanceState) {
 
         View view = inflater.inflate(
-                R.layout.fragment_endurance_detail,
+                R.layout.fragment_endurance_detail_not_used,
                 container,
                 false);
 
@@ -28,7 +28,7 @@ public class EnduranceDetailFragment extends Fragment {
                 ChartDataExtractor.getEnduranceData(getContext());
 
         EnduranceChart enduranceChart =
-                new EnduranceChart(3, "Endurance", data);
+                new EnduranceChart(3, "Distance", data);
 
         List<Entry> entries =
                 enduranceChart.getDataForTimeRangeSolid(
@@ -37,7 +37,7 @@ public class EnduranceDetailFragment extends Fragment {
                 );
 
         LineDataSet set =
-                new LineDataSet(entries, "Endurance (km)");
+                new LineDataSet(entries, "Distance (m)");
 
         set.setLineWidth(2f);
         set.setCircleRadius(4f);

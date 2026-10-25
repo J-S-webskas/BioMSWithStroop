@@ -44,8 +44,8 @@ public class BiomechanicalAdapter extends RecyclerView.Adapter<ChartCardViewHold
 
         String chartTitle = chart.getTitle();
 
-        // Set click listener ONLY for endurance cards
-        if (chartTitle != null && chartTitle.equalsIgnoreCase("Endurance")) {
+        // Set click listener ONLY for distance cards
+        if (chartTitle != null && chartTitle.equalsIgnoreCase("Distance")) {
             holder.cardView.setOnClickListener(v -> {
                 // Use holder.getAdapterPosition() instead of position
                 int adapterPosition = holder.getAdapterPosition();

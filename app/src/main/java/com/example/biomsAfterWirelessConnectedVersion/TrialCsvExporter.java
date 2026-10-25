@@ -454,7 +454,7 @@ public class TrialCsvExporter {
                     StringBuilder sb = new StringBuilder();
                     sb.append("Date,Time,Sway Area [mm^2],Sway Velocity [mm/s],"
                             + "Sway Path Length [mm],RMS AP [mm],RMS ML [mm],"
-                            + "Endurance [s],Walking Speed [m/s],"
+                            + "Distance [m],Walking Speed [m/s],"
                             + "Dual Task Balance DTC [%],Sensory Ataxia Balance DTC [%],"
                             + "Balance SD,Balance CV [%]\n");
                     for (ReportModel r : d.reports) {

@@ -182,7 +182,7 @@ public class ReportDetailActivity extends AppCompatActivity {
                 wsTrialsTextView.setText(formatTrials(reportModel.getSpeedTrials(), "m/s"));
             }
             if (enduranceTrialsTextView != null) {
-                enduranceTrialsTextView.setText(formatTrials(reportModel.getEnduranceTrials(), "s"));
+                enduranceTrialsTextView.setText(formatTrials(reportModel.getEnduranceTrials(), "m"));
             }
             if (dualTaskBalanceTrialsTextView != null) {
                 dualTaskBalanceTrialsTextView.setText(formatTrials(reportModel.getDualTaskBalanceTrials(), "mm²"));

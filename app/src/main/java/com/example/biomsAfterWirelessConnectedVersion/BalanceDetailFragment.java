@@ -18,7 +18,7 @@ public class BalanceDetailFragment extends Fragment {
                              Bundle savedInstanceState) {
 
         View view = inflater.inflate(
-                R.layout.fragment_endurance_detail,
+                R.layout.fragment_endurance_detail_not_used,
                 container,
                 false);
 

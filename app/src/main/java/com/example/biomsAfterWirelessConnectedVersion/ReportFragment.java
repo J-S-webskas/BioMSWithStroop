@@ -583,7 +583,7 @@ public class ReportFragment extends Fragment {
 
         // Preview
         String preview = String.format(Locale.US,
-                "Speed: %f m/s | Sway Area: %f mm² | Endurance: %f s",
+                "Speed: %f m/s | Sway Area: %f mm² | Distance: %f m",
                 speedToday, balanceToday, enduranceToday);
         newReport.setPreview(preview);
 
