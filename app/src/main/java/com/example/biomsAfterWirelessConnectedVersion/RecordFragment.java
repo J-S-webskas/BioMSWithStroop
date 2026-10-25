@@ -307,9 +307,25 @@ public class RecordFragment extends Fragment {
             float timeInSeconds = timeInMillis / 1000.0f; // Convert to seconds
             float speed = distance/timeInSeconds;
 
+            // Step metrics from the phone's accelerometer samples, when the
+            // walk produced them. Absent extras (old builds, no sensor) or
+            // a rejected detection both leave stepResult null/unset, and the
+            // save below keeps the step fields unset (dashes, never zeros).
+            StepMetrics.Result stepResult = null;
+            long[] stepTimestamps = data.getLongArrayExtra("stepTimestampsNanos");
+            float[] stepMagnitudes = data.getFloatArrayExtra("stepMagnitudes");
+            if (stepTimestamps != null && stepMagnitudes != null
+                    && stepTimestamps.length == stepMagnitudes.length) {
+                ArrayList<Long> timestamps = new ArrayList<>();
+                ArrayList<Float> magnitudes = new ArrayList<>();
+                for (long t : stepTimestamps) timestamps.add(t);
+                for (float m : stepMagnitudes) magnitudes.add(m);
+                stepResult = StepMetrics.compute(timestamps, magnitudes, timeInSeconds, distance);
+            }
+
             // Save to assessment
             try {
-                saveWSAndEnduranceResults(speed, distance);  // pass the data!
+                saveWSAndEnduranceResults(speed, distance, stepResult);  // pass the data!
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -982,11 +998,25 @@ public class RecordFragment extends Fragment {
         startActivity(intent);
     }
 
-    private void saveWSAndEnduranceResults(float speed, float endurance) throws IOException {
+    private void saveWSAndEnduranceResults(float speed, float endurance, StepMetrics.Result steps) throws IOException {
         AssessmentData trialAssessment = new AssessmentData(username);
         currentAssessment = trialAssessment;
         currentAssessment.getBaseline().setWalkingSpeed(speed);
         currentAssessment.getBaseline().setEnduranceScore(endurance);
+        // Step metrics are saved only when the walk actually produced them;
+        // old trials and walks without step samples keep these unset, and
+        // the report renders them as dashes, never zeros.
+        if (steps != null && steps.hasData) {
+            currentAssessment.getBaseline().setStepCount(steps.stepCount);
+            currentAssessment.getBaseline().setCadence(steps.cadence);
+            currentAssessment.getBaseline().setMeanStepLength(steps.meanStepLengthM);
+            currentAssessment.getBaseline().setStepTimeMeanS(steps.stepTimeMeanS);
+            currentAssessment.getBaseline().setStepTimeSDS(steps.stepTimeSDS);
+            currentAssessment.getBaseline().setStepTimeCVPct(steps.stepTimeCVPct);
+            currentAssessment.getBaseline().setStepTimeN(steps.stepTimeN);
+            currentAssessment.getBaseline().setStepMethod("imu");
+            currentAssessment.getBaseline().setWalkPaused(steps.walkPaused);
+        }
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.WS_ENDURANCE_COMPLETED);
         currentAssessment.setWSAndEnduranceTestDate(new Date());
 

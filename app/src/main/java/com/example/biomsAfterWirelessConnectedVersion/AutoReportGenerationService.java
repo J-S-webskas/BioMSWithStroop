@@ -178,6 +178,9 @@ public class AutoReportGenerationService extends Service {
         Float bestARJLeft = null, bestARJRight = null, bestBalance = null;
         Float bestSwayVelocity = null, bestSwayPathLength = null, bestSwayRmsAP = null, bestSwayRmsML = null;
         Float bestWalkingSpeed = null, bestEndurance = null;
+        // Latest step values of the day (null = no walk with step data)
+        Float bestStepCount = null, bestCadence = null, bestStepLength = null;
+        Float bestStepTimeCv = null, bestStepTimeN = null;
         Float bestDTARJLeft = null, bestDTARJRight = null, bestDTBalance = null;
         Float bestDTSwayVelocity = null, bestDTSwayPathLength = null, bestDTSwayRmsAP = null, bestDTSwayRmsML = null;
         Float bestSAARJLeft = null, bestSAARJRight = null, bestSABalance = null;
@@ -244,6 +247,14 @@ public class AutoReportGenerationService extends Service {
             float endurance = assessment.getBaseline().getEnduranceScore();
             if (endurance != 0 && (bestEndurance == null || currentTimestamp > latestTimestamp)) {
                 bestEndurance = endurance;
+            }
+            if (assessment.getBaseline().getStepCount() > 0
+                    && (bestStepCount == null || currentTimestamp > latestTimestamp)) {
+                bestStepCount = (float) assessment.getBaseline().getStepCount();
+                bestCadence = assessment.getBaseline().getCadence();
+                bestStepLength = assessment.getBaseline().getMeanStepLength();
+                bestStepTimeCv = assessment.getBaseline().getStepTimeCVPct();
+                bestStepTimeN = (float) assessment.getBaseline().getStepTimeN();
             }
             if (currentTimestamp > latestTimestamp) latestTimestamp = currentTimestamp;
 
@@ -337,6 +348,16 @@ public class AutoReportGenerationService extends Service {
         ArrayList<Float> balanceTrials = new ArrayList<>();
         ArrayList<Float> speedTrials = new ArrayList<>();
         ArrayList<Float> enduranceTrials = new ArrayList<>();
+        // Step trials (only walks with step data contribute, so these can
+        // be shorter than speedTrials; stepTimeNTrials parallels stepTimeCvTrials;
+        // stepTrialNumbers parallels all five step lists with the walk's
+        // actual trial number among the day's walking-speed trials)
+        ArrayList<Float> stepCountTrials = new ArrayList<>();
+        ArrayList<Float> cadenceTrials = new ArrayList<>();
+        ArrayList<Float> stepLengthTrials = new ArrayList<>();
+        ArrayList<Float> stepTimeCvTrials = new ArrayList<>();
+        ArrayList<Float> stepTimeNTrials = new ArrayList<>();
+        ArrayList<Integer> stepTrialNumbers = new ArrayList<>();
         ArrayList<Float> dtBalanceTrials = new ArrayList<>();
         ArrayList<ReportModel.StroopTrialData> dtStroopTrials = new ArrayList<>();
         ArrayList<Float> dtDTCTrials = new ArrayList<>();
@@ -400,6 +421,27 @@ public class AutoReportGenerationService extends Service {
 
             float endurance = assessment.getBaseline().getEnduranceScore();
             if (endurance > 0) enduranceTrials.add(endurance);
+
+            // Step trials: only walks whose detection produced steps.
+            // The trial number is this walk's position among the day's
+            // walking-speed trials (the numbering the speed row uses):
+            // the step block runs after the speed block, so
+            // speedTrials.size() already includes this walk when it has
+            // a speed; a step walk without one counts as the next walk.
+            // A day whose T1 predates step capture therefore shows T2's
+            // steps as T2, never relabeled T1.
+            if (assessment.getBaseline().getStepCount() > 0) {
+                int stepTrialNumber = speedTrials.size();
+                if (speed <= 0) {
+                    stepTrialNumber = speedTrials.size() + 1;
+                }
+                stepTrialNumbers.add(stepTrialNumber);
+                stepCountTrials.add((float) assessment.getBaseline().getStepCount());
+                cadenceTrials.add(assessment.getBaseline().getCadence());
+                stepLengthTrials.add(assessment.getBaseline().getMeanStepLength());
+                stepTimeCvTrials.add(assessment.getBaseline().getStepTimeCVPct());
+                stepTimeNTrials.add((float) assessment.getBaseline().getStepTimeN());
+            }
 
             if (assessment.getDualTask() != null
                     && (assessment.getDualTask().getBalanceScore() > 0
@@ -520,6 +562,11 @@ public class AutoReportGenerationService extends Service {
         newReport.setSwayRmsMLToday(bestSwayRmsML != null ? bestSwayRmsML : 0f);
         newReport.setSpeedToday(bestWalkingSpeed != null ? bestWalkingSpeed : 0f);
         newReport.setEnduranceToday(bestEndurance != null ? bestEndurance : 0f);
+        newReport.setStepCountToday(bestStepCount != null ? bestStepCount : 0f);
+        newReport.setCadenceToday(bestCadence != null ? bestCadence : 0f);
+        newReport.setStepLengthToday(bestStepLength != null ? bestStepLength : 0f);
+        newReport.setStepTimeCvToday(bestStepTimeCv != null ? bestStepTimeCv : 0f);
+        newReport.setStepTimeNToday(bestStepTimeN != null ? bestStepTimeN : 0f);
         newReport.setSensoryAtaxiaARJLeftToday(bestSAARJLeft != null ? bestSAARJLeft : 0f);
         newReport.setSensoryAtaxiaARJRightToday(bestSAARJRight != null ? bestSAARJRight : 0f);
         newReport.setSensoryAtaxiaBalanceToday(bestSABalance != null ? bestSABalance : 0f);
@@ -560,6 +607,12 @@ public class AutoReportGenerationService extends Service {
         newReport.setBalanceTrials(balanceTrials);
         newReport.setSpeedTrials(speedTrials);
         newReport.setEnduranceTrials(enduranceTrials);
+        newReport.setStepCountTrials(stepCountTrials);
+        newReport.setCadenceTrials(cadenceTrials);
+        newReport.setStepLengthTrials(stepLengthTrials);
+        newReport.setStepTimeCvTrials(stepTimeCvTrials);
+        newReport.setStepTimeNTrials(stepTimeNTrials);
+        newReport.setStepTrialNumbers(stepTrialNumbers);
         newReport.setDualTaskBalanceTrials(dtBalanceTrials);
         newReport.setDualTaskDTCTrials(dtDTCTrials);
         newReport.setSensoryAtaxiaBalanceTrials(saBalanceTrials);
