@@ -164,11 +164,16 @@ public class ReportModel implements Serializable {
     // Step trials for the timed walk (chronological; only walks with step
     // data contribute, so these lists can be shorter than speedTrials).
     // stepTimeNTrials parallels stepTimeCvTrials (intervals per CV).
+    // stepTrialNumbers parallels all five step lists: the walk's position
+    // among the day's walking-speed trials (the numbering the speed row
+    // uses), so a day whose T1 predates step capture shows T2's steps
+    // as T2, never relabeled T1.
     private List<Float> stepCountTrials = new ArrayList<>();
     private List<Float> cadenceTrials = new ArrayList<>();
     private List<Float> stepLengthTrials = new ArrayList<>();
     private List<Float> stepTimeCvTrials = new ArrayList<>();
     private List<Float> stepTimeNTrials = new ArrayList<>();
+    private List<Integer> stepTrialNumbers = new ArrayList<>();
 
     public List<Float> getStepCountTrials() { return stepCountTrials; }
     public void setStepCountTrials(List<Float> trials) { this.stepCountTrials = trials != null ? trials : new ArrayList<>(); }
@@ -184,6 +189,9 @@ public class ReportModel implements Serializable {
 
     public List<Float> getStepTimeNTrials() { return stepTimeNTrials; }
     public void setStepTimeNTrials(List<Float> trials) { this.stepTimeNTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Integer> getStepTrialNumbers() { return stepTrialNumbers; }
+    public void setStepTrialNumbers(List<Integer> numbers) { this.stepTrialNumbers = numbers != null ? numbers : new ArrayList<>(); }
 
     public List<Float> getDualTaskBalanceTrials() { return dualTaskBalanceTrials; }
     public void setDualTaskBalanceTrials(List<Float> trials) { this.dualTaskBalanceTrials = trials != null ? trials : new ArrayList<>(); }

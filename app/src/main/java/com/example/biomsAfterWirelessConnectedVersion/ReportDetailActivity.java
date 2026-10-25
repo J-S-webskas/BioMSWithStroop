@@ -187,18 +187,25 @@ public class ReportDetailActivity extends AppCompatActivity {
             }
             // Step trials for the timed walk. Empty lists (old trials, walks
             // without step samples) render as "N/A" via the formatters.
+            // Labels are the walks' actual trial numbers, never list
+            // position: a day whose T1 has no step data shows T2's steps
+            // as T2, and T1 never appears in these rows.
             if (stepCountTrialsTextView != null) {
-                stepCountTrialsTextView.setText(formatStepCountTrials(reportModel.getStepCountTrials()));
+                stepCountTrialsTextView.setText(formatStepCountTrials(
+                        reportModel.getStepCountTrials(), reportModel.getStepTrialNumbers()));
             }
             if (cadenceTrialsTextView != null) {
-                cadenceTrialsTextView.setText(formatTrials(reportModel.getCadenceTrials(), "steps/min"));
+                cadenceTrialsTextView.setText(formatNumberedTrials(
+                        reportModel.getCadenceTrials(), reportModel.getStepTrialNumbers(), "steps/min"));
             }
             if (stepLengthTrialsTextView != null) {
-                stepLengthTrialsTextView.setText(formatTrials(reportModel.getStepLengthTrials(), "m"));
+                stepLengthTrialsTextView.setText(formatNumberedTrials(
+                        reportModel.getStepLengthTrials(), reportModel.getStepTrialNumbers(), "m"));
             }
             if (stepTimeCvTrialsTextView != null) {
                 stepTimeCvTrialsTextView.setText(formatStepCvTrials(
-                        reportModel.getStepTimeCvTrials(), reportModel.getStepTimeNTrials()));
+                        reportModel.getStepTimeCvTrials(), reportModel.getStepTimeNTrials(),
+                        reportModel.getStepTrialNumbers()));
             }
             if (dualTaskBalanceTrialsTextView != null) {
                 dualTaskBalanceTrialsTextView.setText(formatTrials(reportModel.getDualTaskBalanceTrials(), "mm²"));
@@ -246,9 +253,20 @@ public class ReportDetailActivity extends AppCompatActivity {
         }
     }
 
-    // Step counts are integers: "T1: 31 steps", no Avg line (an average
+    // Label for a step-trial row: the walk's actual trial number as
+    // recorded by the report builders. Reports generated before numbers
+    // were recorded carry no list, so those fall back to list position.
+    private int stepTrialLabel(java.util.List<Integer> numbers, int index) {
+        if (numbers != null && index < numbers.size() && numbers.get(index) != null) {
+            return numbers.get(index);
+        }
+        return index + 1;
+    }
+
+    // Step counts are integers: "T2: 31 steps", no Avg line (an average
     // step count across trials is not a meaningful number).
-    private String formatStepCountTrials(java.util.List<Float> trials) {
+    private String formatStepCountTrials(java.util.List<Float> trials,
+                                         java.util.List<Integer> numbers) {
         if (trials == null || trials.isEmpty()) {
             return "N/A";
         }
@@ -257,7 +275,7 @@ public class ReportDetailActivity extends AppCompatActivity {
             if (i > 0) {
                 sb.append("\n");
             }
-            sb.append("T").append(i + 1).append(":\u00A0")
+            sb.append("T").append(stepTrialLabel(numbers, i)).append(":\u00A0")
                     .append(Math.round(trials.get(i)))
                     .append("\u00A0steps");
         }
@@ -269,7 +287,8 @@ public class ReportDetailActivity extends AppCompatActivity {
     // of a CV (a CV from a handful of steps is noise, not a measurement).
     // No Avg line: averaging CVs across trials is not meaningful.
     private String formatStepCvTrials(java.util.List<Float> cvTrials,
-                                      java.util.List<Float> nTrials) {
+                                      java.util.List<Float> nTrials,
+                                      java.util.List<Integer> numbers) {
         if (cvTrials == null || cvTrials.isEmpty()) {
             return "N/A";
         }
@@ -279,7 +298,7 @@ public class ReportDetailActivity extends AppCompatActivity {
                 sb.append("\n");
             }
             int n = (nTrials != null && i < nTrials.size()) ? Math.round(nTrials.get(i)) : 0;
-            sb.append("T").append(i + 1).append(":\u00A0");
+            sb.append("T").append(stepTrialLabel(numbers, i)).append(":\u00A0");
             if (n >= 10) {
                 sb.append(String.format(Locale.US, "%.2f", cvTrials.get(i)))
                         .append("\u00A0%")
@@ -288,6 +307,35 @@ public class ReportDetailActivity extends AppCompatActivity {
                 sb.append("\u2014\u00A0(n\u00A0=\u00A0").append(n)
                         .append(", too few steps for variability)");
             }
+        }
+        return sb.toString();
+    }
+
+    // Like formatTrials, but each row carries the walk's actual trial
+    // number instead of its position in this (possibly filtered) list.
+    // Used for cadence and mean step length, where the Avg line is kept.
+    private String formatNumberedTrials(java.util.List<Float> trials,
+                                        java.util.List<Integer> numbers,
+                                        String unit) {
+        if (trials == null || trials.isEmpty()) {
+            return "N/A";
+        }
+        String displayUnit = unit.replace("/", "/\u2060");
+        StringBuilder sb = new StringBuilder();
+        double sum = 0;
+        for (int i = 0; i < trials.size(); i++) {
+            if (i > 0) {
+                sb.append("\n");
+            }
+            sb.append("T").append(stepTrialLabel(numbers, i)).append(":\u00A0")
+                    .append(String.format(Locale.US, "%.2f", trials.get(i)))
+                    .append("\u00A0").append(displayUnit);
+            sum += trials.get(i);
+        }
+        if (trials.size() >= 2) {
+            sb.append("\n").append("Avg:\u00A0")
+                    .append(String.format(Locale.US, "%.2f", sum / trials.size()))
+                    .append("\u00A0").append(displayUnit);
         }
         return sb.toString();
     }
