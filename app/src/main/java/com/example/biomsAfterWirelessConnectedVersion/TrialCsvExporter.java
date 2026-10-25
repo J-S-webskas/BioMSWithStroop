@@ -456,7 +456,9 @@ public class TrialCsvExporter {
                             + "Sway Path Length [mm],RMS AP [mm],RMS ML [mm],"
                             + "Distance [m],Walking Speed [m/s],"
                             + "Dual Task Balance DTC [%],Sensory Ataxia Balance DTC [%],"
-                            + "Balance SD,Balance CV [%]\n");
+                            + "Balance SD,Balance CV [%],"
+                            + "Steps,Cadence [steps/min],Mean Step Length [m],"
+                            + "Step Time CV [%],Step Time N\n");
                     for (ReportModel r : d.reports) {
                         sb.append(r.getDate()).append(',');
                         sb.append(r.getTimeStamp() != null ? timeFmt.format(r.getTimeStamp()) : "").append(',');
@@ -470,7 +472,12 @@ public class TrialCsvExporter {
                         sb.append(fmt(r.getDualTaskDTCBalance())).append(',');
                         sb.append(fmt(r.getSensoryAtaxiaDTCBalance())).append(',');
                         sb.append(fmt(r.getBalanceSD())).append(',');
-                        sb.append(fmt(r.getBalanceCV())).append('\n');
+                        sb.append(fmt(r.getBalanceCV())).append(',');
+                        sb.append(fmtStepCount(r)).append(',');
+                        sb.append(fmtStepValue(r, r.getCadenceToday())).append(',');
+                        sb.append(fmtStepValue(r, r.getStepLengthToday())).append(',');
+                        sb.append(fmtStepCv(r)).append(',');
+                        sb.append(fmtStepN(r)).append('\n');
                     }
                     writeEntry(zos, d.dateKey + "/Reports.csv", sb.toString());
                 }
@@ -488,11 +495,32 @@ public class TrialCsvExporter {
         return String.format(Locale.US, "%.2f", v);
     }
 
+    private static boolean hasSteps(ReportModel r) {
+        return r.getStepCountToday() > 0;
+    }
+
+    private static String fmtStepCount(ReportModel r) {
+        return hasSteps(r) ? String.format(Locale.US, "%d", Math.round(r.getStepCountToday())) : "";
+    }
+
+    private static String fmtStepValue(ReportModel r, float v) {
+        return hasSteps(r) ? fmt(v) : "";
+    }
+
+    private static String fmtStepCv(ReportModel r) {
+        return (hasSteps(r) && r.getStepTimeNToday() >= 10) ? fmt(r.getStepTimeCvToday()) : "";
+    }
+
+    private static String fmtStepN(ReportModel r) {
+        return hasSteps(r) ? String.format(Locale.US, "%d", Math.round(r.getStepTimeNToday())) : "";
+    }
+
     private static String buildReportsReadme(String patientId, List<ReportDayExport> days) {
         StringBuilder sb = new StringBuilder();
         sb.append("BioMS report export\n");
         sb.append("PatientID,").append(patientId).append('\n');
         sb.append("Source,Saved reports (export generated on demand)\n");
+        sb.append("Step columns are empty when a day's latest walk has no step data; Step Time CV is empty when fewer than 10 intervals.\n");
         sb.append("Included days:\n");
         for (ReportDayExport d : days) {
             int count = d.reports == null ? 0 : d.reports.size();

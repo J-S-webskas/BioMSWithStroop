@@ -161,6 +161,26 @@ public class ReportModel implements Serializable {
     public List<Float> getEnduranceTrials() { return enduranceTrials; }
     public void setEnduranceTrials(List<Float> trials) { this.enduranceTrials = trials != null ? trials : new ArrayList<>(); }
 
+    private List<Float> stepCountTrials = new ArrayList<>();
+    private List<Float> cadenceTrials = new ArrayList<>();
+    private List<Float> stepLengthTrials = new ArrayList<>();
+    private List<Float> stepTimeCvTrials = new ArrayList<>();
+    private List<Float> stepTimeNTrials = new ArrayList<>();
+
+    public List<Float> getStepCountTrials() { return stepCountTrials; }
+    public void setStepCountTrials(List<Float> trials) { this.stepCountTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getCadenceTrials() { return cadenceTrials; }
+    public void setCadenceTrials(List<Float> trials) { this.cadenceTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getStepLengthTrials() { return stepLengthTrials; }
+    public void setStepLengthTrials(List<Float> trials) { this.stepLengthTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getStepTimeCvTrials() { return stepTimeCvTrials; }
+    public void setStepTimeCvTrials(List<Float> trials) { this.stepTimeCvTrials = trials != null ? trials : new ArrayList<>(); }
+
+    public List<Float> getStepTimeNTrials() { return stepTimeNTrials; }
+    public void setStepTimeNTrials(List<Float> trials) { this.stepTimeNTrials = trials != null ? trials : new ArrayList<>(); }
     public List<Float> getDualTaskBalanceTrials() { return dualTaskBalanceTrials; }
     public void setDualTaskBalanceTrials(List<Float> trials) { this.dualTaskBalanceTrials = trials != null ? trials : new ArrayList<>(); }
 
@@ -502,6 +522,51 @@ public class ReportModel implements Serializable {
         this.enduranceToday = enduranceToday;
     }
 
+    private float stepCountToday;
+    private float cadenceToday;
+    private float stepLengthToday;
+    private float stepTimeCvToday;
+    private float stepTimeNToday;
+
+    public float getStepCountToday() {
+        return stepCountToday;
+    }
+
+    public void setStepCountToday(float stepCountToday) {
+        this.stepCountToday = stepCountToday;
+    }
+
+    public float getCadenceToday() {
+        return cadenceToday;
+    }
+
+    public void setCadenceToday(float cadenceToday) {
+        this.cadenceToday = cadenceToday;
+    }
+
+    public float getStepLengthToday() {
+        return stepLengthToday;
+    }
+
+    public void setStepLengthToday(float stepLengthToday) {
+        this.stepLengthToday = stepLengthToday;
+    }
+
+    public float getStepTimeCvToday() {
+        return stepTimeCvToday;
+    }
+
+    public void setStepTimeCvToday(float stepTimeCvToday) {
+        this.stepTimeCvToday = stepTimeCvToday;
+    }
+
+    public float getStepTimeNToday() {
+        return stepTimeNToday;
+    }
+
+    public void setStepTimeNToday(float stepTimeNToday) {
+        this.stepTimeNToday = stepTimeNToday;
+    }
     public String getEnduranceTrend() {
         return enduranceTrend;
     }

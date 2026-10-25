@@ -236,7 +236,15 @@ class BaselineAssessment implements Serializable {
     private float walkingSpeed;
     private float balanceScore;
     private float enduranceScore;
-
+    private int stepCount;          // steps over the walk
+    private float cadence;          // steps/min
+    private float meanStepLength;   // m (distance / stepCount)
+    private float stepTimeMeanS;    // mean of the CV intervals (s)
+    private float stepTimeSDS;      // sample SD of the CV intervals (s)
+    private float stepTimeCVPct;    // % (reportable only with stepTimeN >= 10)
+    private int stepTimeN;          // intervals entering the CV
+    private String stepMethod;      // "imu" when step data is present, else null
+    private boolean walkPaused;     // a >2 s interval was excluded from the CV
     private float swayPathLength;   // mm
     private float swayMeanVelocity; // mm/s
     private float swayRmsAP;        // mm (z/depth axis, frontal camera)
@@ -285,7 +293,32 @@ class BaselineAssessment implements Serializable {
 
     public float getEnduranceScore() { return enduranceScore; }
     public void setEnduranceScore(float enduranceScore) { this.enduranceScore = enduranceScore; }
+    public int getStepCount() { return stepCount; }
+    public void setStepCount(int stepCount) { this.stepCount = stepCount; }
 
+    public float getCadence() { return cadence; }
+    public void setCadence(float cadence) { this.cadence = cadence; }
+
+    public float getMeanStepLength() { return meanStepLength; }
+    public void setMeanStepLength(float meanStepLength) { this.meanStepLength = meanStepLength; }
+
+    public float getStepTimeMeanS() { return stepTimeMeanS; }
+    public void setStepTimeMeanS(float stepTimeMeanS) { this.stepTimeMeanS = stepTimeMeanS; }
+
+    public float getStepTimeSDS() { return stepTimeSDS; }
+    public void setStepTimeSDS(float stepTimeSDS) { this.stepTimeSDS = stepTimeSDS; }
+
+    public float getStepTimeCVPct() { return stepTimeCVPct; }
+    public void setStepTimeCVPct(float stepTimeCVPct) { this.stepTimeCVPct = stepTimeCVPct; }
+
+    public int getStepTimeN() { return stepTimeN; }
+    public void setStepTimeN(int stepTimeN) { this.stepTimeN = stepTimeN; }
+
+    public String getStepMethod() { return stepMethod; }
+    public void setStepMethod(String stepMethod) { this.stepMethod = stepMethod; }
+
+    public boolean isWalkPaused() { return walkPaused; }
+    public void setWalkPaused(boolean walkPaused) { this.walkPaused = walkPaused; }
     public float getSwayPathLength() { return swayPathLength; }
     public void setSwayPathLength(float v) { this.swayPathLength = v; }
 

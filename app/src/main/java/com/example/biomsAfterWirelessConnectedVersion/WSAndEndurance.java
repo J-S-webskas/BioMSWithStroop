@@ -4,6 +4,10 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +26,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.ArrayList;
 import java.util.Locale;
 
 public class WSAndEndurance extends AppCompatActivity {
@@ -33,6 +38,47 @@ public class WSAndEndurance extends AppCompatActivity {
     private boolean isRunning = false;
     private long pauseOffset = 0;
     private int distance = 0;
+
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private boolean stepListening = false;
+    private final ArrayList<Long> stepTimestampsNs = new ArrayList<>();
+    private final ArrayList<Float> stepMagnitudes = new ArrayList<>();
+    private final SensorEventListener stepListener = new SensorEventListener() {
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            if (event.values.length < 3) return;
+            float x = event.values[0];
+            float y = event.values[1];
+            float z = event.values[2];
+            stepTimestampsNs.add(event.timestamp);
+            stepMagnitudes.add((float) Math.sqrt(x * x + y * y + z * z));
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
+    };
+
+    private void registerStepListener() {
+        if (accelerometer != null && !stepListening) {
+            sensorManager.registerListener(stepListener, accelerometer,
+                    SensorManager.SENSOR_DELAY_GAME);
+            stepListening = true;
+        }
+    }
+
+    private void unregisterStepListener() {
+        if (stepListening) {
+            sensorManager.unregisterListener(stepListener);
+            stepListening = false;
+        }
+    }
+
+    private void clearStepSamples() {
+        stepTimestampsNs.clear();
+        stepMagnitudes.clear();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +106,10 @@ public class WSAndEndurance extends AppCompatActivity {
         startTimerButton = findViewById(R.id.startTimer);
         resetButton = findViewById(R.id.reset_button);
         finish = findViewById(R.id.finish);
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        if (sensorManager != null) {
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
         startTimerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -67,6 +117,7 @@ public class WSAndEndurance extends AppCompatActivity {
                     // Start the timer
                     timer.setBase(SystemClock.elapsedRealtime() - pauseOffset);
                     timer.start();
+                    registerStepListener();
                     isRunning = true;
                     startTimerButton.setText("Pause");
                     startTimerButton.setBackgroundTintList(ColorStateList.valueOf(
@@ -75,6 +126,7 @@ public class WSAndEndurance extends AppCompatActivity {
                 } else {
                     // Pause the timer
                     timer.stop();
+                    unregisterStepListener();
                     pauseOffset = SystemClock.elapsedRealtime() - timer.getBase();
                     isRunning = false;
                     startTimerButton.setText("Resume");
@@ -90,6 +142,8 @@ public class WSAndEndurance extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 timer.stop();
+                unregisterStepListener();
+                clearStepSamples();
                 timer.setBase(SystemClock.elapsedRealtime());
                 pauseOffset = 0;
                 isRunning = false;
@@ -104,6 +158,7 @@ public class WSAndEndurance extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 timer.stop();
+                unregisterStepListener();
                 if (isRunning) {
                     timer.stop();
                     pauseOffset = SystemClock.elapsedRealtime() - timer.getBase();
@@ -124,6 +179,12 @@ public class WSAndEndurance extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onDestroy() {
+        unregisterStepListener();
+        super.onDestroy();
+    }
+
     private void saveAndFinish() {
         // Save the results
         Intent resultIntent = getIntent();
@@ -133,6 +194,16 @@ public class WSAndEndurance extends AppCompatActivity {
 //        intent.putExtra("totalDistance", distance);
         intent.putExtra("testDuration", pauseOffset);
 //        intent.putExtra("meterType", String.valueOf(distance));
+        long[] timestamps = new long[stepTimestampsNs.size()];
+        for (int i = 0; i < stepTimestampsNs.size(); i++) {
+            timestamps[i] = stepTimestampsNs.get(i);
+        }
+        float[] magnitudes = new float[stepMagnitudes.size()];
+        for (int i = 0; i < stepMagnitudes.size(); i++) {
+            magnitudes[i] = stepMagnitudes.get(i);
+        }
+        intent.putExtra("stepTimestampsNanos", timestamps);
+        intent.putExtra("stepMagnitudes", magnitudes);
         setResult(RESULT_OK, intent);
         finish();
     }

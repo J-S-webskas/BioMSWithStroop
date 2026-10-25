@@ -307,9 +307,21 @@ public class RecordFragment extends Fragment {
             float timeInSeconds = timeInMillis / 1000.0f; // Convert to seconds
             float speed = distance/timeInSeconds;
 
+            StepMetrics.Result stepResult = null;
+            long[] stepTimestamps = data.getLongArrayExtra("stepTimestampsNanos");
+            float[] stepMagnitudes = data.getFloatArrayExtra("stepMagnitudes");
+            if (stepTimestamps != null && stepMagnitudes != null
+                    && stepTimestamps.length == stepMagnitudes.length) {
+                ArrayList<Long> timestamps = new ArrayList<>();
+                ArrayList<Float> magnitudes = new ArrayList<>();
+                for (long t : stepTimestamps) timestamps.add(t);
+                for (float m : stepMagnitudes) magnitudes.add(m);
+                stepResult = StepMetrics.compute(timestamps, magnitudes, timeInSeconds, distance);
+            }
+
             // Save to assessment
             try {
-                saveWSAndEnduranceResults(speed, distance);  // pass the data!
+                saveWSAndEnduranceResults(speed, distance, stepResult);  // pass the data!
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -811,7 +823,7 @@ public class RecordFragment extends Fragment {
         // Sensory Ataxia saves. This method used to load the shared
         // "today" assessment and write into its single DualTask slot,
         // so every dual-task recording of the day overwrote the same
-        // slot of the same file -- reports, which collect one trial per
+        // slot of the same file  reports, which collect one trial per
         // file, could only ever show a single dual-task trial per day.
         AssessmentData trialAssessment = new AssessmentData(username);
         currentAssessment = trialAssessment;
@@ -855,15 +867,6 @@ public class RecordFragment extends Fragment {
         // running at this point (it is stopped right after this save), so
         // stop the voice test here and store what it recorded.
         try {
-            // Collect the Stroop result from whichever camera fragment
-            // actually ran the test: at save time the container usually
-            // holds THIS RecordFragment (the old findFragmentById lookup
-            // therefore missed the camera entirely and nothing was ever
-            // stored), and with several camera fragments in the manager
-            // the first one found may be a stale instance whose test
-            // never ran. stopTest() does not clear the manager's
-            // answers, so asking each fragment is safe; keep the
-            // fullest result.
             StroopVoiceManager.VoiceStroopResult stroop = null;
             if (getActivity() != null) {
                 for (Fragment f : getActivity().getSupportFragmentManager().getFragments()) {
@@ -898,11 +901,6 @@ public class RecordFragment extends Fragment {
 
         generateCsvExport("DualTask", metrics);
         currentAssessment.getDualTask().setCameraDistanceM(metrics.cameraDistanceM);
-        // Persist the trial diagnostics with the assessment, so an
-        // export generated later from stored data reproduces the full
-        // at-save SystemLog. generateCsvExport has just enriched
-        // `metrics` with the end-of-test anchor snapshot, the
-        // dropped-frame count and the FOV actually used.
         currentAssessment.getDualTask().setDiagnosticsRecorded(true);
         currentAssessment.getDualTask().setDroppedFrames(metrics.droppedFrames);
         currentAssessment.getDualTask().setInterpolatedFrames(metrics.interpolatedFrames);
@@ -953,11 +951,6 @@ public class RecordFragment extends Fragment {
         recalculateComparisons(currentAssessment);
         generateCsvExport("Baseline", metrics);
         currentAssessment.getBaseline().setCameraDistanceM(metrics.cameraDistanceM);
-        // Persist the trial diagnostics with the assessment, so an
-        // export generated later from stored data reproduces the full
-        // at-save SystemLog. generateCsvExport has just enriched
-        // `metrics` with the end-of-test anchor snapshot, the
-        // dropped-frame count and the FOV actually used.
         currentAssessment.getBaseline().setDiagnosticsRecorded(true);
         currentAssessment.getBaseline().setDroppedFrames(metrics.droppedFrames);
         currentAssessment.getBaseline().setInterpolatedFrames(metrics.interpolatedFrames);
@@ -982,11 +975,22 @@ public class RecordFragment extends Fragment {
         startActivity(intent);
     }
 
-    private void saveWSAndEnduranceResults(float speed, float endurance) throws IOException {
+    private void saveWSAndEnduranceResults(float speed, float endurance, StepMetrics.Result steps) throws IOException {
         AssessmentData trialAssessment = new AssessmentData(username);
         currentAssessment = trialAssessment;
         currentAssessment.getBaseline().setWalkingSpeed(speed);
         currentAssessment.getBaseline().setEnduranceScore(endurance);
+        if (steps != null && steps.hasData) {
+            currentAssessment.getBaseline().setStepCount(steps.stepCount);
+            currentAssessment.getBaseline().setCadence(steps.cadence);
+            currentAssessment.getBaseline().setMeanStepLength(steps.meanStepLengthM);
+            currentAssessment.getBaseline().setStepTimeMeanS(steps.stepTimeMeanS);
+            currentAssessment.getBaseline().setStepTimeSDS(steps.stepTimeSDS);
+            currentAssessment.getBaseline().setStepTimeCVPct(steps.stepTimeCVPct);
+            currentAssessment.getBaseline().setStepTimeN(steps.stepTimeN);
+            currentAssessment.getBaseline().setStepMethod("imu");
+            currentAssessment.getBaseline().setWalkPaused(steps.walkPaused);
+        }
         currentAssessment.setStatus(AssessmentData.AssessmentStatus.WS_ENDURANCE_COMPLETED);
         currentAssessment.setWSAndEnduranceTestDate(new Date());
 
