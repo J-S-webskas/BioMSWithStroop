@@ -41,6 +41,7 @@ public class ReportDetailActivity extends AppCompatActivity {
             dtcSwayVelocityDT, dtcSwayPathDT, dtcSwayVelocitySA, dtcSwayPathSA,
             ARJRightSD, ARJRightCV, ARJLeftSD, ARJLeftCV, BalanceSD, BalanceCV, WSSD, WSCV, EnduranceSD, EnduranceCV,
             balanceTrialsTextView, wsTrialsTextView, enduranceTrialsTextView, dualTaskBalanceTrialsTextView, sensoryAtaxiaBalanceTrialsTextView,
+            stepCountTrialsTextView, cadenceTrialsTextView, stepLengthTrialsTextView, stepTimeCvTrialsTextView,
             swayPathLengthTrialsTextView, swayVelocityTrialsTextView, swayRmsAPTrialsTextView, swayRmsMLTrialsTextView,
             dualTaskSwayPathLengthTrialsTextView, dualTaskSwayVelocityTrialsTextView, dualTaskSwayRmsAPTrialsTextView, dualTaskSwayRmsMLTrialsTextView,
             sensoryAtaxiaSwayPathLengthTrialsTextView, sensoryAtaxiaSwayVelocityTrialsTextView, sensoryAtaxiaSwayRmsAPTrialsTextView, sensoryAtaxiaSwayRmsMLTrialsTextView;
@@ -184,6 +185,21 @@ public class ReportDetailActivity extends AppCompatActivity {
             if (enduranceTrialsTextView != null) {
                 enduranceTrialsTextView.setText(formatTrials(reportModel.getEnduranceTrials(), "s"));
             }
+            // Step trials for the timed walk. Empty lists (old trials, walks
+            // without step samples) render as "N/A" via the formatters.
+            if (stepCountTrialsTextView != null) {
+                stepCountTrialsTextView.setText(formatStepCountTrials(reportModel.getStepCountTrials()));
+            }
+            if (cadenceTrialsTextView != null) {
+                cadenceTrialsTextView.setText(formatTrials(reportModel.getCadenceTrials(), "steps/min"));
+            }
+            if (stepLengthTrialsTextView != null) {
+                stepLengthTrialsTextView.setText(formatTrials(reportModel.getStepLengthTrials(), "m"));
+            }
+            if (stepTimeCvTrialsTextView != null) {
+                stepTimeCvTrialsTextView.setText(formatStepCvTrials(
+                        reportModel.getStepTimeCvTrials(), reportModel.getStepTimeNTrials()));
+            }
             if (dualTaskBalanceTrialsTextView != null) {
                 dualTaskBalanceTrialsTextView.setText(formatTrials(reportModel.getDualTaskBalanceTrials(), "mm²"));
             }
@@ -228,6 +244,52 @@ public class ReportDetailActivity extends AppCompatActivity {
                 sensoryAtaxiaSwayRmsMLTrialsTextView.setText(formatTrials(reportModel.getSensoryAtaxiaSwayRmsMLTrials(), "mm"));
             }
         }
+    }
+
+    // Step counts are integers: "T1: 31 steps", no Avg line (an average
+    // step count across trials is not a meaningful number).
+    private String formatStepCountTrials(java.util.List<Float> trials) {
+        if (trials == null || trials.isEmpty()) {
+            return "N/A";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < trials.size(); i++) {
+            if (i > 0) {
+                sb.append("\n");
+            }
+            sb.append("T").append(i + 1).append(":\u00A0")
+                    .append(Math.round(trials.get(i)))
+                    .append("\u00A0steps");
+        }
+        return sb.toString();
+    }
+
+    // Step-time CV, one line per trial with its interval count. Trials
+    // with fewer than 10 intervals show a dash with the reason instead
+    // of a CV (a CV from a handful of steps is noise, not a measurement).
+    // No Avg line: averaging CVs across trials is not meaningful.
+    private String formatStepCvTrials(java.util.List<Float> cvTrials,
+                                      java.util.List<Float> nTrials) {
+        if (cvTrials == null || cvTrials.isEmpty()) {
+            return "N/A";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cvTrials.size(); i++) {
+            if (i > 0) {
+                sb.append("\n");
+            }
+            int n = (nTrials != null && i < nTrials.size()) ? Math.round(nTrials.get(i)) : 0;
+            sb.append("T").append(i + 1).append(":\u00A0");
+            if (n >= 10) {
+                sb.append(String.format(Locale.US, "%.2f", cvTrials.get(i)))
+                        .append("\u00A0%")
+                        .append("\u00A0(n\u00A0=\u00A0").append(n).append(")");
+            } else {
+                sb.append("\u2014\u00A0(n\u00A0=\u00A0").append(n)
+                        .append(", too few steps for variability)");
+            }
+        }
+        return sb.toString();
     }
 
     private String formatTrials(java.util.List<Float> trials, String unit) {
@@ -362,6 +424,10 @@ public class ReportDetailActivity extends AppCompatActivity {
         balanceTrialsTextView = findViewById(R.id.BalanceTrials);
         wsTrialsTextView = findViewById(R.id.WSTrials);
         enduranceTrialsTextView = findViewById(R.id.EnduranceTrials);
+        stepCountTrialsTextView = findViewById(R.id.StepCountTrials);
+        cadenceTrialsTextView = findViewById(R.id.CadenceTrials);
+        stepLengthTrialsTextView = findViewById(R.id.StepLengthTrials);
+        stepTimeCvTrialsTextView = findViewById(R.id.StepCvTrials);
         dualTaskBalanceTrialsTextView = findViewById(R.id.DualTaskBalanceTrials);
 
         // Stroop Test section (results of the voice test recorded during

@@ -393,6 +393,78 @@
                 android:fontFamily="@font/profile_pro"
                 android:textSize="20sp"/>
 
+            <TextView
+                android:text="Steps"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:padding="8dp"
+                android:fontFamily="@font/profile_pro_medi"
+                android:textSize="19sp"/>
+
+            <TextView
+                android:id="@+id/StepCountTrials"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="2"
+                android:padding="8dp"
+                android:fontFamily="@font/profile_pro"
+                android:textSize="20sp"/>
+
+            <TextView
+                android:text="Cadence"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:padding="8dp"
+                android:fontFamily="@font/profile_pro_medi"
+                android:textSize="19sp"/>
+
+            <TextView
+                android:id="@+id/CadenceTrials"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="2"
+                android:padding="8dp"
+                android:fontFamily="@font/profile_pro"
+                android:textSize="20sp"/>
+
+            <TextView
+                android:text="Mean Step Length"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:padding="8dp"
+                android:fontFamily="@font/profile_pro_medi"
+                android:textSize="19sp"/>
+
+            <TextView
+                android:id="@+id/StepLengthTrials"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="2"
+                android:padding="8dp"
+                android:fontFamily="@font/profile_pro"
+                android:textSize="20sp"/>
+
+            <TextView
+                android:text="Step-Time Variability"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:padding="8dp"
+                android:fontFamily="@font/profile_pro_medi"
+                android:textSize="19sp"/>
+
+            <TextView
+                android:id="@+id/StepCvTrials"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="2"
+                android:padding="8dp"
+                android:fontFamily="@font/profile_pro"
+                android:textSize="20sp"/>
+
         </GridLayout>
 
         <TextView

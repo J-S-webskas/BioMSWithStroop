@@ -209,6 +209,12 @@ public class ReportFragment extends Fragment {
         Float bestBalance = null;
         Float bestWalkingSpeed = null;
         Float bestEndurance = null;
+        // Latest step values of the day (null = no walk with step data)
+        Float bestStepCount = null;
+        Float bestCadence = null;
+        Float bestStepLength = null;
+        Float bestStepTimeCv = null;
+        Float bestStepTimeN = null;
         Float bestSwayVelocity = null;
         Float bestSwayPathLength = null;
         Float bestSwayRmsAP = null;
@@ -279,6 +285,13 @@ public class ReportFragment extends Fragment {
         ArrayList<Float> balanceTrials = new ArrayList<>();
         ArrayList<Float> speedTrials = new ArrayList<>();
         ArrayList<Float> enduranceTrials = new ArrayList<>();
+        // Step trials (only walks with step data contribute, so these can
+        // be shorter than speedTrials; stepTimeNTrials parallels stepTimeCvTrials)
+        ArrayList<Float> stepCountTrials = new ArrayList<>();
+        ArrayList<Float> cadenceTrials = new ArrayList<>();
+        ArrayList<Float> stepLengthTrials = new ArrayList<>();
+        ArrayList<Float> stepTimeCvTrials = new ArrayList<>();
+        ArrayList<Float> stepTimeNTrials = new ArrayList<>();
         ArrayList<Float> dtBalanceTrials = new ArrayList<>();
         ArrayList<ReportModel.StroopTrialData> dtStroopTrials = new ArrayList<>();
         ArrayList<Float> dtDTCTrials = new ArrayList<>();
@@ -372,6 +385,23 @@ public class ReportFragment extends Fragment {
                 }
                 if (bestEndurance == null || currentTimestamp > latestTimestamp) {
                     bestEndurance = endurance;
+                }
+            }
+
+            // Step trials: only walks whose detection produced steps. The
+            // has-data marker is stepCount > 0 (unset trials store 0).
+            if (assessment.getBaseline().getStepCount() > 0) {
+                stepCountTrials.add((float) assessment.getBaseline().getStepCount());
+                cadenceTrials.add(assessment.getBaseline().getCadence());
+                stepLengthTrials.add(assessment.getBaseline().getMeanStepLength());
+                stepTimeCvTrials.add(assessment.getBaseline().getStepTimeCVPct());
+                stepTimeNTrials.add((float) assessment.getBaseline().getStepTimeN());
+                if (bestStepCount == null || currentTimestamp > latestTimestamp) {
+                    bestStepCount = (float) assessment.getBaseline().getStepCount();
+                    bestCadence = assessment.getBaseline().getCadence();
+                    bestStepLength = assessment.getBaseline().getMeanStepLength();
+                    bestStepTimeCv = assessment.getBaseline().getStepTimeCVPct();
+                    bestStepTimeN = (float) assessment.getBaseline().getStepTimeN();
                 }
             }
 
@@ -519,6 +549,11 @@ public class ReportFragment extends Fragment {
         balanceToday = bestBalance != null ? bestBalance : 0f;
         speedToday = bestWalkingSpeed != null ? bestWalkingSpeed : 0f;
         enduranceToday = bestEndurance != null ? bestEndurance : 0f;
+        float stepCountToday = bestStepCount != null ? bestStepCount : 0f;
+        float cadenceToday = bestCadence != null ? bestCadence : 0f;
+        float stepLengthToday = bestStepLength != null ? bestStepLength : 0f;
+        float stepTimeCvToday = bestStepTimeCv != null ? bestStepTimeCv : 0f;
+        float stepTimeNToday = bestStepTimeN != null ? bestStepTimeN : 0f;
         DTbalanceToday = bestDTBalance != null ? bestDTBalance : 0f;
         SAbalanceToday = bestSABalance != null ? bestSABalance : 0f;
 
@@ -536,6 +571,11 @@ public class ReportFragment extends Fragment {
         newReport.setBalanceToday(balanceToday);
         newReport.setSpeedToday(speedToday);
         newReport.setEnduranceToday(enduranceToday);
+        newReport.setStepCountToday(stepCountToday);
+        newReport.setCadenceToday(cadenceToday);
+        newReport.setStepLengthToday(stepLengthToday);
+        newReport.setStepTimeCvToday(stepTimeCvToday);
+        newReport.setStepTimeNToday(stepTimeNToday);
         newReport.setSensoryAtaxiaBalanceToday(SAbalanceToday);
         newReport.setDualTaskBalanceToday(DTbalanceToday);
         // DTC
@@ -557,6 +597,11 @@ public class ReportFragment extends Fragment {
         newReport.setBalanceTrials(balanceTrials);
         newReport.setSpeedTrials(speedTrials);
         newReport.setEnduranceTrials(enduranceTrials);
+        newReport.setStepCountTrials(stepCountTrials);
+        newReport.setCadenceTrials(cadenceTrials);
+        newReport.setStepLengthTrials(stepLengthTrials);
+        newReport.setStepTimeCvTrials(stepTimeCvTrials);
+        newReport.setStepTimeNTrials(stepTimeNTrials);
         newReport.setDualTaskBalanceTrials(dtBalanceTrials);
         newReport.setDualTaskStroopTrials(dtStroopTrials);
         newReport.setDualTaskDTCTrials(dtDTCTrials);
