@@ -286,15 +286,12 @@ public class ReportFragment extends Fragment {
         ArrayList<Float> speedTrials = new ArrayList<>();
         ArrayList<Float> enduranceTrials = new ArrayList<>();
         // Step trials (only walks with step data contribute, so these can
-        // be shorter than speedTrials; stepTimeNTrials parallels stepTimeCvTrials;
-        // stepTrialNumbers parallels all five step lists with the walk's
-        // actual trial number among the day's walking-speed trials)
+        // be shorter than speedTrials; stepTimeNTrials parallels stepTimeCvTrials)
         ArrayList<Float> stepCountTrials = new ArrayList<>();
         ArrayList<Float> cadenceTrials = new ArrayList<>();
         ArrayList<Float> stepLengthTrials = new ArrayList<>();
         ArrayList<Float> stepTimeCvTrials = new ArrayList<>();
         ArrayList<Float> stepTimeNTrials = new ArrayList<>();
-        ArrayList<Integer> stepTrialNumbers = new ArrayList<>();
         ArrayList<Float> dtBalanceTrials = new ArrayList<>();
         ArrayList<ReportModel.StroopTrialData> dtStroopTrials = new ArrayList<>();
         ArrayList<Float> dtDTCTrials = new ArrayList<>();
@@ -393,19 +390,7 @@ public class ReportFragment extends Fragment {
 
             // Step trials: only walks whose detection produced steps. The
             // has-data marker is stepCount > 0 (unset trials store 0).
-            // The trial number is this walk's position among the day's
-            // walking-speed trials (the numbering the speed row uses):
-            // the step block runs after the speed block, so
-            // speedTrials.size() already includes this walk when it has
-            // a speed; a step walk without one counts as the next walk.
-            // A day whose T1 predates step capture therefore shows T2's
-            // steps as T2, never relabeled T1.
             if (assessment.getBaseline().getStepCount() > 0) {
-                int stepTrialNumber = speedTrials.size();
-                if (walkingSpeed <= 0) {
-                    stepTrialNumber = speedTrials.size() + 1;
-                }
-                stepTrialNumbers.add(stepTrialNumber);
                 stepCountTrials.add((float) assessment.getBaseline().getStepCount());
                 cadenceTrials.add(assessment.getBaseline().getCadence());
                 stepLengthTrials.add(assessment.getBaseline().getMeanStepLength());
@@ -617,7 +602,6 @@ public class ReportFragment extends Fragment {
         newReport.setStepLengthTrials(stepLengthTrials);
         newReport.setStepTimeCvTrials(stepTimeCvTrials);
         newReport.setStepTimeNTrials(stepTimeNTrials);
-        newReport.setStepTrialNumbers(stepTrialNumbers);
         newReport.setDualTaskBalanceTrials(dtBalanceTrials);
         newReport.setDualTaskStroopTrials(dtStroopTrials);
         newReport.setDualTaskDTCTrials(dtDTCTrials);
