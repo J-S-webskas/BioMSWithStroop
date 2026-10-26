@@ -81,7 +81,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:gravity="center"
-                android:text="Put the phone in your pocket, then walk in a straight line. Tap Start, walk, and tap Save at the end."
+                android:text="Tap Start, put the phone in your pocket, stand still for a moment, then walk in a straight line. When you finish, stand still for a moment, then take the phone out and tap Save."
                 android:textSize="16sp"
                 android:fontFamily="@font/profile_pro"
                 app:layout_constraintEnd_toEndOf="parent"
