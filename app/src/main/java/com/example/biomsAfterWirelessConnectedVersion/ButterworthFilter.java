@@ -13,8 +13,8 @@ public class ButterworthFilter {
 
     /**
      * Constructs a 2nd order low-pass Butterworth filter.
-     * @param cutoffFreq Cutoff frequency in Hz (e.g., 6.0 Hz for human gait/posture)
-     * @param sampleRate Sampling rate in Hz (e.g., 30.0 Hz frame rate)
+     * cutoffFreq Cutoff frequency in Hz (6.0 Hz for human gait/posture)
+     * sampleRate Sampling rate in Hz (30.0 Hz frame rate)
      */
     public ButterworthFilter(float cutoffFreq, float sampleRate) {
         if (sampleRate <= 0) sampleRate = 30.0f;
@@ -40,7 +40,7 @@ public class ButterworthFilter {
      * Applies the forward filter, reverses the series, applies the filter a
      * second time, and reverses back. The result is equivalent to a
      * doubled-order Butterworth (4th order here) with NO phase lag — unlike
-     * the forward-only {@link #filter(List)}, which shifts the series in time
+     * the forward-only List, which shifts the series in time
      * and lets substantially more high-frequency jitter through (a 2nd-order
      * forward filter passes ~24% of 12 Hz energy at a 6 Hz cutoff; the
      * forward-backward pass squares that attenuation to ~6%). This is the
@@ -61,6 +61,7 @@ public class ButterworthFilter {
         }
         return out;
     }
+
     public List<Float> filter(List<Float> input) {
         if (input == null || input.size() < 3) {
             return input != null ? new ArrayList<>(input) : new ArrayList<>();

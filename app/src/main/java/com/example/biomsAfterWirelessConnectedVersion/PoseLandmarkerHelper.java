@@ -909,7 +909,7 @@ public class PoseLandmarkerHelper {
         double comZ = 0;  // Using Z for depth (forward/backward in normalized space)
         double totalMassUsed = 0;
 
-        // 1. TRUNK (43.46% for male)
+        // TRUNK (43.46% for male)
         Landmark leftShoulder = worldLandmarks.get(11);
         Landmark rightShoulder = worldLandmarks.get(12);
         Landmark leftHip = worldLandmarks.get(23);
@@ -932,7 +932,7 @@ public class PoseLandmarkerHelper {
         comZ += trunkCOM_Z * trunkMass;
         totalMassUsed += trunkMass;
 
-        // 2. LEFT THIGH (14.16% for male)
+        // LEFT THIGH (14.16% for male)
         Landmark leftHipJoint = worldLandmarks.get(23);    // Proximal end
         Landmark leftKnee = worldLandmarks.get(25);         // Distal end
         // COM location for male thigh: 0.3775 from proximal
@@ -943,7 +943,7 @@ public class PoseLandmarkerHelper {
         comZ += leftThighCOM_Z * leftThighMass;
         totalMassUsed += leftThighMass;
 
-        // 3. RIGHT THIGH (14.16% for male)
+        // RIGHT THIGH (14.16% for male)
         Landmark rightHipJoint = worldLandmarks.get(24);    // Proximal end
         Landmark rightKnee = worldLandmarks.get(26);        // Distal end
         double rightThighCOM_X = rightHipJoint.x() + (rightKnee.x() - rightHipJoint.x()) * 0.3775;
@@ -953,7 +953,7 @@ public class PoseLandmarkerHelper {
         comZ += rightThighCOM_Z * rightThighMass;
         totalMassUsed += rightThighMass;
 
-        // 4. LEFT SHANK (4.33% for male)
+        // LEFT SHANK (4.33% for male)
         Landmark leftKnee2 = worldLandmarks.get(25);        // Proximal end
         Landmark leftAnkle = worldLandmarks.get(27);        // Distal end
         // COM location for male shank: 0.4225 from proximal
@@ -964,7 +964,7 @@ public class PoseLandmarkerHelper {
         comZ += leftShankCOM_Z * leftShankMass;
         totalMassUsed += leftShankMass;
 
-        // 5. RIGHT SHANK (4.33% for male)
+        // RIGHT SHANK (4.33% for male)
         Landmark rightKnee2 = worldLandmarks.get(26);       // Proximal end
         Landmark rightAnkle = worldLandmarks.get(28);       // Distal end
         double rightShankCOM_X = rightKnee2.x() + (rightAnkle.x() - rightKnee2.x()) * 0.4225;
@@ -974,7 +974,7 @@ public class PoseLandmarkerHelper {
         comZ += rightShankCOM_Z * rightShankMass;
         totalMassUsed += rightShankMass;
 
-        // 6. LEFT FOOT (1.37% for male)
+        // LEFT FOOT (1.37% for male)
         Landmark leftAnkle2 = worldLandmarks.get(27);       // Proximal end
         Landmark leftHeel = worldLandmarks.get(29);         // Heel
         Landmark leftToe = worldLandmarks.get(31);          // Toe
@@ -993,7 +993,7 @@ public class PoseLandmarkerHelper {
         comZ += leftFootCOM_Z * leftFootMass;
         totalMassUsed += leftFootMass;
 
-        // 7. RIGHT FOOT (1.37% for male)
+        // RIGHT FOOT (1.37% for male)
         Landmark rightAnkle2 = worldLandmarks.get(28);      // Proximal end
         Landmark rightHeel = worldLandmarks.get(30);        // Heel
         Landmark rightToe = worldLandmarks.get(32);         // Toe
@@ -1044,7 +1044,7 @@ public class PoseLandmarkerHelper {
         comZ += trunkCOM_Z * trunkMass;
         totalMassUsed += trunkMass;
 
-        // 2. LEFT THIGH (14.78% for female)
+        // LEFT THIGH (14.78% for female)
         Landmark leftHipJoint = worldLandmarks.get(23);    // Proximal end
         Landmark leftKnee = worldLandmarks.get(25);         // Distal end
         // COM location for female thigh: 0.3612 from proximal
@@ -1055,7 +1055,7 @@ public class PoseLandmarkerHelper {
         comZ += leftThighCOM_Z * leftThighMass;
         totalMassUsed += leftThighMass;
 
-        // 3. RIGHT THIGH (14.78% for female)
+        // RIGHT THIGH (14.78% for female)
         Landmark rightHipJoint = worldLandmarks.get(24);    // Proximal end
         Landmark rightKnee = worldLandmarks.get(26);        // Distal end
         double rightThighCOM_X = rightHipJoint.x() + (rightKnee.x() - rightHipJoint.x()) * 0.3612;
@@ -1065,7 +1065,7 @@ public class PoseLandmarkerHelper {
         comZ += rightThighCOM_Z * rightThighMass;
         totalMassUsed += rightThighMass;
 
-        // 4. LEFT SHANK (4.81% for female)
+        // LEFT SHANK (4.81% for female)
         Landmark leftKnee2 = worldLandmarks.get(25);        // Proximal end
         Landmark leftAnkle = worldLandmarks.get(27);        // Distal end
         // COM location for female shank: 0.4352 from proximal
@@ -1076,7 +1076,7 @@ public class PoseLandmarkerHelper {
         comZ += leftShankCOM_Z * leftShankMass;
         totalMassUsed += leftShankMass;
 
-        // 5. RIGHT SHANK (4.81% for female)
+        // RIGHT SHANK (4.81% for female)
         Landmark rightKnee2 = worldLandmarks.get(26);       // Proximal end
         Landmark rightAnkle = worldLandmarks.get(28);       // Distal end
         double rightShankCOM_X = rightKnee2.x() + (rightAnkle.x() - rightKnee2.x()) * 0.4352;
@@ -1086,7 +1086,7 @@ public class PoseLandmarkerHelper {
         comZ += rightShankCOM_Z * rightShankMass;
         totalMassUsed += rightShankMass;
 
-        // 6. LEFT FOOT (1.29% for female)
+        // LEFT FOOT (1.29% for female)
         Landmark leftAnkle2 = worldLandmarks.get(27);       // Proximal end
         Landmark leftHeel = worldLandmarks.get(29);         // Heel
         Landmark leftToe = worldLandmarks.get(31);          // Toe
@@ -1106,7 +1106,7 @@ public class PoseLandmarkerHelper {
         comZ += leftFootCOM_Z * leftFootMass;
         totalMassUsed += leftFootMass;
 
-        // 7. RIGHT FOOT (1.29% for female)
+        // RIGHT FOOT (1.29% for female)
         Landmark rightAnkle2 = worldLandmarks.get(28);      // Proximal end
         Landmark rightHeel = worldLandmarks.get(30);        // Heel
         Landmark rightToe = worldLandmarks.get(32);         // Toe

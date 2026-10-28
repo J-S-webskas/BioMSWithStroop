@@ -337,7 +337,7 @@
                 android:layout_columnWeight="2"
                 android:padding="8dp"
                 android:fontFamily="@font/profile_pro"
-                android:textSize="20sp"/>
+                android:textSize="20sp" />
 
             <TextView
                 android:text="Sway RMS (ML)"
@@ -400,7 +400,8 @@
                 android:layout_columnWeight="1"
                 android:padding="8dp"
                 android:fontFamily="@font/profile_pro_medi"
-                android:textSize="19sp"/>
+                android:textSize="19sp"
+                android:visibility="gone"/>
 
             <TextView
                 android:id="@+id/StepCountTrials"
@@ -409,7 +410,8 @@
                 android:layout_columnWeight="2"
                 android:padding="8dp"
                 android:fontFamily="@font/profile_pro"
-                android:textSize="20sp"/>
+                android:textSize="20sp"
+                android:visibility="gone"/>
 
             <TextView
                 android:text="Cadence"
@@ -418,7 +420,8 @@
                 android:layout_columnWeight="1"
                 android:padding="8dp"
                 android:fontFamily="@font/profile_pro_medi"
-                android:textSize="19sp"/>
+                android:textSize="19sp"
+                android:visibility="gone"/>
 
             <TextView
                 android:id="@+id/CadenceTrials"
@@ -427,7 +430,8 @@
                 android:layout_columnWeight="2"
                 android:padding="8dp"
                 android:fontFamily="@font/profile_pro"
-                android:textSize="20sp"/>
+                android:textSize="20sp"
+                android:visibility="gone"/>
 
             <TextView
                 android:text="Mean Step Length"
@@ -436,7 +440,8 @@
                 android:layout_columnWeight="1"
                 android:padding="8dp"
                 android:fontFamily="@font/profile_pro_medi"
-                android:textSize="19sp"/>
+                android:textSize="19sp"
+                android:visibility="gone"/>
 
             <TextView
                 android:id="@+id/StepLengthTrials"
@@ -445,7 +450,8 @@
                 android:layout_columnWeight="2"
                 android:padding="8dp"
                 android:fontFamily="@font/profile_pro"
-                android:textSize="20sp"/>
+                android:textSize="20sp"
+                android:visibility="gone"/>
 
             <TextView
                 android:text="Step-Time Variability"
@@ -454,7 +460,8 @@
                 android:layout_columnWeight="1"
                 android:padding="8dp"
                 android:fontFamily="@font/profile_pro_medi"
-                android:textSize="19sp"/>
+                android:textSize="19sp"
+                android:visibility="gone"/>
 
             <TextView
                 android:id="@+id/StepCvTrials"
@@ -463,7 +470,8 @@
                 android:layout_columnWeight="2"
                 android:padding="8dp"
                 android:fontFamily="@font/profile_pro"
-                android:textSize="20sp"/>
+                android:textSize="20sp"
+                android:visibility="gone"/>
 
         </GridLayout>
 

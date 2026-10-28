@@ -1,5 +1,7 @@
 package com.example.biomsAfterWirelessConnectedVersion;
 
+import android.view.Window;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -21,8 +23,6 @@ import java.util.List;
  *      the same filter class as the sway pipeline)
  *   -> peak pick (local maxima, tallest-first with 300 ms separation,
  *      adaptive prominence 0.3x the median kept-peak height)
- *   -> handling trim (first/last 1.0 s are pocketing and tapping,
- *      not steps) -> intervals -> metrics.
  *
  * Two deliberate deviations from the review spec, both so the spec's
  * own acceptance benches can pass:
@@ -48,6 +48,18 @@ public class StepMetrics {
     private static final long MIN_STEP_SEPARATION_NS = 300_000_000L;
     /** Handling trim: peaks in the first/last second are phone handling, not steps. */
     private static final double TRIM_S = 1.0;
+    /** Stillness window: std of raw magnitude over this span defines "still". */
+    private static final double STILLNESS_WINDOW_S = 1.0;
+    /** A 1.0 s magnitude window counts as still below this std (m/s^2). */
+    private static final float STILLNESS_STD_THRESHOLD = 0.15f;
+    /** A still run must span at least this long to bound the walk. */
+    private static final double STILLNESS_MIN_GAP_S = 1.5;
+    /** A gated window shorter than this is nonsense: fall back to the trim. */
+    private static final double STILLNESS_MIN_WINDOW_S = 3.0;
+    /** Deviation from a gap's median magnitude that counts as motion (m/s^2). */
+    private static final float STILLNESS_MOTION_DEV = 0.3f;
+    /** Motion after a trailing gap must span at least this long (unpocketing). */
+    private static final double STILLNESS_TRAIL_MOTION_S = 1.0;
     /** Adaptive prominence: a peak counts when it reaches this fraction of the median peak height. */
     private static final double PROMINENCE_FRACTION = 0.3;
     /** Band-pass for stepping: step frequency in MS is ~1.5-2.2 Hz. */
@@ -76,6 +88,8 @@ public class StepMetrics {
         public float stepTimeCVPct;    // %
         public int stepTimeN;          // intervals entering the CV
         public boolean walkPaused;     // a >2 s interval was excluded
+        public boolean stillnessGated;
+        public float gatedWindowS;
     }
 
     public static Result compute(List<Long> timestampsNs, List<Float> magnitudes,
@@ -146,27 +160,27 @@ public class StepMetrics {
         }
         if (separated.isEmpty()) return r;
 
-        // 4. Handling trim: drop peaks in the first/last second (pocketing, tapping).
-        long startNs = timestampsNs.get(0);
-        long endNs = timestampsNs.get(n - 1);
-        long trimNs = (long) (TRIM_S * 1_000_000_000L);
-        List<Integer> trimmed = new ArrayList<>();
+        // 4. Analysis window: stillness gaps gate the edges when present;
+        // each edge without a qualifying gap falls back to the 1.0 s trim,
+        // so a walk recorded without any pause behaves exactly as before.
+        Window window = gateWindow(timestampsNs, magnitudes);
+        List<Integer> windowed = new ArrayList<>();
         for (int idx : separated) {
             long t = timestampsNs.get(idx);
-            if (t >= startNs + trimNs && t <= endNs - trimNs) trimmed.add(idx);
+            if (t >= window.startNs && t <= window.endNs) windowed.add(idx);
         }
-        if (trimmed.isEmpty()) return r;
+        if (windowed.isEmpty()) return r;
 
         // 5. Adaptive prominence: keep peaks >= 0.3x the median kept-peak height.
-        // The median is taken after the trim so handling spikes cannot set the threshold.
+        // The median is taken after the window so handling spikes cannot set the threshold.
         List<Float> heights = new ArrayList<>();
-        for (int idx : trimmed) heights.add(band.get(idx));
+        for (int idx : windowed) heights.add(band.get(idx));
         Collections.sort(heights);
         float medianHeight = heights.get(heights.size() / 2);
         if (medianHeight < MIN_MEDIAN_PEAK_HEIGHT) return r;
         float threshold = (float) (PROMINENCE_FRACTION * medianHeight);
         List<Integer> steps = new ArrayList<>();
-        for (int idx : trimmed) {
+        for (int idx : windowed) {
             if (band.get(idx) >= threshold) steps.add(idx);
         }
         if (steps.isEmpty()) return r;
@@ -181,6 +195,8 @@ public class StepMetrics {
         r.hasData = true;
         r.stepCount = steps.size();
         r.meanStepLengthM = (float) (distanceM / r.stepCount);
+        r.stillnessGated = window.gatedLeading || window.gatedTrailing;
+        r.gatedWindowS = (float) ((window.endNs - window.startNs) / 1_000_000_000.0);
 
         // 6. Intervals: pauses (>2 s) are stops, not steps, and are excluded
         // everywhere; the first/last surviving intervals (acceleration and
@@ -209,8 +225,9 @@ public class StepMetrics {
         }
         if (r.cadence == 0) {
             // Degenerate fallback (a single step has no interval): count over
-            // the analysis window, i.e. the timer minus the handling trim.
-            double effectiveTimeS = walkTimeS - 2.0 * TRIM_S;
+            // the analysis window (gated when gaps exist, else the sample
+            // span minus the handling trim).
+            double effectiveTimeS = (window.endNs - window.startNs) / 1_000_000_000.0;
             if (effectiveTimeS <= 0) effectiveTimeS = walkTimeS;
             r.cadence = (float) (r.stepCount / effectiveTimeS * 60.0);
         }
@@ -240,5 +257,119 @@ public class StepMetrics {
             }
         }
         return r;
+    }
+
+    private static class Gap {
+        final long startNs;
+        final long endNs;
+        final float medianMag;
+
+        Gap(long startNs, long endNs, float medianMag) {
+            this.startNs = startNs;
+            this.endNs = endNs;
+            this.medianMag = medianMag;
+        }
+    }
+
+    private static class Window {
+        final long startNs;
+        final long endNs;
+        final boolean gatedLeading;
+        final boolean gatedTrailing;
+
+        Window(long startNs, long endNs, boolean gatedLeading, boolean gatedTrailing) {
+            this.startNs = startNs;
+            this.endNs = endNs;
+            this.gatedLeading = gatedLeading;
+            this.gatedTrailing = gatedTrailing;
+        }
+    }
+
+    private static List<Gap> stillGaps(List<Long> timestampsNs, List<Float> magnitudes) {
+        List<Gap> gaps = new ArrayList<>();
+        final int n = timestampsNs.size();
+        long winNs = (long) (STILLNESS_WINDOW_S * 1_000_000_000L);
+        boolean[] still = new boolean[n];
+        for (int i = 0; i < n; i++) {
+            long t0 = timestampsNs.get(i);
+            int j = i;
+            while (j < n && timestampsNs.get(j) - t0 <= winNs) j++;
+            double spanS = (j > i) ? (timestampsNs.get(j - 1) - t0) / 1_000_000_000.0 : 0.0;
+            if (j - i < 2 || spanS < 0.9) {
+                still[i] = false;
+                continue;
+            }
+            double mean = 0;
+            for (int k = i; k < j; k++) mean += magnitudes.get(k);
+            mean /= (j - i);
+            double var = 0;
+            for (int k = i; k < j; k++) {
+                double d = magnitudes.get(k) - mean;
+                var += d * d;
+            }
+            var /= (j - i);
+            still[i] = Math.sqrt(var) < STILLNESS_STD_THRESHOLD;
+        }
+        int i = 0;
+        while (i < n) {
+            if (!still[i]) {
+                i++;
+                continue;
+            }
+            int k = i;
+            while (k + 1 < n && still[k + 1]) k++;
+            long gapStart = timestampsNs.get(i);
+            long gapEnd = Math.min(timestampsNs.get(k) + winNs, timestampsNs.get(n - 1));
+            if ((gapEnd - gapStart) / 1_000_000_000.0 >= STILLNESS_MIN_GAP_S) {
+                List<Float> seg = new ArrayList<>();
+                for (int t = i; t <= k; t++) seg.add(magnitudes.get(t));
+                Collections.sort(seg);
+                gaps.add(new Gap(gapStart, gapEnd, seg.get(seg.size() / 2)));
+            }
+            i = k + 1;
+        }
+        return gaps;
+    }
+
+    private static Window gateWindow(List<Long> timestampsNs, List<Float> magnitudes) {
+        long startNs = timestampsNs.get(0);
+        long endNs = timestampsNs.get(timestampsNs.size() - 1);
+        long trimNs = (long) (TRIM_S * 1_000_000_000L);
+        long winStart = startNs + trimNs;
+        long winEnd = endNs - trimNs;
+        boolean gatedLeading = false;
+        boolean gatedTrailing = false;
+        List<Gap> gaps = stillGaps(timestampsNs, magnitudes);
+        if (!gaps.isEmpty()) {
+            Gap first = gaps.get(0);
+            if (first.endNs < endNs) {
+                winStart = first.endNs;
+                gatedLeading = true;
+            }
+            for (int g = gaps.size() - 1; g >= 0; g--) {
+                Gap gap = gaps.get(g);
+                long lastMotionNs = -1;
+                for (int t = 0; t < timestampsNs.size(); t++) {
+                    if (timestampsNs.get(t) > gap.endNs
+                            && Math.abs(magnitudes.get(t) - gap.medianMag) > STILLNESS_MOTION_DEV) {
+                        lastMotionNs = timestampsNs.get(t);
+                    }
+                }
+                if (lastMotionNs >= 0
+                        && (lastMotionNs - gap.endNs) / 1_000_000_000.0 >= STILLNESS_TRAIL_MOTION_S
+                        && gap.startNs > winStart) {
+                    winEnd = gap.startNs;
+                    gatedTrailing = true;
+                    break;
+                }
+            }
+        }
+        if (gatedLeading || gatedTrailing) {
+            if ((winEnd - winStart) / 1_000_000_000.0 < STILLNESS_MIN_WINDOW_S
+                    || winStart >= winEnd) {
+                return new Window(startNs + trimNs, endNs - trimNs, false, false);
+            }
+        }
+        return new Window(winStart, winEnd, gatedLeading, gatedTrailing);
     }
 }

@@ -49,8 +49,6 @@
         <receiver
             android:name=".AutoReportReceiver"
             android:exported="false" />
-        <activity android:name=".DemoSession"
-            android:screenOrientation="portrait"/>
         <activity android:name=".Speed"
             android:screenOrientation="portrait"/>
         <activity android:name=".TestMeaning"

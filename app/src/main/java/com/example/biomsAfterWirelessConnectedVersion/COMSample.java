@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 /**
  * One center-of-mass sample: position (meters, camera space) plus the
- * frame's capture timestamp (milliseconds, SystemClock.uptimeMillis clock —
+ * frame's capture timestamp (milliseconds, SystemClock.uptimeMillis clock -
  * the same clock MediaPipe reports result timestamps on).
  *
  * Timestamps are first-class because the camera does not deliver frames at a

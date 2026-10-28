@@ -21,12 +21,12 @@ import java.util.zip.ZipOutputStream;
  * Builds the per-trial CSV export package for one finished test and zips
  * it for sharing (e.g. via Gmail):
  *
- *  &lt;PatientID&gt;_&lt;Condition&gt;_&lt;n&gt;_CoM_Trajectory.csv
- *  &lt;PatientID&gt;_&lt;Condition&gt;_&lt;n&gt;_JointAngles.csv
- *  &lt;PatientID&gt;_&lt;Condition&gt;_&lt;n&gt;_SystemLog.csv
+ *  PatientID Condition_CoM_Trajectory.csv
+ *  PatientID Condition_JointAngles.csv
+ *  PatientID Condition_SystemLog.csv
  *   README.txt
  *
- * zipped as &lt;PatientID&gt;_&lt;yyyy-MM-dd&gt;_&lt;Condition&gt;_&lt;n&gt;.zip,
+ * zipped as PatientIDyyyy-MM-ddCondition.zip,
  * where n is the trial's number within its condition for that day,
  * counting from 1 (the first Baseline of a day is _Baseline_1, the
  * second _Baseline_2, and so on; DualTask and SensoryAtaxia are
@@ -34,7 +34,7 @@ import java.util.zip.ZipOutputStream;
  * also recorded inside SystemLog.csv and README.txt, so exported
  * trials of one condition can live in one folder without overwriting
  * each other. The patient is identified ONLY by the anonymous ID from
- * {@link AnonymousIdManager} — never by name.
+ * AnonymousIdManager. Never by name.
  *
  * Axis mapping for the trajectory: the app measures sway in the ground
  * plane — CoM_x_Pos is the mediolateral axis and CoM_z_Pos the
@@ -53,12 +53,12 @@ public class TrialCsvExporter {
     /**
      * Writes the export zip into the app's files/exports directory.
      *
-     * @param conditionLabel Baseline / DualTask / SensoryAtaxia
-     * @param metrics        the trial's computed sway metrics (trajectory + cleaning counters)
-     * @param jointSeries    per-joint angle series recorded during the trial (degrees)
-     * @param droppedFrames  frames where MediaPipe lost the patient during this trial
-     * @param fovDegrees     the horizontal FOV used for this phone's scale conversion
-     * @return the zip file, or null if it could not be written
+     * conditionLabel Baseline / DualTask / SensoryAtaxia
+     * metrics        the trial's computed sway metrics (trajectory + cleaning counters)
+     * jointSeries    per-joint angle series recorded during the trial (degrees)
+     * droppedFrames  frames where MediaPipe lost the patient during this trial
+     * fovDegrees     the horizontal FOV used for this phone's scale conversion
+     * return the zip file, or null if it could not be written
      */
     public static File exportTrial(Context context, String conditionLabel, SwayMetrics metrics,
                                    Map<String, List<Float>> jointSeries,
@@ -114,14 +114,13 @@ public class TrialCsvExporter {
     // assessment: reports load every assessment at once, and angle
     // streams would bloat that load for data the reports never show.
     // Instead, at save time the angles are written to a sidecar file
-    // per trial -- the exact JointAngles.csv content the at-save
-    // export carries -- under files/joint_angles/, named
+    // per trial - the exact JointAngles.csv content the at-save
+    // export carries - under files/joint_angles/, named
     // <sessionId>_<Condition>.csv (the session id is unique per
     // trial). Stored exports attach the sidecar verbatim when one
     // exists; trials recorded before sidecar storage have none.
     // Deleting a trial's data deletes its sidecar (see
     // DataStorageManager.deleteAssessment).
-    // ------------------------------------------------------------------
 
     private static File jointAnglesDir(Context context) {
         File dir = new File(context.getFilesDir(), "joint_angles");
@@ -284,15 +283,15 @@ public class TrialCsvExporter {
     /**
      * Builds a ZIP for one condition of one stored day, from data saved in
      * assessments. Contains the trajectory + a system log per trial (files
-     * gain a _T&lt;n&gt; suffix when the day has several trials of the
+     * gain a suffix when the day has several trials of the
      * condition). Joint angles are stored per trial as sidecar files
      * and are attached when present (trials recorded before sidecar
      * storage have none); the trial diagnostics ARE stored in the
      * assessment and are reproduced in the system log. The README in
      * the zip says so.
      *
-     * @param dateStr yyyy-MM-dd of the chosen day
-     * @return the zip file, or null on failure / nothing to export
+     * dateStr yyyy-MM-dd of the chosen day
+     * return the zip file, or null on failure / nothing to export
      */
     public static File exportStoredTrials(Context context, String dateStr, String conditionLabel,
                                           List<StoredTrialData> trials) {
@@ -349,12 +348,12 @@ public class TrialCsvExporter {
     /**
      * Builds one ZIP for an arbitrary selection of stored trials spanning
      * several days and conditions. Files are grouped into folders
-     * "<date>_<Condition>/" and named like the single-day export, with a
-     * _T&lt;n&gt; suffix that always counts within the trial's own day and
+     * and named like the single-day export, with a
+     * suffix that always counts within the trial's own day and
      * condition. Joint angles are attached from the sidecar when present;
      * the README lists everything included.
      *
-     * @return the zip file, or null on failure / empty selection
+     * return the zip file, or null on failure / empty selection
      */
     public static File exportSelectedTrials(Context context, List<MultiExportEntry> entries) {
         if (entries == null || entries.isEmpty()) return null;
@@ -424,11 +423,11 @@ public class TrialCsvExporter {
 
     /**
      * Builds one ZIP of report summaries for the chosen days: one folder
-     * per day ("&lt;date&gt;/") holding that day's "Reports.csv" — one row
-     * per saved report, headline metrics only — plus a README listing
+     * per day holding that day's "Reports.csv" - one row
+     * per saved report, headline metrics only - plus a README listing
      * the included days.
      *
-     * @return the zip file, or null on failure / empty selection
+     * return the zip file, or null on failure / empty selection
      */
     public static File exportSelectedReports(Context context, List<ReportDayExport> days) {
         if (days == null || days.isEmpty()) return null;
