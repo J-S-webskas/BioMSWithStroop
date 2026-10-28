@@ -184,6 +184,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     private void startStroopVoiceTest() {
+        // Never run two recognizers at once: a leaked earlier manager
+        // holds the mic and the new one answers BUSY forever.
+        if (stroopVoiceManager != null) {
+            stroopVoiceManager.stopTest();
+        }
+        if (tvVoiceStatus != null) {
+            tvVoiceStatus.setText("Starting voice test…");
+        }
         stroopVoiceManager = new StroopVoiceManager(requireContext(), new StroopVoiceManager.StroopVoiceListener() {
             @Override
             public void onNewTrial(String wordText, int colorInt) {
@@ -197,6 +205,13 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             public void onSpokenResult(String spokenWord, boolean isCorrect) {
                 if (tvVoiceStatus != null) {
                     tvVoiceStatus.setText("Heard: " + spokenWord + (isCorrect ? " ✓" : " ✗"));
+                }
+            }
+
+            @Override
+            public void onVoiceReady() {
+                if (tvVoiceStatus != null) {
+                    tvVoiceStatus.setText("Listening… speak the ink color");
                 }
             }
 
@@ -515,6 +530,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         // Preview must never inherit a test's focus lock: whatever path
         // leaves the test screen, the lock ends here.
         releaseFocusLock();
+        // A voice test abandoned mid-trial must not keep the mic: stop
+        // it here. On the normal path the manager is already stopped
+        // (stopVoiceStroop at test end), so this is a no-op there.
+        if (stroopVoiceManager != null) {
+            stroopVoiceManager.stopTest();
+        }
         _fragmentCameraBinding = null;
         super.onDestroyView();
 

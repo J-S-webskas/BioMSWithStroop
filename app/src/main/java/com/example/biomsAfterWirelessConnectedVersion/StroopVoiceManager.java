@@ -21,6 +21,8 @@ public class StroopVoiceManager implements RecognitionListener {
     public interface StroopVoiceListener {
         void onNewTrial(String wordText, int colorInt);
         void onSpokenResult(String spokenWord, boolean isCorrect);
+        /** First time the service answers in this test: the mic is live. */
+        void onVoiceReady();
         void onError(String errorMessage);
     }
 
@@ -95,6 +97,20 @@ public class StroopVoiceManager implements RecognitionListener {
     private StroopTrial currentTrial;
     private long trialStartTimeMs;
     private boolean isListeningActive = false;
+
+    // Session-state guard + hung-service watchdog. startListening() must
+    // never be called while a session is already active: the service
+    // answers that with ERROR_RECOGNIZER_BUSY, and the old code did it
+    // on every partial result -- which is why the test heard nothing at
+    // any distance. sessionActive is true from a startListening call
+    // until onResults/onError ends the session.
+    private boolean sessionActive = false;
+    private static final long WATCHDOG_MS = 5000;
+    private int sessionGeneration = 0;
+    private int readyGeneration = -1;
+    private int busyRetries = 0;
+    private static final int MAX_BUSY_RETRIES = 3;
+    private boolean firstReadyPending = false;
 
     // Recognizer-session hardening (see buildRecognizerIntent): the
     // current simplification level, how many hard errors in a row the
@@ -197,6 +213,10 @@ public class StroopVoiceManager implements RecognitionListener {
         reactionTimes.clear();
         answers.clear();
         lastTextIndex = -1;
+        lastColorIndex = -1;
+        sessionActive = false;
+        busyRetries = 0;
+        firstReadyPending = true;
         intentLevel = 0;
         consecutiveHardErrors = 0;
         recognizerTerminal = false;
@@ -213,14 +233,29 @@ public class StroopVoiceManager implements RecognitionListener {
     }
 
     private void startListening() {
-        if (!isListeningActive || speechRecognizer == null) return;
+        if (!isListeningActive || speechRecognizer == null || sessionActive) return;
+        sessionActive = true;
+        final int generation = ++sessionGeneration;
         mainHandler.post(() -> {
             try {
                 speechRecognizer.startListening(recognizerIntent);
             } catch (Exception e) {
+                sessionActive = false;
                 Log.e(TAG, "Error starting speech recognizer: " + e.getMessage());
             }
         });
+        // Hung-service watchdog: a startListening call that produces no
+        // callback at all (not even onReadyForSpeech) within WATCHDOG_MS
+        // means the session is dead. Rebuild instead of waiting forever
+        // in silence -- the old code had no recovery for this at all.
+        mainHandler.postDelayed(() -> {
+            if (isListeningActive && !recognizerTerminal && sessionActive
+                    && readyGeneration != generation) {
+                Log.w(TAG, "Recognizer produced no callback within " + WATCHDOG_MS
+                        + "ms; treating as hung service");
+                onHardError("ERROR_NO_CALLBACK");
+            }
+        }, WATCHDOG_MS);
     }
 
     public void nextTrial() {
@@ -383,6 +418,8 @@ public class StroopVoiceManager implements RecognitionListener {
 
     public VoiceStroopResult stopTest() {
         isListeningActive = false;
+        sessionActive = false;
+        mainHandler.removeCallbacksAndMessages(null);
         if (speechRecognizer != null) {
             speechRecognizer.stopListening();
             speechRecognizer.destroy();
@@ -404,7 +441,9 @@ public class StroopVoiceManager implements RecognitionListener {
     public void onResults(Bundle results) {
         // A full result proves the current intent level works on this
         // device's recognition service.
+        sessionActive = false;
         consecutiveHardErrors = 0;
+        busyRetries = 0;
         ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         if (matches != null && !matches.isEmpty()) {
             processSpokenMatches(matches);
@@ -415,14 +454,22 @@ public class StroopVoiceManager implements RecognitionListener {
 
     @Override
     public void onPartialResults(Bundle partialResults) {
-        ArrayList<String> matches = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-        if (matches != null && !matches.isEmpty()) {
-            processSpokenMatches(matches);
-        }
+        // Deliberately ignored. Partial results arrive mid-session, and
+        // the old code judged them AND restarted listening from them.
+        // Restarting mid-session earns ERROR_RECOGNIZER_BUSY, and a
+        // partial judged against one trial was followed by the same
+        // utterance's final result judged against the next trial -- one
+        // spoken word counted twice, or not at all. Only final results
+        // judge and restart. (Reaction times now include the service's
+        // end-of-speech latency; that uniform offset is the price of
+        // judging each utterance exactly once.)
     }
 
     @Override
     public void onError(int error) {
+        // The session is over, whatever the error: clear the guard so a
+        // restart is allowed.
+        sessionActive = false;
         // Every error is logged BY NAME: the old silent restart made a
         // failing recognition service indistinguishable from a quiet
         // room, and no Stroop result ever reached the report.
@@ -444,27 +491,47 @@ public class StroopVoiceManager implements RecognitionListener {
                 }
                 return;
             case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
-                // Transient: retry the same intent after a short pause.
-                mainHandler.postDelayed(this::startListening, 500);
+                // With the session guard this should be rare (another app
+                // holding the mic). Retry a bounded number of times,
+                // then say so instead of retrying forever.
+                if (busyRetries < MAX_BUSY_RETRIES) {
+                    busyRetries++;
+                    mainHandler.postDelayed(this::startListening, 500);
+                } else {
+                    recognizerTerminal = true;
+                    if (listener != null) {
+                        listener.onError("Voice recognition is busy on this device. "
+                                + "Close other apps using the microphone and try again.");
+                    }
+                }
                 return;
             default:
                 break;
         }
-        // Hard error: the service rejected or failed the session
-        // itself. Rebuild with a simpler intent; if the simplest
-        // intent keeps failing, stop looping and say so on screen
-        // instead of restarting forever.
+        onHardError(errorName(error));
+    }
+
+    /**
+     * Hard error: the service rejected or failed the session itself
+     * (or the watchdog found a session with no callbacks at all).
+     * Rebuild with a simpler intent; if the simplest intent keeps
+     * failing, stop looping and say so on screen instead of
+     * restarting forever.
+     */
+    private void onHardError(String name) {
+        sessionActive = false;
         consecutiveHardErrors++;
         if (intentLevel < 2) {
             intentLevel++;
-            Log.w(TAG, "Rebuilding recognizer with simpler intent, level " + intentLevel);
+            Log.w(TAG, "Rebuilding recognizer with simpler intent, level " + intentLevel
+                    + " after " + name);
             rebuildRecognizer();
             startListening();
         } else if (consecutiveHardErrors >= MAX_HARD_ERRORS) {
             recognizerTerminal = true;
             if (listener != null) {
                 listener.onError("Voice recognition isn't responding on this device ("
-                        + errorName(error) + "). Answers can't be heard for this test.");
+                        + name + "). Answers can't be heard for this test.");
             }
         } else {
             rebuildRecognizer();
@@ -474,6 +541,17 @@ public class StroopVoiceManager implements RecognitionListener {
 
     @Override public void onReadyForSpeech(Bundle params) {
         Log.d(TAG, "Recognizer ready, intentLevel=" + intentLevel);
+        readyGeneration = sessionGeneration;
+        busyRetries = 0;
+        // Only the first ready of a test touches the status line: later
+        // readies would overwrite each "Heard: ..." message as soon as
+        // the next session starts.
+        if (firstReadyPending) {
+            firstReadyPending = false;
+            if (listener != null) {
+                listener.onVoiceReady();
+            }
+        }
     }
     @Override public void onBeginningOfSpeech() {}
     @Override public void onRmsChanged(float rmsdB) {}
