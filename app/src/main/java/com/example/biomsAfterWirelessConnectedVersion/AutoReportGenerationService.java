@@ -352,6 +352,9 @@ public class AutoReportGenerationService extends Service {
         ArrayList<Float> stepLengthTrials = new ArrayList<>();
         ArrayList<Float> stepTimeCvTrials = new ArrayList<>();
         ArrayList<Float> stepTimeNTrials = new ArrayList<>();
+        // Parallels all five step lists: the walk's actual trial number
+        // among the day's walking-speed trials.
+        ArrayList<Integer> stepTrialNumbers = new ArrayList<>();
         ArrayList<Float> dtBalanceTrials = new ArrayList<>();
         ArrayList<ReportModel.StroopTrialData> dtStroopTrials = new ArrayList<>();
         ArrayList<Float> dtDTCTrials = new ArrayList<>();
@@ -417,6 +420,17 @@ public class AutoReportGenerationService extends Service {
             if (endurance > 0) enduranceTrials.add(endurance);
 
             if (assessment.getBaseline().getStepCount() > 0) {
+                // Trial number = this walk's position among the day's
+                // walking-speed trials (the numbering the speed row
+                // uses). The step block runs after the speed block, so
+                // speedTrials.size() already includes this walk when it
+                // has a speed; a step walk without one counts as the
+                // next walk.
+                int stepTrialNumber = speedTrials.size();
+                if (speed <= 0) {
+                    stepTrialNumber = speedTrials.size() + 1;
+                }
+                stepTrialNumbers.add(stepTrialNumber);
                 stepCountTrials.add((float) assessment.getBaseline().getStepCount());
                 cadenceTrials.add(assessment.getBaseline().getCadence());
                 stepLengthTrials.add(assessment.getBaseline().getMeanStepLength());
@@ -592,6 +606,7 @@ public class AutoReportGenerationService extends Service {
         newReport.setStepLengthTrials(stepLengthTrials);
         newReport.setStepTimeCvTrials(stepTimeCvTrials);
         newReport.setStepTimeNTrials(stepTimeNTrials);
+        newReport.setStepTrialNumbers(stepTrialNumbers);
         newReport.setDualTaskBalanceTrials(dtBalanceTrials);
         newReport.setDualTaskDTCTrials(dtDTCTrials);
         newReport.setSensoryAtaxiaBalanceTrials(saBalanceTrials);
