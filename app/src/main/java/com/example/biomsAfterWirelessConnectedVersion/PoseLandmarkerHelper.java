@@ -903,6 +903,7 @@ public class PoseLandmarkerHelper {
         return rawCHip;
     }
 
+    // Male segment model: de Leva (1996), joint-centre endpoints.
     private List<Double> calculateCOMForMale(double totalMass, List<Landmark> worldLandmarks) {
         List<Double> com = new ArrayList<>();
         double comX = 0;
@@ -924,9 +925,9 @@ public class PoseLandmarkerHelper {
         double hipZ = (leftHip.z() + rightHip.z()) / 2;
 
         // Trunk COM = proximal + (distal - proximal) * COM_location_ratio
-        // COM location ratio for male trunk: 0.4458 (from proximal)
-        double trunkCOM_X = shoulderX + (hipX - shoulderX) * 0.4458;
-        double trunkCOM_Z = shoulderZ + (hipZ - shoulderZ) * 0.4458;
+        // COM location ratio for male trunk: 0.5138 (from proximal, de Leva 1996)
+        double trunkCOM_X = shoulderX + (hipX - shoulderX) * 0.5138;
+        double trunkCOM_Z = shoulderZ + (hipZ - shoulderZ) * 0.5138;
         double trunkMass = 0.4346 * totalMass;  // 43.46% for male
         comX += trunkCOM_X * trunkMass;
         comZ += trunkCOM_Z * trunkMass;
@@ -935,9 +936,9 @@ public class PoseLandmarkerHelper {
         // LEFT THIGH (14.16% for male)
         Landmark leftHipJoint = worldLandmarks.get(23);    // Proximal end
         Landmark leftKnee = worldLandmarks.get(25);         // Distal end
-        // COM location for male thigh: 0.3775 from proximal
-        double leftThighCOM_X = leftHipJoint.x() + (leftKnee.x() - leftHipJoint.x()) * 0.3775;
-        double leftThighCOM_Z = leftHipJoint.z() + (leftKnee.z() - leftHipJoint.z()) * 0.3775;
+        // COM location for male thigh: 0.4095 from proximal (de Leva 1996)
+        double leftThighCOM_X = leftHipJoint.x() + (leftKnee.x() - leftHipJoint.x()) * 0.4095;
+        double leftThighCOM_Z = leftHipJoint.z() + (leftKnee.z() - leftHipJoint.z()) * 0.4095;
         double leftThighMass = 0.1416 * totalMass;  // 14.16% for male
         comX += leftThighCOM_X * leftThighMass;
         comZ += leftThighCOM_Z * leftThighMass;
@@ -946,8 +947,8 @@ public class PoseLandmarkerHelper {
         // RIGHT THIGH (14.16% for male)
         Landmark rightHipJoint = worldLandmarks.get(24);    // Proximal end
         Landmark rightKnee = worldLandmarks.get(26);        // Distal end
-        double rightThighCOM_X = rightHipJoint.x() + (rightKnee.x() - rightHipJoint.x()) * 0.3775;
-        double rightThighCOM_Z = rightHipJoint.z() + (rightKnee.z() - rightHipJoint.z()) * 0.3775;
+        double rightThighCOM_X = rightHipJoint.x() + (rightKnee.x() - rightHipJoint.x()) * 0.4095;
+        double rightThighCOM_Z = rightHipJoint.z() + (rightKnee.z() - rightHipJoint.z()) * 0.4095;
         double rightThighMass = 0.1416 * totalMass;  // 14.16% for male
         comX += rightThighCOM_X * rightThighMass;
         comZ += rightThighCOM_Z * rightThighMass;
@@ -956,9 +957,9 @@ public class PoseLandmarkerHelper {
         // LEFT SHANK (4.33% for male)
         Landmark leftKnee2 = worldLandmarks.get(25);        // Proximal end
         Landmark leftAnkle = worldLandmarks.get(27);        // Distal end
-        // COM location for male shank: 0.4225 from proximal
-        double leftShankCOM_X = leftKnee2.x() + (leftAnkle.x() - leftKnee2.x()) * 0.4225;
-        double leftShankCOM_Z = leftKnee2.z() + (leftAnkle.z() - leftKnee2.z()) * 0.4225;
+        // COM location for male shank: 0.4395 from proximal (de Leva 1996)
+        double leftShankCOM_X = leftKnee2.x() + (leftAnkle.x() - leftKnee2.x()) * 0.4395;
+        double leftShankCOM_Z = leftKnee2.z() + (leftAnkle.z() - leftKnee2.z()) * 0.4395;
         double leftShankMass = 0.0433 * totalMass;  // 4.33% for male
         comX += leftShankCOM_X * leftShankMass;
         comZ += leftShankCOM_Z * leftShankMass;
@@ -967,41 +968,39 @@ public class PoseLandmarkerHelper {
         // RIGHT SHANK (4.33% for male)
         Landmark rightKnee2 = worldLandmarks.get(26);       // Proximal end
         Landmark rightAnkle = worldLandmarks.get(28);       // Distal end
-        double rightShankCOM_X = rightKnee2.x() + (rightAnkle.x() - rightKnee2.x()) * 0.4225;
-        double rightShankCOM_Z = rightKnee2.z() + (rightAnkle.z() - rightKnee2.z()) * 0.4225;
+        double rightShankCOM_X = rightKnee2.x() + (rightAnkle.x() - rightKnee2.x()) * 0.4395;
+        double rightShankCOM_Z = rightKnee2.z() + (rightAnkle.z() - rightKnee2.z()) * 0.4395;
         double rightShankMass = 0.0433 * totalMass;  // 4.33% for male
         comX += rightShankCOM_X * rightShankMass;
         comZ += rightShankCOM_Z * rightShankMass;
         totalMassUsed += rightShankMass;
 
         // LEFT FOOT (1.37% for male)
-        Landmark leftAnkle2 = worldLandmarks.get(27);       // Proximal end
-        Landmark leftHeel = worldLandmarks.get(29);         // Heel
-        Landmark leftToe = worldLandmarks.get(31);          // Toe
-        // Using heel as distal for simplicity
-        double leftFootDistalX = leftHeel.x();
-        double leftFootDistalZ = leftHeel.z();
+        Landmark leftHeel = worldLandmarks.get(29);         // Proximal end (heel)
+        Landmark leftToe = worldLandmarks.get(31);          // Distal end (toe)
+        // de Leva 1996: foot runs heel to toe
+        double leftFootDistalX = leftToe.x();
+        double leftFootDistalZ = leftToe.z();
         // Alternative: use midpoint of heel and toe
         // double leftFootDistalX = (leftHeel.x() + leftToe.x()) / 2;
         // double leftFootDistalZ = (leftHeel.z() + leftToe.z()) / 2;
 
-        // COM location for male foot: 0.4069 from proximal
-        double leftFootCOM_X = leftAnkle2.x() + (leftFootDistalX - leftAnkle2.x()) * 0.4069;
-        double leftFootCOM_Z = leftAnkle2.z() + (leftFootDistalZ - leftAnkle2.z()) * 0.4069;
+        // COM location for male foot: 0.4415 from proximal (de Leva 1996, heel to toe)
+        double leftFootCOM_X = leftHeel.x() + (leftFootDistalX - leftHeel.x()) * 0.4415;
+        double leftFootCOM_Z = leftHeel.z() + (leftFootDistalZ - leftHeel.z()) * 0.4415;
         double leftFootMass = 0.0137 * totalMass;  // 1.37% for male
         comX += leftFootCOM_X * leftFootMass;
         comZ += leftFootCOM_Z * leftFootMass;
         totalMassUsed += leftFootMass;
 
         // RIGHT FOOT (1.37% for male)
-        Landmark rightAnkle2 = worldLandmarks.get(28);      // Proximal end
-        Landmark rightHeel = worldLandmarks.get(30);        // Heel
-        Landmark rightToe = worldLandmarks.get(32);         // Toe
-        double rightFootDistalX = rightHeel.x();
-        double rightFootDistalZ = rightHeel.z();
+        Landmark rightHeel = worldLandmarks.get(30);        // Proximal end (heel)
+        Landmark rightToe = worldLandmarks.get(32);         // Distal end (toe)
+        double rightFootDistalX = rightToe.x();
+        double rightFootDistalZ = rightToe.z();
 
-        double rightFootCOM_X = rightAnkle2.x() + (rightFootDistalX - rightAnkle2.x()) * 0.4069;
-        double rightFootCOM_Z = rightAnkle2.z() + (rightFootDistalZ - rightAnkle2.z()) * 0.4069;
+        double rightFootCOM_X = rightHeel.x() + (rightFootDistalX - rightHeel.x()) * 0.4415;
+        double rightFootCOM_Z = rightHeel.z() + (rightFootDistalZ - rightHeel.z()) * 0.4415;
         double rightFootMass = 0.0137 * totalMass;  // 1.37% for male
         comX += rightFootCOM_X * rightFootMass;
         comZ += rightFootCOM_Z * rightFootMass;
