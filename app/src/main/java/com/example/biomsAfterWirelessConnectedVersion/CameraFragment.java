@@ -60,6 +60,7 @@ import com.example.biomsAfterWirelessConnectedVersion.databinding.FragmentCamera
 
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.mediapipe.framework.MediaPipeException;
 import com.google.mediapipe.tasks.vision.core.RunningMode;
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 
@@ -184,6 +185,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     private void startStroopVoiceTest() {
+        // Never run two recognizers at once: a leaked earlier manager
+        // holds the mic and the new one answers BUSY forever.
+        if (stroopVoiceManager != null) {
+            stroopVoiceManager.stopTest();
+        }
+        if (tvVoiceStatus != null) {
+            tvVoiceStatus.setText("Starting voice test…");
+        }
         stroopVoiceManager = new StroopVoiceManager(requireContext(), new StroopVoiceManager.StroopVoiceListener() {
             @Override
             public void onNewTrial(String wordText, int colorInt) {
@@ -197,6 +206,13 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             public void onSpokenResult(String spokenWord, boolean isCorrect) {
                 if (tvVoiceStatus != null) {
                     tvVoiceStatus.setText("Heard: " + spokenWord + (isCorrect ? " ✓" : " ✗"));
+                }
+            }
+
+            @Override
+            public void onVoiceReady() {
+                if (tvVoiceStatus != null) {
+                    tvVoiceStatus.setText("Listening… speak the ink color");
                 }
             }
 
@@ -410,6 +426,13 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
         // Start the PoseLandmarkerHelper again when users come back
         // to the foreground.
+        // The executor must be alive here: a previous stopCamera() used to
+        // shut it down, and a resume after that threw
+        // RejectedExecutionException and killed the app. Recreate it if
+        // it is gone, so this line can never throw again.
+        if (backgroundExecutor == null || backgroundExecutor.isShutdown()) {
+            backgroundExecutor = Executors.newSingleThreadExecutor();
+        }
         backgroundExecutor.execute(new Runnable() {
             @Override
             public void run() {
@@ -515,6 +538,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         // Preview must never inherit a test's focus lock: whatever path
         // leaves the test screen, the lock ends here.
         releaseFocusLock();
+        // A voice test abandoned mid-trial must not keep the mic: stop
+        // it here. On the normal path the manager is already stopped
+        // (stopVoiceStroop at test end), so this is a no-op there.
+        if (stroopVoiceManager != null) {
+            stroopVoiceManager.stopTest();
+        }
         _fragmentCameraBinding = null;
         super.onDestroyView();
 
@@ -672,6 +701,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 }, 3000);
 
                 btnCancel.setOnClickListener(v2 -> {
+                    // Retract the countdown first: without this, a cancel
+                    // during the get-ready countdown leaves its end action
+                    // pending, and it fires afterwards on the stopped
+                    // camera (focus lock fails, test-started state is set,
+                    // Stroop starts) with no test running.
+                    cancelCountdown();
                     pendingStartAction = null;
                     RecordFragment.setTestStarted(false);
                      Fragment fragment = fm.findFragmentById(R.id.fragment_container);
@@ -683,6 +718,20 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                      viewModel.setCooldownActive(true);
                      if (recordFragment != null) {
                          recordFragment.cancelTest();  // Direct method call!
+                     } else {
+                         // No RecordFragment exists yet: cancel landed during
+                         // the get-ready countdown, before its end action
+                         // creates one. Nothing else navigates away, so go to
+                         // CancellingTest directly instead of stranding the
+                         // user on the stopped camera screen. Extras mirror
+                         // the discard path: cancelledMidway is read first
+                         // there, so it shows "Test Cancelled / Results not
+                         // saved" for 1.5 s and then goes to main.
+                         Intent intent = new Intent(requireContext(), CancellingTest.class);
+                         intent.putExtra("finished", true);
+                         intent.putExtra("Saving", false);
+                         intent.putExtra("cancelledMidway", true);
+                         startActivity(intent);
                      }
                  });
             });
@@ -889,10 +938,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             cameraProvider = null;
         }
 
-        // Shutdown executor (if you want to completely stop)
-        if (backgroundExecutor != null && !backgroundExecutor.isShutdown()) {
-            backgroundExecutor.shutdown();
-        }
+        // The executor is owned by the view lifecycle only: onViewCreated
+        // creates it, onDestroyView shuts it down. stopCamera must NOT shut
+        // it down — it runs mid-life, and every later lifecycle post
+        // (onResume, onPause, updateControlsUi) then threw
+        // RejectedExecutionException on the terminated executor.
+        // Camera use cases and the landmarker are still torn down above.
     }
 
     // Initialize CameraX, and prepare to bind the camera use cases
@@ -1003,10 +1054,18 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private void detectPose(ImageProxy imageProxy) {
         if (poseLandmarkerHelper != null) {
             // MediaPipe processing on background thread
-            poseLandmarkerHelper.detectLiveStream(
-                    imageProxy,
-                    cameraFacing == CameraSelector.LENS_FACING_FRONT
-            );
+            try {
+                poseLandmarkerHelper.detectLiveStream(
+                        imageProxy,
+                        cameraFacing == CameraSelector.LENS_FACING_FRONT
+                );
+            } catch (MediaPipeException e) {
+                // A frame racing landmarker teardown (or a graph that never
+                // started) must not kill the app: the image is already
+                // closed inside detectLiveStream before the send, so drop
+                // the frame and log it.
+                Log.e(TAG, "Dropping frame: landmarker send failed", e);
+            }
         }
     }
 
@@ -1081,7 +1140,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                    // The fragment may have detached between the post and
+                    // this run (e.g. cancel navigated away while a
+                    // landmarker error was queued): skip the toast instead
+                    // of throwing from requireContext().
+                    if (!isAdded() || getActivity() == null) {
+                        return;
+                    }
+                    Toast.makeText(getActivity(), error, Toast.LENGTH_SHORT).show();
                 }
             });
         }

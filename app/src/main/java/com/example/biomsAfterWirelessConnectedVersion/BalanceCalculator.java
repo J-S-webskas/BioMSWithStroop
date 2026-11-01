@@ -24,6 +24,14 @@ public class BalanceCalculator {
     public static volatile float GATE_AP_RANGE_MM = DEFAULT_GATE_AP_RANGE_MM;
     public static volatile float GATE_ML_RANGE_MM = DEFAULT_GATE_ML_RANGE_MM;
 
+    /** Settling cut at the start of each trial, in milliseconds. The old
+     *  code cut a fixed 45 samples; at 30 fps that is 1.5 s, but at the
+     *  ~7.7 fps this phone actually delivers it cut ~5.8 s. */
+    private static final long SETTLING_CUT_MS = 2500;
+    /** Fallback sample count, used only when the timestamps carry no
+     *  usable span (all equal, e.g. legacy data). */
+    private static final int LEGACY_SETTLING_SAMPLES = 45;
+
     /** Despike: a sample >5 cm from its 5-sample rolling median is a pose
      *  glitch, not physiology (sway cannot move that far in one frame). */
     private static final int DESPIKE_RADIUS = 2;
@@ -46,9 +54,28 @@ public class BalanceCalculator {
      */
     public SwayMetrics computeSwayMetrics(List<COMSample> samples) {
         SwayMetrics m = new SwayMetrics();
-        // Drop the first 1.5 seconds (45 frames at 30fps) to ignore the "settling" period.
-        if (samples != null && samples.size() > 45) {
-            samples = new ArrayList<>(samples.subList(45, samples.size()));
+        // Drop the first SETTLING_CUT_MS of the trial to ignore the "settling"
+        // period. This is a duration, not a sample count: the old code dropped
+        // a fixed 45 samples, which assumed 30 fps but cut ~5.8 s on a phone
+        // running at ~7.7 fps. Timestamps are MediaPipe result times on the
+        // uptimeMillis clock, so differences within one trial are exact.
+        // If the timestamps carry no usable span, fall back to the old
+        // 45-sample drop rather than cutting nothing.
+        if (samples != null && !samples.isEmpty()) {
+            long t0 = samples.get(0).timestampMs;
+            long tEnd = samples.get(samples.size() - 1).timestampMs;
+            int cut = 0;
+            if (tEnd > t0) {
+                while (cut < samples.size()
+                        && samples.get(cut).timestampMs - t0 < SETTLING_CUT_MS) {
+                    cut++;
+                }
+            } else if (samples.size() > LEGACY_SETTLING_SAMPLES) {
+                cut = LEGACY_SETTLING_SAMPLES;
+            }
+            if (cut > 0) {
+                samples = new ArrayList<>(samples.subList(cut, samples.size()));
+            }
         }
         if (samples == null || samples.size() < MIN_REAL_SAMPLES) {
             m.valid = false;
