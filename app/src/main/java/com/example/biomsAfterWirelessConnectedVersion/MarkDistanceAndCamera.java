@@ -223,14 +223,12 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
     }
 
     /** Prompt 2: CRITICAL — the phone must be on a secure surface, not
-     *  held. Skipped when someone else records (the recorder holds and
-     *  operates the phone by design in that mode). Yes -> countdown. */
+     *  held. Shown in every mode, including someone-records: the recorder
+     *  can prop the phone up against a vertical surface instead of
+     *  holding it, so the question applies there too. It sits in its
+     *  usual place, after the camera-distance prompt. Yes -> countdown. */
     private void showSecureSurfacePrompt(String assessmentType, boolean someoneRecord,
                                          NestedScrollView scrollView, FrameLayout fragmentContainer) {
-        if (someoneRecord) {
-            launchCameraPreview(assessmentType, someoneRecord, scrollView, fragmentContainer);
-            return;
-        }
         new AlertDialog.Builder(this)
                 .setTitle("\u26A0 CRITICAL")
                 .setMessage("Is the phone on A SECURE SURFACE AND NOT BEING HELD?\n\n"
