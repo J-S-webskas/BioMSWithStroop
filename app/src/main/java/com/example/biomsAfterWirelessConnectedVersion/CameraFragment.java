@@ -60,6 +60,7 @@ import com.example.biomsAfterWirelessConnectedVersion.databinding.FragmentCamera
 
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.mediapipe.framework.MediaPipeException;
 import com.google.mediapipe.tasks.vision.core.RunningMode;
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 
@@ -410,6 +411,13 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
         // Start the PoseLandmarkerHelper again when users come back
         // to the foreground.
+        // The executor must be alive here: a previous stopCamera() used to
+        // shut it down, and a resume after that threw
+        // RejectedExecutionException and killed the app. Recreate it if
+        // it is gone, so this line can never throw again.
+        if (backgroundExecutor == null || backgroundExecutor.isShutdown()) {
+            backgroundExecutor = Executors.newSingleThreadExecutor();
+        }
         backgroundExecutor.execute(new Runnable() {
             @Override
             public void run() {
@@ -889,10 +897,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             cameraProvider = null;
         }
 
-        // Shutdown executor (if you want to completely stop)
-        if (backgroundExecutor != null && !backgroundExecutor.isShutdown()) {
-            backgroundExecutor.shutdown();
-        }
+        // The executor is owned by the view lifecycle only: onViewCreated
+        // creates it, onDestroyView shuts it down. stopCamera must NOT shut
+        // it down — it runs mid-life, and every later lifecycle post
+        // (onResume, onPause, updateControlsUi) then threw
+        // RejectedExecutionException on the terminated executor.
+        // Camera use cases and the landmarker are still torn down above.
     }
 
     // Initialize CameraX, and prepare to bind the camera use cases
@@ -1003,10 +1013,18 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private void detectPose(ImageProxy imageProxy) {
         if (poseLandmarkerHelper != null) {
             // MediaPipe processing on background thread
-            poseLandmarkerHelper.detectLiveStream(
-                    imageProxy,
-                    cameraFacing == CameraSelector.LENS_FACING_FRONT
-            );
+            try {
+                poseLandmarkerHelper.detectLiveStream(
+                        imageProxy,
+                        cameraFacing == CameraSelector.LENS_FACING_FRONT
+                );
+            } catch (MediaPipeException e) {
+                // A frame racing landmarker teardown (or a graph that never
+                // started) must not kill the app: the image is already
+                // closed inside detectLiveStream before the send, so drop
+                // the frame and log it.
+                Log.e(TAG, "Dropping frame: landmarker send failed", e);
+            }
         }
     }
 
