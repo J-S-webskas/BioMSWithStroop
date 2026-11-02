@@ -683,6 +683,20 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                      viewModel.setCooldownActive(true);
                      if (recordFragment != null) {
                          recordFragment.cancelTest();  // Direct method call!
+                     } else {
+                         // No RecordFragment exists yet: cancel landed during
+                         // the get-ready countdown, before its end action
+                         // creates one. Nothing else navigates away, so go to
+                         // CancellingTest directly instead of stranding the
+                         // user on the stopped camera screen. Extras mirror
+                         // the discard path: cancelledMidway is read first
+                         // there, so it shows "Test Cancelled / Results not
+                         // saved" for 1.5 s and then goes to main.
+                         Intent intent = new Intent(requireContext(), CancellingTest.class);
+                         intent.putExtra("finished", true);
+                         intent.putExtra("Saving", false);
+                         intent.putExtra("cancelledMidway", true);
+                         startActivity(intent);
                      }
                  });
             });
