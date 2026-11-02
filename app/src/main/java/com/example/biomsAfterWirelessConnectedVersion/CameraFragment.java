@@ -672,6 +672,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 }, 3000);
 
                 btnCancel.setOnClickListener(v2 -> {
+                    // Retract the countdown first: without this, a cancel
+                    // during the get-ready countdown leaves its end action
+                    // pending, and it fires afterwards on the stopped
+                    // camera (focus lock fails, test-started state is set,
+                    // Stroop starts) with no test running.
+                    cancelCountdown();
                     pendingStartAction = null;
                     RecordFragment.setTestStarted(false);
                      Fragment fragment = fm.findFragmentById(R.id.fragment_container);
@@ -1081,7 +1087,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                    // The fragment may have detached between the post and
+                    // this run (e.g. cancel navigated away while a
+                    // landmarker error was queued): skip the toast instead
+                    // of throwing from requireContext().
+                    if (!isAdded() || getActivity() == null) {
+                        return;
+                    }
+                    Toast.makeText(getActivity(), error, Toast.LENGTH_SHORT).show();
                 }
             });
         }
