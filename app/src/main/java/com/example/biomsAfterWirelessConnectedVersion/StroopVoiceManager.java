@@ -111,6 +111,12 @@ public class StroopVoiceManager implements RecognitionListener {
     private int busyRetries = 0;
     private static final int MAX_BUSY_RETRIES = 3;
     private boolean firstReadyPending = false;
+    /** The watchdog armed for the current session, if any. It is
+     *  cancelled when the session settles (onResults/onError) and
+     *  replaced when a new session starts: a watchdog left pending
+     *  after its session ended would otherwise fire later and rebuild
+     *  a healthy recognizer mid-utterance. */
+    private Runnable pendingWatchdog;
 
     // Recognizer-session hardening (see buildRecognizerIntent): the
     // current simplification level, how many hard errors in a row the
@@ -119,6 +125,10 @@ public class StroopVoiceManager implements RecognitionListener {
     private int consecutiveHardErrors = 0;
     private boolean recognizerTerminal = false;
     private static final int MAX_HARD_ERRORS = 3;
+    /** True once the user has been told voice paused for a retry this
+     *  outage; reset when a result proves recovery, so a later outage
+     *  notifies once again. Later retries stay silent. */
+    private boolean softRetryNotified = false;
 
     private int lastTextIndex = -1;
     private int lastColorIndex = -1;
@@ -220,6 +230,7 @@ public class StroopVoiceManager implements RecognitionListener {
         intentLevel = 0;
         consecutiveHardErrors = 0;
         recognizerTerminal = false;
+        softRetryNotified = false;
         if (speechRecognizer == null) {
             // stopTest() destroys the recognizer; recreate for a new run.
             initSpeechRecognizer();
@@ -248,14 +259,30 @@ public class StroopVoiceManager implements RecognitionListener {
         // callback at all (not even onReadyForSpeech) within WATCHDOG_MS
         // means the session is dead. Rebuild instead of waiting forever
         // in silence -- the old code had no recovery for this at all.
-        mainHandler.postDelayed(() -> {
+        // The watchdog is tied to its generation: it fires only if its
+        // own session is still the current one (sessionGeneration ==
+        // generation) and that session never reported ready. Without
+        // the generation check, a watchdog armed for an earlier session
+        // fires after a later session went ready and destroys a healthy
+        // recognizer -- the rebuild loop that ate every spoken word.
+        cancelPendingWatchdog();
+        pendingWatchdog = () -> {
             if (isListeningActive && !recognizerTerminal && sessionActive
+                    && sessionGeneration == generation
                     && readyGeneration != generation) {
                 Log.w(TAG, "Recognizer produced no callback within " + WATCHDOG_MS
                         + "ms; treating as hung service");
                 onHardError("ERROR_NO_CALLBACK");
             }
-        }, WATCHDOG_MS);
+        };
+        mainHandler.postDelayed(pendingWatchdog, WATCHDOG_MS);
+    }
+
+    /** Drop the watchdog armed for the previous session, if any. */
+    private void cancelPendingWatchdog() {
+        if (pendingWatchdog != null) {
+            mainHandler.removeCallbacks(pendingWatchdog);
+        }
     }
 
     public void nextTrial() {
@@ -442,8 +469,10 @@ public class StroopVoiceManager implements RecognitionListener {
         // A full result proves the current intent level works on this
         // device's recognition service.
         sessionActive = false;
+        cancelPendingWatchdog();
         consecutiveHardErrors = 0;
         busyRetries = 0;
+        softRetryNotified = false;
         ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         if (matches != null && !matches.isEmpty()) {
             processSpokenMatches(matches);
@@ -470,6 +499,7 @@ public class StroopVoiceManager implements RecognitionListener {
         // The session is over, whatever the error: clear the guard so a
         // restart is allowed.
         sessionActive = false;
+        cancelPendingWatchdog();
         // Every error is logged BY NAME: the old silent restart made a
         // failing recognition service indistinguishable from a quiet
         // room, and no Stroop result ever reached the report.
@@ -508,7 +538,6 @@ public class StroopVoiceManager implements RecognitionListener {
             default:
                 break;
         }
-        consecutiveHardErrors++;
         onHardError(errorName(error));
     }
 
@@ -516,11 +545,18 @@ public class StroopVoiceManager implements RecognitionListener {
      * Hard error: the service rejected or failed the session itself
      * (or the watchdog found a session with no callbacks at all).
      * Rebuild with a simpler intent; if the simplest intent keeps
-     * failing, stop looping and say so on screen instead of
-     * restarting forever.
+     * failing, do NOT go terminal -- the wedge that kills a trial is
+     * transient (a fresh test recovers), so retry soft instead: reset
+     * to a fresh start, keep the answers and the current trial, and
+     * keep listening until the trial ends. The trial end bounds all
+     * retries, so this cannot loop forever. Only the first retry of
+     * an outage notifies the user; later retries stay silent.
+     * (Microphone-permission denial keeps its own terminal path in
+     * onError -- retrying cannot fix a missing permission.)
      */
     private void onHardError(String name) {
         sessionActive = false;
+        consecutiveHardErrors++;
         if (intentLevel < 2) {
             intentLevel++;
             Log.w(TAG, "Rebuilding recognizer with simpler intent, level " + intentLevel
@@ -528,11 +564,23 @@ public class StroopVoiceManager implements RecognitionListener {
             rebuildRecognizer();
             startListening();
         } else if (consecutiveHardErrors >= MAX_HARD_ERRORS) {
-            recognizerTerminal = true;
-            if (listener != null) {
-                listener.onError("Voice recognition isn't responding on this device ("
-                        + name + "). Answers can't be heard for this test.");
+            // Soft retry: the service wedge is transient, so a fresh
+            // start may recover mid-trial. Reset exactly what a fresh
+            // test resets (level, counter, recognizer), but keep the
+            // answers, the trial count, and the current trial.
+            if (!softRetryNotified) {
+                softRetryNotified = true;
+                if (listener != null) {
+                    listener.onError("Voice recognition paused, retrying...");
+                }
+            } else {
+                Log.w(TAG, "Voice recognition still not responding after " + name
+                        + "; retrying silently");
             }
+            intentLevel = 0;
+            consecutiveHardErrors = 0;
+            rebuildRecognizer();
+            startListening();
         } else {
             rebuildRecognizer();
             startListening();
