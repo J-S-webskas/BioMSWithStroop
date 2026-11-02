@@ -21,7 +21,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.VideoView;
-import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -71,7 +70,6 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
         FrameLayout fragmentContainer = findViewById(R.id.fragment_container);
         ImageButton back = findViewById(R.id.back);
         CheckBox propRecording = findViewById(R.id.propRecording);
-        TextView surfaceBody = findViewById(R.id.surfaceBody);
         NestedScrollView scrollView = findViewById(R.id.nested_scroll_view); // Add this
         TextView previewModeNext = findViewById(R.id.previewModeNext);
         CheckBox walk = findViewById(R.id.walk);
@@ -99,13 +97,10 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
             Log.d("Entering if", "if entered");
         }
 
-        ImageView propRecord = findViewById(R.id.propRecord);
-
-        if (someoneRecord) {
-            propRecording.setVisibility(GONE);
-            surfaceBody.setVisibility(GONE);
-            propRecord.setVisibility(GONE);
-        }
+        // The prop-up section stays visible in someone-records mode too:
+        // it is now the selector for the secure-surface prompt — ticking
+        // "Find a Vertical Surface" means the recorder props the phone up
+        // instead of holding it, so the prompt below must show.
 
         next.setOnClickListener(v -> {
 
@@ -129,8 +124,11 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
             }
 
             // Before the camera (and its countdown) starts: confirm the
-            // camera distance, then the secure-surface setup.
-            showDistancePrompt(assessmentType, someoneRecord, scrollView, fragmentContainer);
+            // camera distance, then the secure-surface setup. The prop
+            // box state travels with the chain: it decides whether the
+            // secure-surface prompt shows in someone-records mode.
+            showDistancePrompt(assessmentType, someoneRecord, propRecording.isChecked(),
+                    scrollView, fragmentContainer);
         });
 
         // Re-enable scrolling when returning from fragment
@@ -157,7 +155,7 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
     /** Prompt 1: is the camera distance correct for this test? Blocks the
      *  flow until a distance exists. Yes -> secure-surface prompt;
      *  Edit -> distance dialog, then back here to confirm the new value. */
-    private void showDistancePrompt(String assessmentType, boolean someoneRecord,
+    private void showDistancePrompt(String assessmentType, boolean someoneRecord, boolean propUp,
                                     NestedScrollView scrollView, FrameLayout fragmentContainer) {
         float d = getRecordedDistance();
         if (d <= 0f) {
@@ -169,7 +167,7 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
                             + "you will stand, then enter it to continue.")
                     .setPositiveButton("Enter Distance", (dlg, w) ->
                             showDistanceEditDialog(() -> showDistancePrompt(
-                                    assessmentType, someoneRecord, scrollView, fragmentContainer)))
+                                    assessmentType, someoneRecord, propUp, scrollView, fragmentContainer)))
                     .setNegativeButton("Not Now", null)
                     .show();
             return;
@@ -180,10 +178,11 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
                         "Is this camera distance correct for this test?\n\n%.2f meters\n\n"
                                 + "\u26A0 Camera distance directly influences accuracy.", d))
                 .setPositiveButton("Yes", (dlg, w) ->
-                        showSecureSurfacePrompt(assessmentType, someoneRecord, scrollView, fragmentContainer))
+                        showSecureSurfacePrompt(assessmentType, someoneRecord, propUp,
+                                scrollView, fragmentContainer))
                 .setNegativeButton("Edit", (dlg, w) ->
                         showDistanceEditDialog(() -> showDistancePrompt(
-                                assessmentType, someoneRecord, scrollView, fragmentContainer)))
+                                assessmentType, someoneRecord, propUp, scrollView, fragmentContainer)))
                 .show();
     }
 
@@ -223,11 +222,14 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
     }
 
     /** Prompt 2: CRITICAL — the phone must be on a secure surface, not
-     *  held. Skipped when someone else records (the recorder holds and
-     *  operates the phone by design in that mode). Yes -> countdown. */
-    private void showSecureSurfacePrompt(String assessmentType, boolean someoneRecord,
+     *  held. Skipped only when someone else records AND holds the phone.
+     *  When the recorder props the phone up instead (prop box ticked),
+     *  the phone is on a surface, not held, so the question applies and
+     *  the prompt shows, in its usual place after the distance prompt.
+     *  Yes -> countdown. */
+    private void showSecureSurfacePrompt(String assessmentType, boolean someoneRecord, boolean propUp,
                                          NestedScrollView scrollView, FrameLayout fragmentContainer) {
-        if (someoneRecord) {
+        if (someoneRecord && !propUp) {
             launchCameraPreview(assessmentType, someoneRecord, scrollView, fragmentContainer);
             return;
         }
