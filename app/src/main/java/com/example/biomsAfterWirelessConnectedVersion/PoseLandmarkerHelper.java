@@ -155,18 +155,17 @@ public class PoseLandmarkerHelper {
     // anchor fought the data is visible in its SystemLog.
     private static final double ANCHOR_CLAMP_FRACTION = 0.10;
 
-    // Depth-scale calibration, measured 2026-11-03: the apparent-torso
-    // depth product reads ~0.81x the true distance (3.00 m tape ->
-    // ~2.43 m estimate; ~200 mm forward step -> ~161 mm Z change), so
-    // the focal length is corrected by 1/0.81 ~= 1.23. Applied at f
-    // (not at Z) so the recorded X scale, which divides by f, is
-    // unchanged whichever factor (focal length or world torso length)
-    // is actually off; only Z gains the correction. Re-measure after
-    // any camera/FOV change: if a tape distance D reads R, set this
-    // to D/R. A future measured lateral step will show whether
-    // recorded X is already true (error in f) or 0.81x short (error
-    // in the world torso length).
-    private static final double DEPTH_SCALE_CORRECTION = 1.23;
+    // No empirical depth-scale constant: f comes from the camera
+    // hardware field of view (CameraFragment.updateDynamicFov reads
+    // focal length + sensor size and calls setFovDegrees). The 60°
+    // DEFAULT_FOV_H_DEGREES below is only the fallback when the device
+    // reports no characteristics. The 1.23 factor measured 2026-11-03
+    // (apparent-torso depth ~0.81x true) was the signature of the 60°
+    // assumption, not a property of the pipeline: with the true
+    // hardware FOV, f is right with no multiplier. If a confident
+    // lateral + forward pair ever disagrees with this again, suspect
+    // the analyzer crop (sensor FOV vs the cropped image's effective
+    // FOV), not the torso length -- T9 proved D correct.
 
     private final List<Double> calibrationZ = new ArrayList<>();
     private final ArrayDeque<Double> anchorZWindow = new ArrayDeque<>();
@@ -902,7 +901,7 @@ public class PoseLandmarkerHelper {
         double D_torso_meters = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         // Focal length in pixels:
-        double f_pixels = DEPTH_SCALE_CORRECTION * width / (2.0 * Math.tan(Math.toRadians(fovHDegrees / 2.0)));
+        double f_pixels = width / (2.0 * Math.tan(Math.toRadians(fovHDegrees / 2.0)));
         double cx = width / 2.0;
         double cy = height / 2.0;
 

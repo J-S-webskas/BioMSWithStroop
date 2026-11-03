@@ -41,6 +41,7 @@ import androidx.annotation.Nullable;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.FocusMeteringResult;
 import androidx.camera.core.ImageAnalysis;
@@ -264,6 +265,11 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         if (poseLandmarkerHelper != null) {
             poseLandmarkerHelper.resetCalibration();
         }
+
+        // Re-apply the hardware FOV every test: the helper is created
+        // asynchronously, so the single application in startCamera can
+        // run before it exists and silently leave the 60° default.
+        updateDynamicFov();
 
         // Find container
         ViewGroup container = (ViewGroup) getFragmentCameraBinding().getRoot();
@@ -1023,25 +1029,53 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     private void updateDynamicFov() {
+        // The scale conversion needs THIS camera's hardware field of
+        // view, not the 60° default and not an empirical multiplier.
+        // Prefer the bound camera's own characteristics: scanning camera
+        // IDs can land on a different same-facing camera (ultrawide,
+        // depth) with a different focal length. The helper is created
+        // asynchronously, so the single call in startCamera can run
+        // before it exists and silently leave the default; showCountdown
+        // re-applies this every test, so a missed first call is harmless.
         try {
             Context ctx = getContext();
-            if (ctx != null && poseLandmarkerHelper != null) {
-                CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
-                if (cameraManager != null) {
-                    int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
-                            CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
-                    for (String id : cameraManager.getCameraIdList()) {
-                        CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
-                        Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                        if (facing != null && facing == targetFacing) {
-                            float[] focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
-                            SizeF sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
-                            if (focalLengths != null && focalLengths.length > 0 && sensorSize != null && sensorSize.getWidth() > 0) {
-                                double fovH = 2.0 * Math.toDegrees(Math.atan((sensorSize.getWidth() / 2.0) / focalLengths[0]));
-                                poseLandmarkerHelper.setFovDegrees(fovH);
-                            }
-                            break;
+            if (ctx == null || poseLandmarkerHelper == null) {
+                return;
+            }
+            if (camera != null) {
+                try {
+                    Camera2CameraInfo boundInfo =
+                            Camera2CameraInfo.from(camera.getCameraInfo());
+                    float[] focalLengths = boundInfo.getCameraCharacteristic(
+                            CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
+                    SizeF sensorSize = boundInfo.getCameraCharacteristic(
+                            CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
+                    if (focalLengths != null && focalLengths.length > 0
+                            && sensorSize != null && sensorSize.getWidth() > 0) {
+                        double fovH = 2.0 * Math.toDegrees(
+                                Math.atan((sensorSize.getWidth() / 2.0) / focalLengths[0]));
+                        poseLandmarkerHelper.setFovDegrees(fovH);
+                        return;
+                    }
+                } catch (Exception ignored) {
+                    // Fall through to the ID scan below.
+                }
+            }
+            CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
+            if (cameraManager != null) {
+                int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
+                        CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
+                for (String id : cameraManager.getCameraIdList()) {
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+                    Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    if (facing != null && facing == targetFacing) {
+                        float[] focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
+                        SizeF sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
+                        if (focalLengths != null && focalLengths.length > 0 && sensorSize != null && sensorSize.getWidth() > 0) {
+                            double fovH = 2.0 * Math.toDegrees(Math.atan((sensorSize.getWidth() / 2.0) / focalLengths[0]));
+                            poseLandmarkerHelper.setFovDegrees(fovH);
                         }
+                        break;
                     }
                 }
             }

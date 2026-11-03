@@ -692,18 +692,30 @@ public class RecordFragment extends Fragment {
             }
             double fov = PoseLandmarkerHelper.DEFAULT_FOV_H_DEGREES;
             if (metrics != null) {
-                // Anchor + phone-motion audit for the SystemLog. The
-                // snapshot the pose helper took when THIS test ended is
-                // the trustworthy source: by save time the camera
-                // fragment may already be reset for the next test,
-                // replaced in the container, or destroyed -- reading it
-                // then produced the default tuple (0 / "none" / 0) and
-                // the fallback FOV in past exports.
-                PoseLandmarkerHelper.AnchorDiagnostics diag =
-                        PoseLandmarkerHelper.getLastTrialDiagnostics();
+                // Anchor + phone-motion audit for the SystemLog. Prefer
+                // the LIVE diagnostics when the camera fragment is still
+                // alive: they are the anchor THIS test actually ran on.
+                // The static snapshot is taken when the camera stops,
+                // which can be after save time -- so preferring it logs
+                // the PREVIOUS test's anchor whenever the distance
+                // changed mid-session (T5-T11 logged T4's 3.000 m while
+                // the pipeline used 2.16 m). The snapshot stays the
+                // fallback for when the camera is already destroyed:
+                // reading live fields then produced the default tuple
+                // (0 / "none" / 0) and the fallback FOV in past exports.
+                // (A test that itself froze no anchor still falls back
+                // to the snapshot; such a trial is anchorless anyway.)
                 CameraFragment cam = findCameraFragment();
-                if (diag == null && cam != null) {
-                    diag = cam.getAnchorDiagnostics();
+                PoseLandmarkerHelper.AnchorDiagnostics diag = null;
+                if (cam != null) {
+                    PoseLandmarkerHelper.AnchorDiagnostics live =
+                            cam.getAnchorDiagnostics();
+                    if (live != null && live.anchorZ > 0) {
+                        diag = live;
+                    }
+                }
+                if (diag == null) {
+                    diag = PoseLandmarkerHelper.getLastTrialDiagnostics();
                 }
                 if (diag != null) {
                     metrics.anchorZ = diag.anchorZ;
