@@ -270,6 +270,8 @@ class BaselineAssessment implements Serializable {
     private int despikedFrames;
     private double fovUsedDegrees;
     private double anchorZ;              // frozen camera-distance anchor (m)
+    private String appVersion;           // app versionName at save time
+    private int appVersionCode;          // app versionCode at save time
     private String anchorSource;
     private int calibFramesUsed;
     private boolean calibLowConfidence;
@@ -360,6 +362,10 @@ class BaselineAssessment implements Serializable {
     public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
     public double getAnchorZ() { return anchorZ; }
     public void setAnchorZ(double v) { this.anchorZ = v; }
+    public String getAppVersion() { return appVersion; }
+    public void setAppVersion(String v) { this.appVersion = v; }
+    public int getAppVersionCode() { return appVersionCode; }
+    public void setAppVersionCode(int v) { this.appVersionCode = v; }
     public String getAnchorSource() { return anchorSource; }
     public void setAnchorSource(String v) { this.anchorSource = v; }
     public int getCalibFramesUsed() { return calibFramesUsed; }
@@ -398,6 +404,8 @@ class BaselineAssessment implements Serializable {
         anchorZ = 0;
         anchorSource = null;
         calibFramesUsed = 0;
+        appVersion = null;
+        appVersionCode = 0;
         calibLowConfidence = false;
         anchorDisagreement = false;
         anchorClampedFrames = 0;
@@ -441,6 +449,8 @@ class DualTaskAssessment implements Serializable {
     private int despikedFrames;
     private double fovUsedDegrees;
     private double anchorZ;              // frozen camera-distance anchor (m)
+    private String appVersion;           // app versionName at save time
+    private int appVersionCode;          // app versionCode at save time
     private String anchorSource;
     private int calibFramesUsed;
     private boolean calibLowConfidence;
@@ -504,6 +514,10 @@ class DualTaskAssessment implements Serializable {
     public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
     public double getAnchorZ() { return anchorZ; }
     public void setAnchorZ(double v) { this.anchorZ = v; }
+    public String getAppVersion() { return appVersion; }
+    public void setAppVersion(String v) { this.appVersion = v; }
+    public int getAppVersionCode() { return appVersionCode; }
+    public void setAppVersionCode(int v) { this.appVersionCode = v; }
     public String getAnchorSource() { return anchorSource; }
     public void setAnchorSource(String v) { this.anchorSource = v; }
     public int getCalibFramesUsed() { return calibFramesUsed; }
@@ -562,6 +576,8 @@ class DualTaskAssessment implements Serializable {
         anchorZ = 0;
         anchorSource = null;
         calibFramesUsed = 0;
+        appVersion = null;
+        appVersionCode = 0;
         calibLowConfidence = false;
         anchorDisagreement = false;
         anchorClampedFrames = 0;
@@ -610,6 +626,8 @@ class SensoryAtaxiaAssessment implements Serializable {
     private int despikedFrames;
     private double fovUsedDegrees;
     private double anchorZ;              // frozen camera-distance anchor (m)
+    private String appVersion;           // app versionName at save time
+    private int appVersionCode;          // app versionCode at save time
     private String anchorSource;
     private int calibFramesUsed;
     private boolean calibLowConfidence;
@@ -672,6 +690,10 @@ class SensoryAtaxiaAssessment implements Serializable {
     public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
     public double getAnchorZ() { return anchorZ; }
     public void setAnchorZ(double v) { this.anchorZ = v; }
+    public String getAppVersion() { return appVersion; }
+    public void setAppVersion(String v) { this.appVersion = v; }
+    public int getAppVersionCode() { return appVersionCode; }
+    public void setAppVersionCode(int v) { this.appVersionCode = v; }
     public String getAnchorSource() { return anchorSource; }
     public void setAnchorSource(String v) { this.anchorSource = v; }
     public int getCalibFramesUsed() { return calibFramesUsed; }
@@ -711,6 +733,8 @@ class SensoryAtaxiaAssessment implements Serializable {
         anchorZ = 0;
         anchorSource = null;
         calibFramesUsed = 0;
+        appVersion = null;
+        appVersionCode = 0;
         calibLowConfidence = false;
         anchorDisagreement = false;
         anchorClampedFrames = 0;

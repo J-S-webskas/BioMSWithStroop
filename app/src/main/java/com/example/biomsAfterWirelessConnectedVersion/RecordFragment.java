@@ -729,6 +729,11 @@ public class RecordFragment extends Fragment {
             // this at-save export).
             metrics.droppedFrames = PoseLandmarkerHelper.getDroppedFrameCount();
             metrics.fovUsedDegrees = fov;
+            // Same for the app build: record the version that produced
+            // this trial, so the SystemLog identifies its build even
+            // when the export is regenerated later from stored data.
+            metrics.appVersion = BuildConfig.VERSION_NAME;
+            metrics.appVersionCode = BuildConfig.VERSION_CODE;
             TrialCsvExporter.exportTrial(requireContext(), conditionLabel, metrics,
                     jointSeries, metrics.droppedFrames, metrics.fovUsedDegrees);
             // Also store the joint angles as this trial's sidecar file,
@@ -798,6 +803,8 @@ public class RecordFragment extends Fragment {
         currentAssessment.getSensoryAtaxia().setInterpolatedFrames(metrics.interpolatedFrames);
         currentAssessment.getSensoryAtaxia().setDespikedFrames(metrics.despikedFrames);
         currentAssessment.getSensoryAtaxia().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getSensoryAtaxia().setAppVersion(metrics.appVersion);
+        currentAssessment.getSensoryAtaxia().setAppVersionCode(metrics.appVersionCode);
         currentAssessment.getSensoryAtaxia().setAnchorZ(metrics.anchorZ);
         currentAssessment.getSensoryAtaxia().setAnchorSource(metrics.anchorSource);
         currentAssessment.getSensoryAtaxia().setCalibFramesUsed(metrics.calibFramesUsed);
@@ -906,6 +913,8 @@ public class RecordFragment extends Fragment {
         currentAssessment.getDualTask().setInterpolatedFrames(metrics.interpolatedFrames);
         currentAssessment.getDualTask().setDespikedFrames(metrics.despikedFrames);
         currentAssessment.getDualTask().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getDualTask().setAppVersion(metrics.appVersion);
+        currentAssessment.getDualTask().setAppVersionCode(metrics.appVersionCode);
         currentAssessment.getDualTask().setAnchorZ(metrics.anchorZ);
         currentAssessment.getDualTask().setAnchorSource(metrics.anchorSource);
         currentAssessment.getDualTask().setCalibFramesUsed(metrics.calibFramesUsed);
@@ -956,6 +965,8 @@ public class RecordFragment extends Fragment {
         currentAssessment.getBaseline().setInterpolatedFrames(metrics.interpolatedFrames);
         currentAssessment.getBaseline().setDespikedFrames(metrics.despikedFrames);
         currentAssessment.getBaseline().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getBaseline().setAppVersion(metrics.appVersion);
+        currentAssessment.getBaseline().setAppVersionCode(metrics.appVersionCode);
         currentAssessment.getBaseline().setAnchorZ(metrics.anchorZ);
         currentAssessment.getBaseline().setAnchorSource(metrics.anchorSource);
         currentAssessment.getBaseline().setCalibFramesUsed(metrics.calibFramesUsed);
