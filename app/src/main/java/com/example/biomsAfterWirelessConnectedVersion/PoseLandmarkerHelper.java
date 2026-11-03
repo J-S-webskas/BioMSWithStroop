@@ -123,8 +123,9 @@ public class PoseLandmarkerHelper {
     //    is the fallback and the cross-check. A >10% disagreement
     //    between the two is recorded, not silently absorbed.
     //  - During the test, the scale (meters per pixel) is derived from
-    //    the anchored Z only, and Z itself is a ~5 s sliding median of
-    //    the per-frame estimates: steps and re-locks are impossible,
+    //    the anchored Z only, and Z itself is a ~3 s sliding median of
+    //    the per-frame estimates: a sustained step passes after about
+    //    half the window (~1.5 s); brief re-locks are still suppressed,
     //    while slow whole-body AP translation -- which the hip-centred
     //    world landmarks cannot see -- still passes.
     // ------------------------------------------------------------------
@@ -133,7 +134,7 @@ public class PoseLandmarkerHelper {
     private static final float ANCHOR_VISIBILITY_THRESHOLD = 0.5f;
     private static final int ANCHOR_MIN_CALIBRATION_FRAMES = 15;
     private static final int ANCHOR_CALIBRATION_MAX = 300;
-    private static final int ANCHOR_Z_WINDOW = 150; // ~5 s at 30 fps
+    private static final int ANCHOR_Z_WINDOW = 24; // ~3 s at ~8 fps (median lag ~1.5 s)
     // The first ~1 s of pose output after a (re)start is the detector
     // still converging (and, for a self-recorded test, often the subject
     // still walking to their mark): those distance estimates can sit a
@@ -153,6 +154,19 @@ public class PoseLandmarkerHelper {
     // Frames the clamp has to correct are counted, so a trial whose
     // anchor fought the data is visible in its SystemLog.
     private static final double ANCHOR_CLAMP_FRACTION = 0.10;
+
+    // Depth-scale calibration, measured 2026-11-03: the apparent-torso
+    // depth product reads ~0.81x the true distance (3.00 m tape ->
+    // ~2.43 m estimate; ~200 mm forward step -> ~161 mm Z change), so
+    // the focal length is corrected by 1/0.81 ~= 1.23. Applied at f
+    // (not at Z) so the recorded X scale, which divides by f, is
+    // unchanged whichever factor (focal length or world torso length)
+    // is actually off; only Z gains the correction. Re-measure after
+    // any camera/FOV change: if a tape distance D reads R, set this
+    // to D/R. A future measured lateral step will show whether
+    // recorded X is already true (error in f) or 0.81x short (error
+    // in the world torso length).
+    private static final double DEPTH_SCALE_CORRECTION = 1.23;
 
     private final List<Double> calibrationZ = new ArrayList<>();
     private final ArrayDeque<Double> anchorZWindow = new ArrayDeque<>();
@@ -308,7 +322,7 @@ public class PoseLandmarkerHelper {
     /**
      * The Z (camera distance) to use for one recorded frame: a sliding
      * median of recent per-frame estimates, seeded by the frozen anchor.
-     * Kills steps and re-locks; passes slow, real AP translation.
+     * Suppresses brief re-locks; a sustained step passes after about half the window (~1.5 s).
      */
     private synchronized double anchoredZ(double rawZ) {
         anchorZWindow.addLast(rawZ);
@@ -888,7 +902,7 @@ public class PoseLandmarkerHelper {
         double D_torso_meters = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         // Focal length in pixels:
-        double f_pixels = width / (2.0 * Math.tan(Math.toRadians(fovHDegrees / 2.0)));
+        double f_pixels = DEPTH_SCALE_CORRECTION * width / (2.0 * Math.tan(Math.toRadians(fovHDegrees / 2.0)));
         double cx = width / 2.0;
         double cy = height / 2.0;
 
