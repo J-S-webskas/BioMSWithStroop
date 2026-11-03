@@ -123,8 +123,9 @@ public class PoseLandmarkerHelper {
     //    is the fallback and the cross-check. A >10% disagreement
     //    between the two is recorded, not silently absorbed.
     //  - During the test, the scale (meters per pixel) is derived from
-    //    the anchored Z only, and Z itself is a ~5 s sliding median of
-    //    the per-frame estimates: steps and re-locks are impossible,
+    //    the anchored Z only, and Z itself is a ~3 s sliding median of
+    //    the per-frame estimates: a sustained step passes after about
+    //    half the window (~1.5 s); brief re-locks are still suppressed,
     //    while slow whole-body AP translation -- which the hip-centred
     //    world landmarks cannot see -- still passes.
     // ------------------------------------------------------------------
@@ -133,7 +134,7 @@ public class PoseLandmarkerHelper {
     private static final float ANCHOR_VISIBILITY_THRESHOLD = 0.5f;
     private static final int ANCHOR_MIN_CALIBRATION_FRAMES = 15;
     private static final int ANCHOR_CALIBRATION_MAX = 300;
-    private static final int ANCHOR_Z_WINDOW = 150; // ~5 s at 30 fps
+    private static final int ANCHOR_Z_WINDOW = 24; // ~3 s at ~8 fps (median lag ~1.5 s)
     // The first ~1 s of pose output after a (re)start is the detector
     // still converging (and, for a self-recorded test, often the subject
     // still walking to their mark): those distance estimates can sit a
@@ -308,7 +309,7 @@ public class PoseLandmarkerHelper {
     /**
      * The Z (camera distance) to use for one recorded frame: a sliding
      * median of recent per-frame estimates, seeded by the frozen anchor.
-     * Kills steps and re-locks; passes slow, real AP translation.
+     * Suppresses brief re-locks; a sustained step passes after about half the window (~1.5 s).
      */
     private synchronized double anchoredZ(double rawZ) {
         anchorZWindow.addLast(rawZ);
