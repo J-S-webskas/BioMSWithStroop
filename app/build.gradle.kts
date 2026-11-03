@@ -12,6 +12,9 @@ android {
             viewBinding = true
             enable = true  // Correct syntax for Kotlin DSL
         }
+        // Needed so BuildConfig.VERSION_NAME / VERSION_CODE exist for
+        // the SystemLog app-version rows (recorded at save time).
+        buildConfig = true
     }
 
     defaultConfig {

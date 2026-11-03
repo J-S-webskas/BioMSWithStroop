@@ -212,6 +212,8 @@ public class TrialCsvExporter {
         public int despikedFrames = 0;
         public double fovUsedDegrees = 0;
         public double anchorZ = 0;
+        public String appVersion = null;
+        public int appVersionCode = 0;
         public String anchorSource = null;
         public int calibFramesUsed = 0;
         public boolean calibLowConfidence = false;
@@ -231,6 +233,8 @@ public class TrialCsvExporter {
         t.despikedFrames = c.getDespikedFrames();
         t.fovUsedDegrees = c.getFovUsedDegrees();
         t.anchorZ = c.getAnchorZ();
+        t.appVersion = c.getAppVersion();
+        t.appVersionCode = c.getAppVersionCode();
         t.anchorSource = c.getAnchorSource();
         t.calibFramesUsed = c.getCalibFramesUsed();
         t.calibLowConfidence = c.isCalibLowConfidence();
@@ -250,6 +254,8 @@ public class TrialCsvExporter {
         t.despikedFrames = c.getDespikedFrames();
         t.fovUsedDegrees = c.getFovUsedDegrees();
         t.anchorZ = c.getAnchorZ();
+        t.appVersion = c.getAppVersion();
+        t.appVersionCode = c.getAppVersionCode();
         t.anchorSource = c.getAnchorSource();
         t.calibFramesUsed = c.getCalibFramesUsed();
         t.calibLowConfidence = c.isCalibLowConfidence();
@@ -269,6 +275,8 @@ public class TrialCsvExporter {
         t.despikedFrames = c.getDespikedFrames();
         t.fovUsedDegrees = c.getFovUsedDegrees();
         t.anchorZ = c.getAnchorZ();
+        t.appVersion = c.getAppVersion();
+        t.appVersionCode = c.getAppVersionCode();
         t.anchorSource = c.getAnchorSource();
         t.calibFramesUsed = c.getCalibFramesUsed();
         t.calibLowConfidence = c.isCalibLowConfidence();
@@ -554,6 +562,8 @@ public class TrialCsvExporter {
         sb.append("Date,").append(dateStr).append('\n');
         sb.append("Trial,").append(trialIndex).append(" of ").append(trialCount).append('\n');
         sb.append("Source,Stored report data (export generated on demand)\n");
+        sb.append("AppVersion,").append(t.appVersion != null && !t.appVersion.isEmpty() ? t.appVersion : "not recorded").append('\n');
+        sb.append("AppVersionCode,").append(t.appVersionCode > 0 ? String.valueOf(t.appVersionCode) : "not recorded").append('\n');
         sb.append("SwayArea [mm^2],").append(String.format(Locale.US, "%.2f", t.swayAreaMm2)).append('\n');
         sb.append("SwayPathLength [mm],").append(String.format(Locale.US, "%.2f", t.pathLengthMm)).append('\n');
         sb.append("SwayMeanVelocity [mm/s],").append(String.format(Locale.US, "%.2f", t.meanVelocityMmS)).append('\n');
@@ -807,6 +817,8 @@ public class TrialCsvExporter {
         sb.append("Condition,").append(conditionLabel).append('\n');
         sb.append("TrialNumber,").append(trialNumber).append('\n');
         sb.append("Date,").append(dateStr).append('\n');
+        sb.append("AppVersion,").append(metrics != null && metrics.appVersion != null && !metrics.appVersion.isEmpty() ? metrics.appVersion : "not recorded").append('\n');
+        sb.append("AppVersionCode,").append(metrics != null && metrics.appVersionCode > 0 ? String.valueOf(metrics.appVersionCode) : "not recorded").append('\n');
         sb.append("DroppedFramesCount,").append(droppedFrames).append('\n');
         sb.append("InterpolatedFramesCount,").append(metrics != null ? metrics.interpolatedFrames : 0).append('\n');
         sb.append("DespikedFramesCount,").append(metrics != null ? metrics.despikedFrames : 0).append('\n');
