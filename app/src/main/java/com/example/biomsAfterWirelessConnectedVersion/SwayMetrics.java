@@ -52,4 +52,6 @@ public class SwayMetrics implements Serializable {
     public float phoneRotationDeg = 0f; // max device rotation during the trial (gyro audit)
     public int droppedFrames = 0;       // frames where MediaPipe lost the patient (filled at export/save time)
     public double fovUsedDegrees = 0;   // horizontal FOV actually used for the scale conversion (filled at export/save
+    public double focalLengthMm = 0;   // camera focal length (mm) from characteristics (0 = not recorded)
+    public double sensorSpanMm = 0;    // sensor span (mm) along the analyzed image's horizontal axis (0 = not recorded)
 }

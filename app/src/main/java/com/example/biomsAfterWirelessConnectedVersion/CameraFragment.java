@@ -24,6 +24,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.util.SizeF;
 import android.view.Gravity;
+import android.view.Surface;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -50,6 +51,7 @@ import androidx.camera.core.Preview;
 import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
+import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -264,6 +266,13 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         if (poseLandmarkerHelper != null) {
             poseLandmarkerHelper.resetCalibration();
         }
+
+        // Re-apply the focal geometry every test: the helper is
+        // created asynchronously, so the single application in
+        // startCamera can run before it exists and silently leave
+        // the 60 deg default. Re-applying here makes a missed
+        // first call harmless.
+        updateFocalGeometry();
 
         // Find container
         ViewGroup container = (ViewGroup) getFragmentCameraBinding().getRoot();
@@ -1016,38 +1025,125 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             // SurfaceProvider = Interface that provides a drawing surface
             preview.setSurfaceProvider(getFragmentCameraBinding().viewFinder.getSurfaceProvider());
 
-            updateDynamicFov();
+            updateFocalGeometry();
         } catch (Exception exc) {
             Log.e(TAG, "Use case binding failed", exc);
         }
     }
 
-    private void updateDynamicFov() {
+    // Sets the helper's focal geometry from THIS camera's hardware
+    // characteristics: focal length + the sensor span along the
+    // analyzed image's horizontal axis. The span is the sensor's
+    // physical size along the display-horizontal axis — portrait
+    // display: the sensor HEIGHT (the sensor is landscape, the
+    // analyzed frame is portrait, so the axes swap); landscape:
+    // the sensor width — times a width-crop factor when CameraX
+    // crops the width to fit the 4:3 target aspect (for normal
+    // sensors, aspect >= 4:3, the factor is 1 and the span is the
+    // full sensor height). The helper then computes f = focal *
+    // analyzerWidth / span per frame, so the CameraX downscale is
+    // already in the analyzer width and no pixel pitch is needed.
+    // This replaces PR #57 (sensor FOV angle + analyzer width:
+    // wrong axis, f ~1.39x small) and PR #58 (focal / sensor pixel
+    // pitch: wrong pixels, f ~4.85x large). With the span, f
+    // reproduces the validated scale (T4/T9/T11 ~1.00) with no
+    // empirical multiplier, so DEPTH_SCALE_CORRECTION (1.23) stays
+    // deleted. Prefer the bound camera's characteristics: scanning
+    // camera IDs can land on a different same-facing camera
+    // (ultrawide, depth) with a different focal length. Falls back
+    // to the ID scan, then to the helper's 60 deg default
+    // (degraded, visible in exports as FOV_Used 60 + focal/span
+    // "not recorded"). The original error string is preserved
+    // verbatim for genuine failures.
+    private void updateFocalGeometry() {
         try {
             Context ctx = getContext();
-            if (ctx != null && poseLandmarkerHelper != null) {
-                CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
-                if (cameraManager != null) {
-                    int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
-                            CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
-                    for (String id : cameraManager.getCameraIdList()) {
-                        CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
-                        Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                        if (facing != null && facing == targetFacing) {
-                            float[] focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
-                            SizeF sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
-                            if (focalLengths != null && focalLengths.length > 0 && sensorSize != null && sensorSize.getWidth() > 0) {
-                                double fovH = 2.0 * Math.toDegrees(Math.atan((sensorSize.getWidth() / 2.0) / focalLengths[0]));
-                                poseLandmarkerHelper.setFovDegrees(fovH);
-                            }
-                            break;
+            if (ctx == null || poseLandmarkerHelper == null) {
+                return;
+            }
+            int displayRotation = -1;
+            if (getFragmentCameraBinding() != null
+                    && getFragmentCameraBinding().viewFinder != null
+                    && getFragmentCameraBinding().viewFinder.getDisplay() != null) {
+                displayRotation = getFragmentCameraBinding().viewFinder.getDisplay().getRotation();
+            }
+            if (displayRotation < 0) {
+                Log.w(TAG, "Cannot determine display rotation; keeping 60 deg fallback");
+                return;
+            }
+            if (camera != null) {
+                try {
+                    Camera2CameraInfo boundInfo =
+                            Camera2CameraInfo.from(camera.getCameraInfo());
+                    if (applyFocalGeometry(
+                            boundInfo.getCameraCharacteristic(
+                                    CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS),
+                            boundInfo.getCameraCharacteristic(
+                                    CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE),
+                            displayRotation)) {
+                        return;
+                    }
+                } catch (Exception ignored) {
+                    // Fall through to the ID scan below.
+                }
+            }
+            CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
+            if (cameraManager != null) {
+                int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
+                        CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
+                for (String id : cameraManager.getCameraIdList()) {
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+                    Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    if (facing != null && facing == targetFacing) {
+                        if (applyFocalGeometry(
+                                characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS),
+                                characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE),
+                                displayRotation)) {
+                            return;
                         }
+                        break;
                     }
                 }
             }
         } catch (Exception exc) {
             Log.e(TAG, "Since dynamic pov failed, defaulting to 60 degrees", exc);
         }
+    }
+
+    // Computes the sensor span and hands (focal, span) to the
+    // helper. Returns false when any input is missing or invalid,
+    // so the caller can fall through to the next source. The span
+    // is the sensor's physical size along the display-horizontal
+    // axis, times the width-crop factor: CameraX crops to the 4:3
+    // target aspect, so when the rotated sensor is wider than the
+    // target, the width is cropped by target/rotated; otherwise
+    // the full horizontal size is kept (factor 1).
+    private boolean applyFocalGeometry(float[] focalLengths, SizeF sensorSize, int displayRotation) {
+        if (focalLengths == null || focalLengths.length == 0
+                || sensorSize == null || sensorSize.getWidth() <= 0 || sensorSize.getHeight() <= 0) {
+            return false;
+        }
+        double focalMm = focalLengths[0];
+        if (focalMm <= 0) {
+            return false;
+        }
+        boolean portrait = (displayRotation == Surface.ROTATION_90
+                || displayRotation == Surface.ROTATION_270);
+        double sensorHorizontalMm = portrait ? sensorSize.getHeight() : sensorSize.getWidth();
+        double sensorVerticalMm = portrait ? sensorSize.getWidth() : sensorSize.getHeight();
+        if (sensorHorizontalMm <= 0 || sensorVerticalMm <= 0) {
+            return false;
+        }
+        double rotatedAspect = sensorHorizontalMm / sensorVerticalMm;
+        double targetAspect = portrait ? (3.0 / 4.0) : (4.0 / 3.0);
+        double widthCrop = Math.min(1.0, targetAspect / rotatedAspect);
+        double spanMm = sensorHorizontalMm * widthCrop;
+        poseLandmarkerHelper.setFocalGeometry(focalMm, spanMm);
+        Log.i(TAG, "Focal geometry: focal=" + focalMm + "mm span=" + spanMm + "mm crop=" + widthCrop
+                + " sensor=" + sensorSize.getWidth() + "x" + sensorSize.getHeight()
+                + " rotation=" + displayRotation
+                + " effectiveFOV=" + poseLandmarkerHelper.getFovDegrees());
+        return true;
     }
 
     // Processes raw image

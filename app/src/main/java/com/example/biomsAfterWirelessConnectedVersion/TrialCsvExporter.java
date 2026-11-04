@@ -211,6 +211,8 @@ public class TrialCsvExporter {
         public int interpolatedFrames = 0;
         public int despikedFrames = 0;
         public double fovUsedDegrees = 0;
+        public double focalLengthMm = 0;
+        public double sensorSpanMm = 0;
         public double anchorZ = 0;
         public String anchorSource = null;
         public int calibFramesUsed = 0;
@@ -230,6 +232,8 @@ public class TrialCsvExporter {
         t.interpolatedFrames = c.getInterpolatedFrames();
         t.despikedFrames = c.getDespikedFrames();
         t.fovUsedDegrees = c.getFovUsedDegrees();
+        t.focalLengthMm = c.getFocalLengthMm();
+        t.sensorSpanMm = c.getSensorSpanMm();
         t.anchorZ = c.getAnchorZ();
         t.anchorSource = c.getAnchorSource();
         t.calibFramesUsed = c.getCalibFramesUsed();
@@ -249,6 +253,8 @@ public class TrialCsvExporter {
         t.interpolatedFrames = c.getInterpolatedFrames();
         t.despikedFrames = c.getDespikedFrames();
         t.fovUsedDegrees = c.getFovUsedDegrees();
+        t.focalLengthMm = c.getFocalLengthMm();
+        t.sensorSpanMm = c.getSensorSpanMm();
         t.anchorZ = c.getAnchorZ();
         t.anchorSource = c.getAnchorSource();
         t.calibFramesUsed = c.getCalibFramesUsed();
@@ -268,6 +274,8 @@ public class TrialCsvExporter {
         t.interpolatedFrames = c.getInterpolatedFrames();
         t.despikedFrames = c.getDespikedFrames();
         t.fovUsedDegrees = c.getFovUsedDegrees();
+        t.focalLengthMm = c.getFocalLengthMm();
+        t.sensorSpanMm = c.getSensorSpanMm();
         t.anchorZ = c.getAnchorZ();
         t.anchorSource = c.getAnchorSource();
         t.calibFramesUsed = c.getCalibFramesUsed();
@@ -571,6 +579,8 @@ public class TrialCsvExporter {
             sb.append("InterpolatedFramesCount,").append(t.interpolatedFrames).append('\n');
             sb.append("DespikedFramesCount,").append(t.despikedFrames).append('\n');
             sb.append("FOV_Used [deg],").append(String.format(Locale.US, "%.1f", t.fovUsedDegrees)).append('\n');
+            sb.append("FocalLengthMm,").append(t.focalLengthMm > 0 ? String.format(Locale.US, "%.3f", t.focalLengthMm) : "not recorded").append('\n');
+            sb.append("SensorSpanMm,").append(t.sensorSpanMm > 0 ? String.format(Locale.US, "%.3f", t.sensorSpanMm) : "not recorded").append('\n');
             sb.append("AnchorZ [m],").append(String.format(Locale.US, "%.3f", t.anchorZ)).append('\n');
             sb.append("AnchorSource,").append(t.anchorSource != null ? t.anchorSource : "none").append('\n');
             sb.append("CalibFramesUsed,").append(t.calibFramesUsed).append('\n');
@@ -811,6 +821,8 @@ public class TrialCsvExporter {
         sb.append("InterpolatedFramesCount,").append(metrics != null ? metrics.interpolatedFrames : 0).append('\n');
         sb.append("DespikedFramesCount,").append(metrics != null ? metrics.despikedFrames : 0).append('\n');
         sb.append("FOV_Used [deg],").append(String.format(Locale.US, "%.1f", fovDegrees)).append('\n');
+        sb.append("FocalLengthMm,").append(metrics != null && metrics.focalLengthMm > 0 ? String.format(Locale.US, "%.3f", metrics.focalLengthMm) : "not recorded").append('\n');
+        sb.append("SensorSpanMm,").append(metrics != null && metrics.sensorSpanMm > 0 ? String.format(Locale.US, "%.3f", metrics.sensorSpanMm) : "not recorded").append('\n');
         if (metrics != null) {
             sb.append("AnchorZ [m],").append(String.format(Locale.US, "%.3f", metrics.anchorZ)).append('\n');
             sb.append("AnchorSource,").append(metrics.anchorSource != null ? metrics.anchorSource : "none").append('\n');
