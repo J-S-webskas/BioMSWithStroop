@@ -85,6 +85,16 @@ public class PoseLandmarkerHelper {
     }
 
     public double getFovDegrees() {
+        // When the focal geometry is set, report the EFFECTIVE
+        // horizontal FOV of the analyzed image (span / focal),
+        // not the sensor's full FOV: that effective value is what
+        // the SystemLog gate checks (expect ~50 deg front on the
+        // validated phone, not 66.6). Before any geometry is set,
+        // report the configured angle as before.
+        if (focalLengthMm > 0 && sensorSpanMm > 0) {
+            return 2.0 * Math.toDegrees(Math.atan(
+                    (sensorSpanMm / 2.0) / focalLengthMm));
+        }
         return fovHDegrees;
     }
 
@@ -155,18 +165,38 @@ public class PoseLandmarkerHelper {
     // anchor fought the data is visible in its SystemLog.
     private static final double ANCHOR_CLAMP_FRACTION = 0.10;
 
-    // Depth-scale calibration, measured 2026-11-03: the apparent-torso
-    // depth product reads ~0.81x the true distance (3.00 m tape ->
-    // ~2.43 m estimate; ~200 mm forward step -> ~161 mm Z change), so
-    // the focal length is corrected by 1/0.81 ~= 1.23. Applied at f
-    // (not at Z) so the recorded X scale, which divides by f, is
-    // unchanged whichever factor (focal length or world torso length)
-    // is actually off; only Z gains the correction. Re-measure after
-    // any camera/FOV change: if a tape distance D reads R, set this
-    // to D/R. A future measured lateral step will show whether
-    // recorded X is already true (error in f) or 0.81x short (error
-    // in the world torso length).
-    private static final double DEPTH_SCALE_CORRECTION = 1.23;
+    // Focal geometry, from the camera hardware, set by
+    // CameraFragment.updateFocalGeometry(): focal length (mm) and
+    // the sensor span (mm) along the analyzed image's horizontal
+    // axis. The helper then computes f = focal * analyzerWidth /
+    // span per frame. This REPLACES the old DEPTH_SCALE_CORRECTION
+    // = 1.23 (deleted 2026-11-03) and both earlier hardware
+    // attempts: PR #57 paired the full-sensor FOV angle with the
+    // analyzer width (wrong axis: on a portrait display the
+    // analyzer width is the sensor HEIGHT, so f came out ~1.39x
+    // small, lateral ~1.27x, Z pinned at the bottom), and PR #58
+    // used focal / sensor pixel pitch (wrong pixels: CameraX
+    // downscales the readout ~6.7x to the analyzer size, so f came
+    // out ~4.85x large, lateral ~0.19x, Z pinned at the TOP). The
+    // span is the sensor's physical size along the display-
+    // horizontal axis (times a width-crop factor when CameraX
+    // crops the width to fit the 4:3 target; for normal sensors,
+    // aspect >= 4:3, the factor is 1), so f reproduces the
+    // validated scale (T4/T9/T11 ~1.00) with no empirical
+    // multiplier. Dropping 1.23 is only safe when f itself is
+    // right: with the 60 deg assumption and no 1.23, Z pins at the
+    // bottom with X ~1.10x; with the sensor FOV and no 1.23, that
+    // is PR #57. When unset (<= 0), calculateCameraSpaceHip falls
+    // back to the FOV-angle path below.
+    private double focalLengthMm = 0;
+    private double sensorSpanMm = 0;
+
+    public void setFocalGeometry(double focalMm, double spanMm) {
+        if (focalMm > 0 && spanMm > 0) {
+            this.focalLengthMm = focalMm;
+            this.sensorSpanMm = spanMm;
+        }
+    }
 
     private final List<Double> calibrationZ = new ArrayList<>();
     private final ArrayDeque<Double> anchorZWindow = new ArrayDeque<>();
@@ -195,6 +225,8 @@ public class PoseLandmarkerHelper {
         public boolean disagreement = false;
         public int clampedFrames = 0;
         public double fovDegrees = 0;
+        public double focalMm = 0;
+        public double spanMm = 0;
     }
 
     public synchronized AnchorDiagnostics getAnchorDiagnostics() {
@@ -206,6 +238,8 @@ public class PoseLandmarkerHelper {
         d.disagreement = anchorDisagreement;
         d.clampedFrames = anchorClampedFrames;
         d.fovDegrees = getFovDegrees();
+        d.focalMm = focalLengthMm;
+        d.spanMm = sensorSpanMm;
         return d;
     }
 
@@ -901,8 +935,19 @@ public class PoseLandmarkerHelper {
         double dz = sh_mid_w_z - hip_mid_w_z;
         double D_torso_meters = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-        // Focal length in pixels:
-        double f_pixels = DEPTH_SCALE_CORRECTION * width / (2.0 * Math.tan(Math.toRadians(fovHDegrees / 2.0)));
+        // Focal length in pixels. Geometry path: f = focal *
+        // analyzerWidth / span — the analyzer width is known
+        // per frame, so the CameraX downscale is already in it
+        // and no pixel pitch is involved. Fallback path: the FOV
+        // angle (60 deg default unless CameraFragment set an
+        // angle). No empirical multiplier on either path: the
+        // 1.23 constant is deleted (see above).
+        double f_pixels;
+        if (focalLengthMm > 0 && sensorSpanMm > 0) {
+            f_pixels = focalLengthMm * width / sensorSpanMm;
+        } else {
+            f_pixels = width / (2.0 * Math.tan(Math.toRadians(fovHDegrees / 2.0)));
+        }
         double cx = width / 2.0;
         double cy = height / 2.0;
 
