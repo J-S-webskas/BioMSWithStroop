@@ -22,6 +22,7 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.util.Size;
 import android.util.SizeF;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -50,6 +51,7 @@ import androidx.camera.core.Preview;
 import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
+import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -264,6 +266,13 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         if (poseLandmarkerHelper != null) {
             poseLandmarkerHelper.resetCalibration();
         }
+
+        // Re-apply the hardware focal length every test: the helper is
+        // created asynchronously, so the single application in
+        // startCamera can run before it exists and silently leave the
+        // 60 deg default. Re-applying here makes a missed first call
+        // harmless.
+        updateHardwareFocal();
 
         // Find container
         ViewGroup container = (ViewGroup) getFragmentCameraBinding().getRoot();
@@ -1016,38 +1025,92 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             // SurfaceProvider = Interface that provides a drawing surface
             preview.setSurfaceProvider(getFragmentCameraBinding().viewFinder.getSurfaceProvider());
 
-            updateDynamicFov();
+            updateHardwareFocal();
         } catch (Exception exc) {
             Log.e(TAG, "Use case binding failed", exc);
         }
     }
 
-    private void updateDynamicFov() {
+    // Sets the helper's focal length in pixels from THIS camera's
+    // hardware characteristics: f = focal length / sensor pixel
+    // pitch. The FOV angle is deliberately NOT used: PR #57 proved
+    // the sensor's full field of view is not the analyzed image's
+    // field of view (its gate: lateral ~1.27x, Z pinned), because the
+    // analyzer frame is a rotated 4:3 frame whose width is ~0.72x
+    // the sensor width, and pairing the full-sensor angle with that
+    // width understates f ~1.39x. Focal / pixel pitch involves no
+    // analyzer width, so it is immune to the analyzer's crop and
+    // rotation (square pixels), and it reproduces the validated
+    // scale (T4/T9/T11 ~1.00) with no empirical multiplier — which
+    // is why DEPTH_SCALE_CORRECTION (1.23) is deleted, not kept.
+    // Prefer the bound camera's characteristics: scanning camera IDs
+    // can land on a different same-facing camera (ultrawide, depth)
+    // with a different focal length. Falls back to the ID scan, then
+    // to the helper's 60 deg default (degraded, logged).
+    private void updateHardwareFocal() {
         try {
             Context ctx = getContext();
-            if (ctx != null && poseLandmarkerHelper != null) {
-                CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
-                if (cameraManager != null) {
-                    int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
-                            CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
-                    for (String id : cameraManager.getCameraIdList()) {
-                        CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
-                        Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                        if (facing != null && facing == targetFacing) {
-                            float[] focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
-                            SizeF sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
-                            if (focalLengths != null && focalLengths.length > 0 && sensorSize != null && sensorSize.getWidth() > 0) {
-                                double fovH = 2.0 * Math.toDegrees(Math.atan((sensorSize.getWidth() / 2.0) / focalLengths[0]));
-                                poseLandmarkerHelper.setFovDegrees(fovH);
-                            }
-                            break;
+            if (ctx == null || poseLandmarkerHelper == null) {
+                return;
+            }
+            if (camera != null) {
+                try {
+                    Camera2CameraInfo boundInfo =
+                            Camera2CameraInfo.from(camera.getCameraInfo());
+                    if (applyHardwareFocal(
+                            boundInfo.getCameraCharacteristic(
+                                    CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS),
+                            boundInfo.getCameraCharacteristic(
+                                    CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE),
+                            boundInfo.getCameraCharacteristic(
+                                    CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE))) {
+                        return;
+                    }
+                } catch (Exception ignored) {
+                    // Fall through to the ID scan below.
+                }
+            }
+            CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
+            if (cameraManager != null) {
+                int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
+                        CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
+                for (String id : cameraManager.getCameraIdList()) {
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+                    Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    if (facing != null && facing == targetFacing) {
+                        if (applyHardwareFocal(
+                                characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS),
+                                characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE),
+                                characteristics.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE))) {
+                            return;
                         }
+                        break;
                     }
                 }
             }
         } catch (Exception exc) {
             Log.e(TAG, "Since dynamic pov failed, defaulting to 60 degrees", exc);
         }
+    }
+
+    // Computes f = focal / pixel pitch from one camera's
+    // characteristics and hands it to the helper. Returns false when
+    // any input is missing or invalid, so the caller can fall
+    // through to the next source. Pixel pitch uses the width axis;
+    // square pixels make the height axis identical.
+    private boolean applyHardwareFocal(float[] focalLengths, SizeF sensorSize, Size pixelArraySize) {
+        if (focalLengths == null || focalLengths.length == 0
+                || sensorSize == null || sensorSize.getWidth() <= 0
+                || pixelArraySize == null || pixelArraySize.getWidth() <= 0) {
+            return false;
+        }
+        double pixelPitchMm = sensorSize.getWidth() / (double) pixelArraySize.getWidth();
+        double focalMm = focalLengths[0];
+        if (pixelPitchMm <= 0 || focalMm <= 0) {
+            return false;
+        }
+        poseLandmarkerHelper.setFocalLengthPixels(focalMm / pixelPitchMm, pixelPitchMm, focalMm);
+        return true;
     }
 
     // Processes raw image
