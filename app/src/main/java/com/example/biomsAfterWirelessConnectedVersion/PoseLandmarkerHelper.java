@@ -85,6 +85,18 @@ public class PoseLandmarkerHelper {
     }
 
     public double getFovDegrees() {
+        // When the hardware focal path is set, report the EFFECTIVE
+        // horizontal FOV of the analyzed image (its width in mm is
+        // lastFrameWidth * pixel pitch), not the sensor's full FOV:
+        // that effective value is what the SystemLog gate checks
+        // (expect ~50 deg front on the validated phone, not 66.6).
+        // Before any frame, or on the fallback path, report the
+        // configured angle as before.
+        if (focalLengthPixels > 0 && lastFrameWidth > 0
+                && sensorPixelPitchMm > 0 && sensorFocalLengthMm > 0) {
+            return 2.0 * Math.toDegrees(Math.atan(
+                    (lastFrameWidth * sensorPixelPitchMm / 2.0) / sensorFocalLengthMm));
+        }
         return fovHDegrees;
     }
 
@@ -155,18 +167,34 @@ public class PoseLandmarkerHelper {
     // anchor fought the data is visible in its SystemLog.
     private static final double ANCHOR_CLAMP_FRACTION = 0.10;
 
-    // Depth-scale calibration, measured 2026-11-03: the apparent-torso
-    // depth product reads ~0.81x the true distance (3.00 m tape ->
-    // ~2.43 m estimate; ~200 mm forward step -> ~161 mm Z change), so
-    // the focal length is corrected by 1/0.81 ~= 1.23. Applied at f
-    // (not at Z) so the recorded X scale, which divides by f, is
-    // unchanged whichever factor (focal length or world torso length)
-    // is actually off; only Z gains the correction. Re-measure after
-    // any camera/FOV change: if a tape distance D reads R, set this
-    // to D/R. A future measured lateral step will show whether
-    // recorded X is already true (error in f) or 0.81x short (error
-    // in the world torso length).
-    private static final double DEPTH_SCALE_CORRECTION = 1.23;
+    // Focal length in pixels, from the camera hardware (focal length /
+    // sensor pixel pitch), set by CameraFragment.updateHardwareFocal().
+    // This REPLACES the old DEPTH_SCALE_CORRECTION = 1.23 (deleted
+    // 2026-11-03): that constant patched a wrong f. The 60 deg
+    // assumption understated f ~1.22x, and PR #57's sensor-FOV angle
+    // understated it ~1.39x (its gate: lateral reads ~1.27x, Z
+    // pinned), because the sensor's full field of view is NOT the
+    // analyzed image's field of view — the analyzer frame is a
+    // rotated 4:3 frame whose width is ~0.72x the sensor width, and
+    // pairing the full-sensor angle with that width shrinks f. But
+    // f = focal / pixel pitch does not involve the analyzer width
+    // at all (square pixels: pitch is the same on either axis), so
+    // it is immune to the analyzer's crop and rotation, and it
+    // reproduces the validated scale (T4/T9/T11 ~1.00) with no
+    // empirical multiplier. When unset (<= 0), calculateCameraSpaceHip
+    // falls back to the FOV-angle path below.
+    private double focalLengthPixels = -1;
+    private double sensorPixelPitchMm = -1;
+    private double sensorFocalLengthMm = -1;
+    private int lastFrameWidth = -1;
+
+    public void setFocalLengthPixels(double focalPixels, double pixelPitchMm, double focalMm) {
+        if (focalPixels > 0 && pixelPitchMm > 0 && focalMm > 0) {
+            this.focalLengthPixels = focalPixels;
+            this.sensorPixelPitchMm = pixelPitchMm;
+            this.sensorFocalLengthMm = focalMm;
+        }
+    }
 
     private final List<Double> calibrationZ = new ArrayList<>();
     private final ArrayDeque<Double> anchorZWindow = new ArrayDeque<>();
@@ -854,6 +882,7 @@ public class PoseLandmarkerHelper {
         if (landmarks == null || worldLandmarks == null || landmarks.size() <= 24 || worldLandmarks.size() <= 24 || width <= 0 || height <= 0) {
             return null;
         }
+        lastFrameWidth = width;
 
         NormalizedLandmark l_sh = landmarks.get(11);
         NormalizedLandmark r_sh = landmarks.get(12);
@@ -901,8 +930,18 @@ public class PoseLandmarkerHelper {
         double dz = sh_mid_w_z - hip_mid_w_z;
         double D_torso_meters = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-        // Focal length in pixels:
-        double f_pixels = DEPTH_SCALE_CORRECTION * width / (2.0 * Math.tan(Math.toRadians(fovHDegrees / 2.0)));
+        // Focal length in pixels. Hardware path: f = focal length /
+        // sensor pixel pitch (set from camera characteristics) — no
+        // analyzer width in it, so crop/rotation cannot bias it.
+        // Fallback path: the FOV angle (60 deg default unless
+        // CameraFragment set an angle). No empirical multiplier on
+        // either path: the 1.23 constant is deleted (see above).
+        double f_pixels;
+        if (focalLengthPixels > 0) {
+            f_pixels = focalLengthPixels;
+        } else {
+            f_pixels = width / (2.0 * Math.tan(Math.toRadians(fovHDegrees / 2.0)));
+        }
         double cx = width / 2.0;
         double cy = height / 2.0;
 
