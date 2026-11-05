@@ -711,6 +711,10 @@ public class RecordFragment extends Fragment {
                     metrics.calibFramesUsed = diag.calibFramesUsed;
                     metrics.calibLowConfidence = diag.lowConfidence;
                     metrics.anchorClampedFrames = diag.clampedFrames;
+                    metrics.focalLengthMm = diag.focalLengthMm;
+                    metrics.sensorSpanMm = diag.sensorSpanMm;
+                    metrics.sensorPhysicalWmm = diag.sensorPhysicalWmm;
+                    metrics.sensorPhysicalHmm = diag.sensorPhysicalHmm;
                     if (diag.fovDegrees > 0) {
                         fov = diag.fovDegrees;
                     }
@@ -798,6 +802,10 @@ public class RecordFragment extends Fragment {
         currentAssessment.getSensoryAtaxia().setInterpolatedFrames(metrics.interpolatedFrames);
         currentAssessment.getSensoryAtaxia().setDespikedFrames(metrics.despikedFrames);
         currentAssessment.getSensoryAtaxia().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getSensoryAtaxia().setFocalLengthMm(metrics.focalLengthMm);
+        currentAssessment.getSensoryAtaxia().setSensorSpanMm(metrics.sensorSpanMm);
+        currentAssessment.getSensoryAtaxia().setSensorPhysicalWmm(metrics.sensorPhysicalWmm);
+        currentAssessment.getSensoryAtaxia().setSensorPhysicalHmm(metrics.sensorPhysicalHmm);
         currentAssessment.getSensoryAtaxia().setAnchorZ(metrics.anchorZ);
         currentAssessment.getSensoryAtaxia().setAnchorSource(metrics.anchorSource);
         currentAssessment.getSensoryAtaxia().setCalibFramesUsed(metrics.calibFramesUsed);
@@ -906,6 +914,10 @@ public class RecordFragment extends Fragment {
         currentAssessment.getDualTask().setInterpolatedFrames(metrics.interpolatedFrames);
         currentAssessment.getDualTask().setDespikedFrames(metrics.despikedFrames);
         currentAssessment.getDualTask().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getDualTask().setFocalLengthMm(metrics.focalLengthMm);
+        currentAssessment.getDualTask().setSensorSpanMm(metrics.sensorSpanMm);
+        currentAssessment.getDualTask().setSensorPhysicalWmm(metrics.sensorPhysicalWmm);
+        currentAssessment.getDualTask().setSensorPhysicalHmm(metrics.sensorPhysicalHmm);
         currentAssessment.getDualTask().setAnchorZ(metrics.anchorZ);
         currentAssessment.getDualTask().setAnchorSource(metrics.anchorSource);
         currentAssessment.getDualTask().setCalibFramesUsed(metrics.calibFramesUsed);
@@ -956,6 +968,10 @@ public class RecordFragment extends Fragment {
         currentAssessment.getBaseline().setInterpolatedFrames(metrics.interpolatedFrames);
         currentAssessment.getBaseline().setDespikedFrames(metrics.despikedFrames);
         currentAssessment.getBaseline().setFovUsedDegrees(metrics.fovUsedDegrees);
+        currentAssessment.getBaseline().setFocalLengthMm(metrics.focalLengthMm);
+        currentAssessment.getBaseline().setSensorSpanMm(metrics.sensorSpanMm);
+        currentAssessment.getBaseline().setSensorPhysicalWmm(metrics.sensorPhysicalWmm);
+        currentAssessment.getBaseline().setSensorPhysicalHmm(metrics.sensorPhysicalHmm);
         currentAssessment.getBaseline().setAnchorZ(metrics.anchorZ);
         currentAssessment.getBaseline().setAnchorSource(metrics.anchorSource);
         currentAssessment.getBaseline().setCalibFramesUsed(metrics.calibFramesUsed);
