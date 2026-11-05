@@ -88,6 +88,57 @@ public class PoseLandmarkerHelper {
         return fovHDegrees;
     }
 
+    // Diagnostic geometry state (logging only; none of
+    // these fields feeds f). Written by CameraFragment
+    // (camera characteristics) and detectLiveStream
+    // (frame sizes), read by getAnchorDiagnostics().
+    private String diagCameraFacing = "";
+    private String diagFocalLengthsMm = "";
+    private double diagSensorPhysicalWmm = 0;
+    private double diagSensorPhysicalHmm = 0;
+    private int diagSensorActiveWpx = 0;
+    private int diagSensorActiveHpx = 0;
+    private int diagAnalyzerWidthPx = 0;
+    private int diagAnalyzerHeightPx = 0;
+    private int diagImageProxyWidthPx = 0;
+    private int diagImageProxyHeightPx = 0;
+    private int diagImageRotationDeg = -1;
+    private int diagDisplayRotationDeg = -1;
+    private String diagScanCameraId = "";
+    private double diagScanFocalMm = 0;
+    private double diagSpanFovDeg = 0;
+    private double diagSpanFOverF60 = 0;
+
+    public synchronized void setDiagnosticCamera(String facing, String focalsJoined,
+            double physW, double physH, int activeW, int activeH,
+            double spanFovDeg, double spanFOverF60, int displayRotationDeg) {
+        this.diagCameraFacing = facing;
+        this.diagFocalLengthsMm = focalsJoined;
+        this.diagSensorPhysicalWmm = physW;
+        this.diagSensorPhysicalHmm = physH;
+        this.diagSensorActiveWpx = activeW;
+        this.diagSensorActiveHpx = activeH;
+        this.diagSpanFovDeg = spanFovDeg;
+        this.diagSpanFOverF60 = spanFOverF60;
+        this.diagDisplayRotationDeg = displayRotationDeg;
+    }
+
+    public synchronized void setDiagnosticScan(String scanId, double scanFocalMm) {
+        this.diagScanCameraId = scanId;
+        this.diagScanFocalMm = scanFocalMm;
+    }
+
+    public synchronized void setDiagnosticFrameSizes(int proxyW, int proxyH, int proxyRotationDeg) {
+        this.diagImageProxyWidthPx = proxyW;
+        this.diagImageProxyHeightPx = proxyH;
+        this.diagImageRotationDeg = proxyRotationDeg;
+    }
+
+    public synchronized void setDiagnosticAnalyzerSize(int analyzerW, int analyzerH) {
+        this.diagAnalyzerWidthPx = analyzerW;
+        this.diagAnalyzerHeightPx = analyzerH;
+    }
+
     // Frames during the current test where MediaPipe returned no pose —
     // the patient was "lost". Read (and reset) by the export at save time;
     // reset again when a test starts.
@@ -195,6 +246,22 @@ public class PoseLandmarkerHelper {
         public boolean disagreement = false;
         public int clampedFrames = 0;
         public double fovDegrees = 0;
+        public String diagCameraFacing = "";
+        public String diagFocalLengthsMm = "";
+        public double diagSensorPhysicalWmm = 0;
+        public double diagSensorPhysicalHmm = 0;
+        public int diagSensorActiveWpx = 0;
+        public int diagSensorActiveHpx = 0;
+        public int diagAnalyzerWidthPx = 0;
+        public int diagAnalyzerHeightPx = 0;
+        public int diagImageProxyWidthPx = 0;
+        public int diagImageProxyHeightPx = 0;
+        public int diagImageRotationDeg = -1;
+        public int diagDisplayRotationDeg = -1;
+        public String diagScanCameraId = "";
+        public double diagScanFocalMm = 0;
+        public double diagSpanFovDeg = 0;
+        public double diagSpanFOverF60 = 0;
     }
 
     public synchronized AnchorDiagnostics getAnchorDiagnostics() {
@@ -206,6 +273,22 @@ public class PoseLandmarkerHelper {
         d.disagreement = anchorDisagreement;
         d.clampedFrames = anchorClampedFrames;
         d.fovDegrees = getFovDegrees();
+        d.diagCameraFacing = diagCameraFacing;
+        d.diagFocalLengthsMm = diagFocalLengthsMm;
+        d.diagSensorPhysicalWmm = diagSensorPhysicalWmm;
+        d.diagSensorPhysicalHmm = diagSensorPhysicalHmm;
+        d.diagSensorActiveWpx = diagSensorActiveWpx;
+        d.diagSensorActiveHpx = diagSensorActiveHpx;
+        d.diagAnalyzerWidthPx = diagAnalyzerWidthPx;
+        d.diagAnalyzerHeightPx = diagAnalyzerHeightPx;
+        d.diagImageProxyWidthPx = diagImageProxyWidthPx;
+        d.diagImageProxyHeightPx = diagImageProxyHeightPx;
+        d.diagImageRotationDeg = diagImageRotationDeg;
+        d.diagDisplayRotationDeg = diagDisplayRotationDeg;
+        d.diagScanCameraId = diagScanCameraId;
+        d.diagScanFocalMm = diagScanFocalMm;
+        d.diagSpanFovDeg = diagSpanFovDeg;
+        d.diagSpanFOverF60 = diagSpanFOverF60;
         return d;
     }
 
@@ -499,6 +582,10 @@ public class PoseLandmarkerHelper {
             );
         }
         long frameTime = SystemClock.uptimeMillis();
+        // Diagnostic geometry (no behavior change): the CameraX frame
+        // sizes/rotation feeding the scale math, captured before close.
+        setDiagnosticFrameSizes(imageProxy.getWidth(), imageProxy.getHeight(),
+                imageProxy.getImageInfo().getRotationDegrees());
 
         // Creates empty bitmap matching camera frame dimensions. Bitmap = Digital image representation in Android
         Bitmap bitmapBuffer = Bitmap.createBitmap(
@@ -528,6 +615,7 @@ public class PoseLandmarkerHelper {
                 matrix, true
         );
 
+        setDiagnosticAnalyzerSize(rotatedBitmap.getWidth(), rotatedBitmap.getHeight());
         MPImage mpImage = new BitmapImageBuilder(rotatedBitmap).build();
         detectAsync(mpImage, frameTime);
     }
