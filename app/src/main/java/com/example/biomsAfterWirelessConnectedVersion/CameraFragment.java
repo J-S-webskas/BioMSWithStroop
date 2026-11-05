@@ -38,6 +38,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
@@ -264,6 +265,13 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         if (poseLandmarkerHelper != null) {
             poseLandmarkerHelper.resetCalibration();
         }
+
+        // Re-apply the span geometry every test: the helper is
+        // created asynchronously, so the single application at
+        // bind time can run before it exists and silently leave
+        // the 60 deg default. Re-applying here makes a missed
+        // first call harmless.
+        updateSpanGeometry();
 
         // Find container
         ViewGroup container = (ViewGroup) getFragmentCameraBinding().getRoot();
@@ -1016,38 +1024,74 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             // SurfaceProvider = Interface that provides a drawing surface
             preview.setSurfaceProvider(getFragmentCameraBinding().viewFinder.getSurfaceProvider());
 
-            updateDynamicFov();
+            updateSpanGeometry();
         } catch (Exception exc) {
             Log.e(TAG, "Use case binding failed", exc);
         }
     }
 
-    private void updateDynamicFov() {
+    private void updateSpanGeometry() {
         try {
             Context ctx = getContext();
-            if (ctx != null && poseLandmarkerHelper != null) {
-                CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
-                if (cameraManager != null) {
-                    int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
-                            CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
-                    for (String id : cameraManager.getCameraIdList()) {
-                        CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
-                        Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                        if (facing != null && facing == targetFacing) {
-                            float[] focalLengths = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
-                            SizeF sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
-                            if (focalLengths != null && focalLengths.length > 0 && sensorSize != null && sensorSize.getWidth() > 0) {
-                                double fovH = 2.0 * Math.toDegrees(Math.atan((sensorSize.getWidth() / 2.0) / focalLengths[0]));
-                                poseLandmarkerHelper.setFovDegrees(fovH);
-                            }
-                            break;
+            if (ctx == null || poseLandmarkerHelper == null) {
+                return;
+            }
+            if (camera != null) {
+                try {
+                    Camera2CameraInfo boundInfo = Camera2CameraInfo.from(camera.getCameraInfo());
+                    if (applySpanGeometry(
+                            boundInfo.getCameraCharacteristic(
+                                    CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS),
+                            boundInfo.getCameraCharacteristic(
+                                    CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE))) {
+                        return;
+                    }
+                } catch (Exception ignored) {
+                    // Fall through to the ID scan below.
+                }
+            }
+            CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
+            if (cameraManager != null) {
+                int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
+                        CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
+                for (String id : cameraManager.getCameraIdList()) {
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+                    Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    if (facing != null && facing == targetFacing) {
+                        if (applySpanGeometry(
+                                characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS),
+                                characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE))) {
+                            return;
                         }
+                        break;
                     }
                 }
             }
         } catch (Exception exc) {
             Log.e(TAG, "Since dynamic pov failed, defaulting to 60 degrees", exc);
         }
+    }
+
+    // Stores one camera's focal length + full physical size as span
+    // geometry. Returns true when usable. The span itself is NOT
+    // chosen here: the helper picks it per frame from the analyzed
+    // image's orientation (portrait -> height, landscape ->
+    // width), because display rotation proved to be the wrong
+    // signal in #59 (0 on the validated phone while the analyzer
+    // is portrait). Never touches f directly.
+    private boolean applySpanGeometry(float[] focalLengths, SizeF sensorSize) {
+        if (focalLengths == null || focalLengths.length == 0
+                || sensorSize == null || sensorSize.getWidth() <= 0 || sensorSize.getHeight() <= 0) {
+            return false;
+        }
+        double focalMm = focalLengths[0];
+        if (focalMm <= 0) {
+            return false;
+        }
+        poseLandmarkerHelper.setSpanGeometry(focalMm, sensorSize.getWidth(), sensorSize.getHeight());
+        Log.i(TAG, "Span geometry: focal=" + focalMm + "mm sensor="
+                + sensorSize.getWidth() + "x" + sensorSize.getHeight());
+        return true;
     }
 
     // Processes raw image
