@@ -269,6 +269,10 @@ class BaselineAssessment implements Serializable {
     private int interpolatedFrames;
     private int despikedFrames;
     private double fovUsedDegrees;
+    private double focalLengthMm;
+    private double sensorSpanMm;
+    private double sensorPhysicalWmm;
+    private double sensorPhysicalHmm;
     private double anchorZ;              // frozen camera-distance anchor (m)
     private String anchorSource;
     private int calibFramesUsed;
@@ -357,6 +361,14 @@ class BaselineAssessment implements Serializable {
     public int getDespikedFrames() { return despikedFrames; }
     public void setDespikedFrames(int v) { this.despikedFrames = v; }
     public double getFovUsedDegrees() { return fovUsedDegrees; }
+    public double getFocalLengthMm() { return focalLengthMm; }
+    public void setFocalLengthMm(double v) { this.focalLengthMm = v; }
+    public double getSensorSpanMm() { return sensorSpanMm; }
+    public void setSensorSpanMm(double v) { this.sensorSpanMm = v; }
+    public double getSensorPhysicalWmm() { return sensorPhysicalWmm; }
+    public void setSensorPhysicalWmm(double v) { this.sensorPhysicalWmm = v; }
+    public double getSensorPhysicalHmm() { return sensorPhysicalHmm; }
+    public void setSensorPhysicalHmm(double v) { this.sensorPhysicalHmm = v; }
     public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
     public double getAnchorZ() { return anchorZ; }
     public void setAnchorZ(double v) { this.anchorZ = v; }
@@ -395,6 +407,10 @@ class BaselineAssessment implements Serializable {
         interpolatedFrames = 0;
         despikedFrames = 0;
         fovUsedDegrees = 0;
+        focalLengthMm = 0;
+        sensorSpanMm = 0;
+        sensorPhysicalWmm = 0;
+        sensorPhysicalHmm = 0;
         anchorZ = 0;
         anchorSource = null;
         calibFramesUsed = 0;
@@ -440,6 +456,10 @@ class DualTaskAssessment implements Serializable {
     private int interpolatedFrames;
     private int despikedFrames;
     private double fovUsedDegrees;
+    private double focalLengthMm;
+    private double sensorSpanMm;
+    private double sensorPhysicalWmm;
+    private double sensorPhysicalHmm;
     private double anchorZ;              // frozen camera-distance anchor (m)
     private String anchorSource;
     private int calibFramesUsed;
@@ -501,6 +521,14 @@ class DualTaskAssessment implements Serializable {
     public int getDespikedFrames() { return despikedFrames; }
     public void setDespikedFrames(int v) { this.despikedFrames = v; }
     public double getFovUsedDegrees() { return fovUsedDegrees; }
+    public double getFocalLengthMm() { return focalLengthMm; }
+    public void setFocalLengthMm(double v) { this.focalLengthMm = v; }
+    public double getSensorSpanMm() { return sensorSpanMm; }
+    public void setSensorSpanMm(double v) { this.sensorSpanMm = v; }
+    public double getSensorPhysicalWmm() { return sensorPhysicalWmm; }
+    public void setSensorPhysicalWmm(double v) { this.sensorPhysicalWmm = v; }
+    public double getSensorPhysicalHmm() { return sensorPhysicalHmm; }
+    public void setSensorPhysicalHmm(double v) { this.sensorPhysicalHmm = v; }
     public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
     public double getAnchorZ() { return anchorZ; }
     public void setAnchorZ(double v) { this.anchorZ = v; }
@@ -559,6 +587,10 @@ class DualTaskAssessment implements Serializable {
         interpolatedFrames = 0;
         despikedFrames = 0;
         fovUsedDegrees = 0;
+        focalLengthMm = 0;
+        sensorSpanMm = 0;
+        sensorPhysicalWmm = 0;
+        sensorPhysicalHmm = 0;
         anchorZ = 0;
         anchorSource = null;
         calibFramesUsed = 0;
@@ -609,6 +641,10 @@ class SensoryAtaxiaAssessment implements Serializable {
     private int interpolatedFrames;
     private int despikedFrames;
     private double fovUsedDegrees;
+    private double focalLengthMm;
+    private double sensorSpanMm;
+    private double sensorPhysicalWmm;
+    private double sensorPhysicalHmm;
     private double anchorZ;              // frozen camera-distance anchor (m)
     private String anchorSource;
     private int calibFramesUsed;
@@ -669,6 +705,14 @@ class SensoryAtaxiaAssessment implements Serializable {
     public int getDespikedFrames() { return despikedFrames; }
     public void setDespikedFrames(int v) { this.despikedFrames = v; }
     public double getFovUsedDegrees() { return fovUsedDegrees; }
+    public double getFocalLengthMm() { return focalLengthMm; }
+    public void setFocalLengthMm(double v) { this.focalLengthMm = v; }
+    public double getSensorSpanMm() { return sensorSpanMm; }
+    public void setSensorSpanMm(double v) { this.sensorSpanMm = v; }
+    public double getSensorPhysicalWmm() { return sensorPhysicalWmm; }
+    public void setSensorPhysicalWmm(double v) { this.sensorPhysicalWmm = v; }
+    public double getSensorPhysicalHmm() { return sensorPhysicalHmm; }
+    public void setSensorPhysicalHmm(double v) { this.sensorPhysicalHmm = v; }
     public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
     public double getAnchorZ() { return anchorZ; }
     public void setAnchorZ(double v) { this.anchorZ = v; }
@@ -708,6 +752,10 @@ class SensoryAtaxiaAssessment implements Serializable {
         interpolatedFrames = 0;
         despikedFrames = 0;
         fovUsedDegrees = 0;
+        focalLengthMm = 0;
+        sensorSpanMm = 0;
+        sensorPhysicalWmm = 0;
+        sensorPhysicalHmm = 0;
         anchorZ = 0;
         anchorSource = null;
         calibFramesUsed = 0;
