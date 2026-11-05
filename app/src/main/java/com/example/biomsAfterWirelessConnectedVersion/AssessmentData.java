@@ -269,6 +269,22 @@ class BaselineAssessment implements Serializable {
     private int interpolatedFrames;
     private int despikedFrames;
     private double fovUsedDegrees;
+    private String diagCameraFacing;
+    private String diagFocalLengthsMm;
+    private double diagSensorPhysicalWmm;
+    private double diagSensorPhysicalHmm;
+    private int diagSensorActiveWpx;
+    private int diagSensorActiveHpx;
+    private int diagAnalyzerWidthPx;
+    private int diagAnalyzerHeightPx;
+    private int diagImageProxyWidthPx;
+    private int diagImageProxyHeightPx;
+    private int diagImageRotationDeg;
+    private int diagDisplayRotationDeg;
+    private String diagScanCameraId;
+    private double diagScanFocalMm;
+    private double diagSpanFovDeg;
+    private double diagSpanFOverF60;
     private double anchorZ;              // frozen camera-distance anchor (m)
     private String anchorSource;
     private int calibFramesUsed;
@@ -357,6 +373,38 @@ class BaselineAssessment implements Serializable {
     public int getDespikedFrames() { return despikedFrames; }
     public void setDespikedFrames(int v) { this.despikedFrames = v; }
     public double getFovUsedDegrees() { return fovUsedDegrees; }
+    public String getDiagCameraFacing() { return diagCameraFacing; }
+    public void setDiagCameraFacing(String v) { this.diagCameraFacing = v; }
+    public String getDiagFocalLengthsMm() { return diagFocalLengthsMm; }
+    public void setDiagFocalLengthsMm(String v) { this.diagFocalLengthsMm = v; }
+    public double getDiagSensorPhysicalWmm() { return diagSensorPhysicalWmm; }
+    public void setDiagSensorPhysicalWmm(double v) { this.diagSensorPhysicalWmm = v; }
+    public double getDiagSensorPhysicalHmm() { return diagSensorPhysicalHmm; }
+    public void setDiagSensorPhysicalHmm(double v) { this.diagSensorPhysicalHmm = v; }
+    public int getDiagSensorActiveWpx() { return diagSensorActiveWpx; }
+    public void setDiagSensorActiveWpx(int v) { this.diagSensorActiveWpx = v; }
+    public int getDiagSensorActiveHpx() { return diagSensorActiveHpx; }
+    public void setDiagSensorActiveHpx(int v) { this.diagSensorActiveHpx = v; }
+    public int getDiagAnalyzerWidthPx() { return diagAnalyzerWidthPx; }
+    public void setDiagAnalyzerWidthPx(int v) { this.diagAnalyzerWidthPx = v; }
+    public int getDiagAnalyzerHeightPx() { return diagAnalyzerHeightPx; }
+    public void setDiagAnalyzerHeightPx(int v) { this.diagAnalyzerHeightPx = v; }
+    public int getDiagImageProxyWidthPx() { return diagImageProxyWidthPx; }
+    public void setDiagImageProxyWidthPx(int v) { this.diagImageProxyWidthPx = v; }
+    public int getDiagImageProxyHeightPx() { return diagImageProxyHeightPx; }
+    public void setDiagImageProxyHeightPx(int v) { this.diagImageProxyHeightPx = v; }
+    public int getDiagImageRotationDeg() { return diagImageRotationDeg; }
+    public void setDiagImageRotationDeg(int v) { this.diagImageRotationDeg = v; }
+    public int getDiagDisplayRotationDeg() { return diagDisplayRotationDeg; }
+    public void setDiagDisplayRotationDeg(int v) { this.diagDisplayRotationDeg = v; }
+    public String getDiagScanCameraId() { return diagScanCameraId; }
+    public void setDiagScanCameraId(String v) { this.diagScanCameraId = v; }
+    public double getDiagScanFocalMm() { return diagScanFocalMm; }
+    public void setDiagScanFocalMm(double v) { this.diagScanFocalMm = v; }
+    public double getDiagSpanFovDeg() { return diagSpanFovDeg; }
+    public void setDiagSpanFovDeg(double v) { this.diagSpanFovDeg = v; }
+    public double getDiagSpanFOverF60() { return diagSpanFOverF60; }
+    public void setDiagSpanFOverF60(double v) { this.diagSpanFOverF60 = v; }
     public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
     public double getAnchorZ() { return anchorZ; }
     public void setAnchorZ(double v) { this.anchorZ = v; }
@@ -395,6 +443,22 @@ class BaselineAssessment implements Serializable {
         interpolatedFrames = 0;
         despikedFrames = 0;
         fovUsedDegrees = 0;
+        diagCameraFacing = "";
+        diagFocalLengthsMm = "";
+        diagSensorPhysicalWmm = 0;
+        diagSensorPhysicalHmm = 0;
+        diagSensorActiveWpx = 0;
+        diagSensorActiveHpx = 0;
+        diagAnalyzerWidthPx = 0;
+        diagAnalyzerHeightPx = 0;
+        diagImageProxyWidthPx = 0;
+        diagImageProxyHeightPx = 0;
+        diagImageRotationDeg = -1;
+        diagDisplayRotationDeg = -1;
+        diagScanCameraId = "";
+        diagScanFocalMm = 0;
+        diagSpanFovDeg = 0;
+        diagSpanFOverF60 = 0;
         anchorZ = 0;
         anchorSource = null;
         calibFramesUsed = 0;
@@ -440,6 +504,22 @@ class DualTaskAssessment implements Serializable {
     private int interpolatedFrames;
     private int despikedFrames;
     private double fovUsedDegrees;
+    private String diagCameraFacing;
+    private String diagFocalLengthsMm;
+    private double diagSensorPhysicalWmm;
+    private double diagSensorPhysicalHmm;
+    private int diagSensorActiveWpx;
+    private int diagSensorActiveHpx;
+    private int diagAnalyzerWidthPx;
+    private int diagAnalyzerHeightPx;
+    private int diagImageProxyWidthPx;
+    private int diagImageProxyHeightPx;
+    private int diagImageRotationDeg;
+    private int diagDisplayRotationDeg;
+    private String diagScanCameraId;
+    private double diagScanFocalMm;
+    private double diagSpanFovDeg;
+    private double diagSpanFOverF60;
     private double anchorZ;              // frozen camera-distance anchor (m)
     private String anchorSource;
     private int calibFramesUsed;
@@ -501,6 +581,38 @@ class DualTaskAssessment implements Serializable {
     public int getDespikedFrames() { return despikedFrames; }
     public void setDespikedFrames(int v) { this.despikedFrames = v; }
     public double getFovUsedDegrees() { return fovUsedDegrees; }
+    public String getDiagCameraFacing() { return diagCameraFacing; }
+    public void setDiagCameraFacing(String v) { this.diagCameraFacing = v; }
+    public String getDiagFocalLengthsMm() { return diagFocalLengthsMm; }
+    public void setDiagFocalLengthsMm(String v) { this.diagFocalLengthsMm = v; }
+    public double getDiagSensorPhysicalWmm() { return diagSensorPhysicalWmm; }
+    public void setDiagSensorPhysicalWmm(double v) { this.diagSensorPhysicalWmm = v; }
+    public double getDiagSensorPhysicalHmm() { return diagSensorPhysicalHmm; }
+    public void setDiagSensorPhysicalHmm(double v) { this.diagSensorPhysicalHmm = v; }
+    public int getDiagSensorActiveWpx() { return diagSensorActiveWpx; }
+    public void setDiagSensorActiveWpx(int v) { this.diagSensorActiveWpx = v; }
+    public int getDiagSensorActiveHpx() { return diagSensorActiveHpx; }
+    public void setDiagSensorActiveHpx(int v) { this.diagSensorActiveHpx = v; }
+    public int getDiagAnalyzerWidthPx() { return diagAnalyzerWidthPx; }
+    public void setDiagAnalyzerWidthPx(int v) { this.diagAnalyzerWidthPx = v; }
+    public int getDiagAnalyzerHeightPx() { return diagAnalyzerHeightPx; }
+    public void setDiagAnalyzerHeightPx(int v) { this.diagAnalyzerHeightPx = v; }
+    public int getDiagImageProxyWidthPx() { return diagImageProxyWidthPx; }
+    public void setDiagImageProxyWidthPx(int v) { this.diagImageProxyWidthPx = v; }
+    public int getDiagImageProxyHeightPx() { return diagImageProxyHeightPx; }
+    public void setDiagImageProxyHeightPx(int v) { this.diagImageProxyHeightPx = v; }
+    public int getDiagImageRotationDeg() { return diagImageRotationDeg; }
+    public void setDiagImageRotationDeg(int v) { this.diagImageRotationDeg = v; }
+    public int getDiagDisplayRotationDeg() { return diagDisplayRotationDeg; }
+    public void setDiagDisplayRotationDeg(int v) { this.diagDisplayRotationDeg = v; }
+    public String getDiagScanCameraId() { return diagScanCameraId; }
+    public void setDiagScanCameraId(String v) { this.diagScanCameraId = v; }
+    public double getDiagScanFocalMm() { return diagScanFocalMm; }
+    public void setDiagScanFocalMm(double v) { this.diagScanFocalMm = v; }
+    public double getDiagSpanFovDeg() { return diagSpanFovDeg; }
+    public void setDiagSpanFovDeg(double v) { this.diagSpanFovDeg = v; }
+    public double getDiagSpanFOverF60() { return diagSpanFOverF60; }
+    public void setDiagSpanFOverF60(double v) { this.diagSpanFOverF60 = v; }
     public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
     public double getAnchorZ() { return anchorZ; }
     public void setAnchorZ(double v) { this.anchorZ = v; }
@@ -559,6 +671,22 @@ class DualTaskAssessment implements Serializable {
         interpolatedFrames = 0;
         despikedFrames = 0;
         fovUsedDegrees = 0;
+        diagCameraFacing = "";
+        diagFocalLengthsMm = "";
+        diagSensorPhysicalWmm = 0;
+        diagSensorPhysicalHmm = 0;
+        diagSensorActiveWpx = 0;
+        diagSensorActiveHpx = 0;
+        diagAnalyzerWidthPx = 0;
+        diagAnalyzerHeightPx = 0;
+        diagImageProxyWidthPx = 0;
+        diagImageProxyHeightPx = 0;
+        diagImageRotationDeg = -1;
+        diagDisplayRotationDeg = -1;
+        diagScanCameraId = "";
+        diagScanFocalMm = 0;
+        diagSpanFovDeg = 0;
+        diagSpanFOverF60 = 0;
         anchorZ = 0;
         anchorSource = null;
         calibFramesUsed = 0;
@@ -609,6 +737,22 @@ class SensoryAtaxiaAssessment implements Serializable {
     private int interpolatedFrames;
     private int despikedFrames;
     private double fovUsedDegrees;
+    private String diagCameraFacing;
+    private String diagFocalLengthsMm;
+    private double diagSensorPhysicalWmm;
+    private double diagSensorPhysicalHmm;
+    private int diagSensorActiveWpx;
+    private int diagSensorActiveHpx;
+    private int diagAnalyzerWidthPx;
+    private int diagAnalyzerHeightPx;
+    private int diagImageProxyWidthPx;
+    private int diagImageProxyHeightPx;
+    private int diagImageRotationDeg;
+    private int diagDisplayRotationDeg;
+    private String diagScanCameraId;
+    private double diagScanFocalMm;
+    private double diagSpanFovDeg;
+    private double diagSpanFOverF60;
     private double anchorZ;              // frozen camera-distance anchor (m)
     private String anchorSource;
     private int calibFramesUsed;
@@ -669,6 +813,38 @@ class SensoryAtaxiaAssessment implements Serializable {
     public int getDespikedFrames() { return despikedFrames; }
     public void setDespikedFrames(int v) { this.despikedFrames = v; }
     public double getFovUsedDegrees() { return fovUsedDegrees; }
+    public String getDiagCameraFacing() { return diagCameraFacing; }
+    public void setDiagCameraFacing(String v) { this.diagCameraFacing = v; }
+    public String getDiagFocalLengthsMm() { return diagFocalLengthsMm; }
+    public void setDiagFocalLengthsMm(String v) { this.diagFocalLengthsMm = v; }
+    public double getDiagSensorPhysicalWmm() { return diagSensorPhysicalWmm; }
+    public void setDiagSensorPhysicalWmm(double v) { this.diagSensorPhysicalWmm = v; }
+    public double getDiagSensorPhysicalHmm() { return diagSensorPhysicalHmm; }
+    public void setDiagSensorPhysicalHmm(double v) { this.diagSensorPhysicalHmm = v; }
+    public int getDiagSensorActiveWpx() { return diagSensorActiveWpx; }
+    public void setDiagSensorActiveWpx(int v) { this.diagSensorActiveWpx = v; }
+    public int getDiagSensorActiveHpx() { return diagSensorActiveHpx; }
+    public void setDiagSensorActiveHpx(int v) { this.diagSensorActiveHpx = v; }
+    public int getDiagAnalyzerWidthPx() { return diagAnalyzerWidthPx; }
+    public void setDiagAnalyzerWidthPx(int v) { this.diagAnalyzerWidthPx = v; }
+    public int getDiagAnalyzerHeightPx() { return diagAnalyzerHeightPx; }
+    public void setDiagAnalyzerHeightPx(int v) { this.diagAnalyzerHeightPx = v; }
+    public int getDiagImageProxyWidthPx() { return diagImageProxyWidthPx; }
+    public void setDiagImageProxyWidthPx(int v) { this.diagImageProxyWidthPx = v; }
+    public int getDiagImageProxyHeightPx() { return diagImageProxyHeightPx; }
+    public void setDiagImageProxyHeightPx(int v) { this.diagImageProxyHeightPx = v; }
+    public int getDiagImageRotationDeg() { return diagImageRotationDeg; }
+    public void setDiagImageRotationDeg(int v) { this.diagImageRotationDeg = v; }
+    public int getDiagDisplayRotationDeg() { return diagDisplayRotationDeg; }
+    public void setDiagDisplayRotationDeg(int v) { this.diagDisplayRotationDeg = v; }
+    public String getDiagScanCameraId() { return diagScanCameraId; }
+    public void setDiagScanCameraId(String v) { this.diagScanCameraId = v; }
+    public double getDiagScanFocalMm() { return diagScanFocalMm; }
+    public void setDiagScanFocalMm(double v) { this.diagScanFocalMm = v; }
+    public double getDiagSpanFovDeg() { return diagSpanFovDeg; }
+    public void setDiagSpanFovDeg(double v) { this.diagSpanFovDeg = v; }
+    public double getDiagSpanFOverF60() { return diagSpanFOverF60; }
+    public void setDiagSpanFOverF60(double v) { this.diagSpanFOverF60 = v; }
     public void setFovUsedDegrees(double v) { this.fovUsedDegrees = v; }
     public double getAnchorZ() { return anchorZ; }
     public void setAnchorZ(double v) { this.anchorZ = v; }
@@ -708,6 +884,22 @@ class SensoryAtaxiaAssessment implements Serializable {
         interpolatedFrames = 0;
         despikedFrames = 0;
         fovUsedDegrees = 0;
+        diagCameraFacing = "";
+        diagFocalLengthsMm = "";
+        diagSensorPhysicalWmm = 0;
+        diagSensorPhysicalHmm = 0;
+        diagSensorActiveWpx = 0;
+        diagSensorActiveHpx = 0;
+        diagAnalyzerWidthPx = 0;
+        diagAnalyzerHeightPx = 0;
+        diagImageProxyWidthPx = 0;
+        diagImageProxyHeightPx = 0;
+        diagImageRotationDeg = -1;
+        diagDisplayRotationDeg = -1;
+        diagScanCameraId = "";
+        diagScanFocalMm = 0;
+        diagSpanFovDeg = 0;
+        diagSpanFOverF60 = 0;
         anchorZ = 0;
         anchorSource = null;
         calibFramesUsed = 0;

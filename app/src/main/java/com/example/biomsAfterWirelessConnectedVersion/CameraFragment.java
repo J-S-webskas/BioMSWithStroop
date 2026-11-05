@@ -11,6 +11,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -26,6 +27,7 @@ import android.util.SizeF;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -38,6 +40,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
@@ -64,6 +67,7 @@ import com.google.mediapipe.framework.MediaPipeException;
 import com.google.mediapipe.tasks.vision.core.RunningMode;
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -264,6 +268,11 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         if (poseLandmarkerHelper != null) {
             poseLandmarkerHelper.resetCalibration();
         }
+
+        // Diagnostic geometry every test: the helper is created
+        // asynchronously, so a bind-time capture can run before
+        // it exists and leave nothing recorded.
+        captureDiagnosticGeometry();
 
         // Find container
         ViewGroup container = (ViewGroup) getFragmentCameraBinding().getRoot();
@@ -1017,6 +1026,8 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             preview.setSurfaceProvider(getFragmentCameraBinding().viewFinder.getSurfaceProvider());
 
             updateDynamicFov();
+            // Diagnostic geometry at bind time; showCountdown re-captures per test.
+            captureDiagnosticGeometry();
         } catch (Exception exc) {
             Log.e(TAG, "Use case binding failed", exc);
         }
@@ -1039,6 +1050,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                             if (focalLengths != null && focalLengths.length > 0 && sensorSize != null && sensorSize.getWidth() > 0) {
                                 double fovH = 2.0 * Math.toDegrees(Math.atan((sensorSize.getWidth() / 2.0) / focalLengths[0]));
                                 poseLandmarkerHelper.setFovDegrees(fovH);
+                                poseLandmarkerHelper.setDiagnosticScan(id, focalLengths[0]);
                             }
                             break;
                         }
@@ -1048,6 +1060,127 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         } catch (Exception exc) {
             Log.e(TAG, "Since dynamic pov failed, defaulting to 60 degrees", exc);
         }
+    }
+
+
+    // Diagnostic geometry for the f investigation (logging only):
+    // records the bound camera's characteristics, the display
+    // rotation, and the #59-style span prediction, WITHOUT changing
+    // f (updateDynamicFov's 60 deg + 1.23 path is untouched).
+    // Called at bind time and every showCountdown so an
+    // asynchronously created helper still gets values. The SystemLog
+    // Diag* rows carry these values to exports; the Log.i line
+    // carries them to logcat.
+    private void captureDiagnosticGeometry() {
+        try {
+            Context ctx = getContext();
+            if (ctx == null || poseLandmarkerHelper == null) {
+                return;
+            }
+            int displayRotation = -1;
+            if (getFragmentCameraBinding() != null
+                    && getFragmentCameraBinding().viewFinder != null
+                    && getFragmentCameraBinding().viewFinder.getDisplay() != null) {
+                displayRotation = getFragmentCameraBinding().viewFinder.getDisplay().getRotation();
+            }
+            String facingStr = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ? "front" : "back";
+            // Bound camera first (Camera2CameraInfo), as in #59.
+            if (camera != null) {
+                try {
+                    Camera2CameraInfo boundInfo = Camera2CameraInfo.from(camera.getCameraInfo());
+                    float[] focalLengths = boundInfo.getCameraCharacteristic(
+                            CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
+                    SizeF sensorSize = boundInfo.getCameraCharacteristic(
+                            CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
+                    Rect activeArray = boundInfo.getCameraCharacteristic(
+                            CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                    if (recordDiagnosticCamera(facingStr, focalLengths, sensorSize,
+                            activeArray, displayRotation, "bound")) {
+                        return;
+                    }
+                } catch (Exception ignored) {
+                    // Fall through to the ID scan below.
+                }
+            }
+            CameraManager cameraManager = (CameraManager) ctx.getSystemService(Context.CAMERA_SERVICE);
+            if (cameraManager != null) {
+                int targetFacing = (cameraFacing == CameraSelector.LENS_FACING_FRONT) ?
+                        CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
+                for (String id : cameraManager.getCameraIdList()) {
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+                    Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    if (facing != null && facing == targetFacing) {
+                        float[] focalLengths = characteristics.get(
+                                CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
+                        SizeF sensorSize = characteristics.get(
+                                CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
+                        Rect activeArray = characteristics.get(
+                                CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                        poseLandmarkerHelper.setDiagnosticScan(id,
+                                (focalLengths != null && focalLengths.length > 0) ? focalLengths[0] : 0);
+                        recordDiagnosticCamera(facingStr, focalLengths, sensorSize,
+                                activeArray, displayRotation, "scan:" + id);
+                        break;
+                    }
+                }
+            }
+        } catch (Exception exc) {
+            Log.e(TAG, "Diagnostic geometry capture failed", exc);
+        }
+    }
+
+    // Stores one camera's characteristics as diagnostic geometry and
+    // logs them. Returns true when the characteristics were recorded
+    // (the span prediction may still be 0 if display rotation was
+    // unknown); false when focal/size were missing, so the caller
+    // can fall through to the next source. Never touches f.
+    private boolean recordDiagnosticCamera(String facingStr, float[] focalLengths, SizeF sensorSize,
+            Rect activeArray, int displayRotation, String source) {
+        if (focalLengths == null || focalLengths.length == 0
+                || sensorSize == null || sensorSize.getWidth() <= 0 || sensorSize.getHeight() <= 0) {
+            return false;
+        }
+        double focalMm = focalLengths[0];
+        if (focalMm <= 0) {
+            return false;
+        }
+        double spanFovDeg = 0;
+        double spanFOverF60 = 0;
+        if (displayRotation >= 0) {
+            // Same span arithmetic as #59 (portrait: sensor height,
+            // 4:3 target crop) so DiagSpanFOverF60 reproduces #59's
+            // predicted f ratio on this phone (expect ~0.878 front).
+            boolean portrait = (displayRotation == Surface.ROTATION_90
+                    || displayRotation == Surface.ROTATION_270);
+            double sensorHorizontalMm = portrait ? sensorSize.getHeight() : sensorSize.getWidth();
+            double sensorVerticalMm = portrait ? sensorSize.getWidth() : sensorSize.getHeight();
+            if (sensorHorizontalMm > 0 && sensorVerticalMm > 0) {
+                double rotatedAspect = sensorHorizontalMm / sensorVerticalMm;
+                double targetAspect = portrait ? (3.0 / 4.0) : (4.0 / 3.0);
+                double widthCrop = Math.min(1.0, targetAspect / rotatedAspect);
+                double spanMm = sensorHorizontalMm * widthCrop;
+                spanFovDeg = 2.0 * Math.toDegrees(Math.atan((spanMm / 2.0) / focalMm));
+                spanFOverF60 = (focalMm / spanMm) / (1.0 / (2.0 * Math.tan(Math.toRadians(30.0))));
+            }
+        }
+        StringBuilder focals = new StringBuilder();
+        for (int i = 0; i < focalLengths.length; i++) {
+            if (i > 0) {
+                focals.append(';');
+            }
+            focals.append(String.format(Locale.US, "%.3f", focalLengths[i]));
+        }
+        int activeW = (activeArray != null) ? activeArray.width() : 0;
+        int activeH = (activeArray != null) ? activeArray.height() : 0;
+        poseLandmarkerHelper.setDiagnosticCamera(facingStr, focals.toString(),
+                sensorSize.getWidth(), sensorSize.getHeight(), activeW, activeH,
+                spanFovDeg, spanFOverF60, displayRotation);
+        Log.i(TAG, "Diagnostic geometry (" + source + "): facing=" + facingStr
+                + " focals=" + focals + " sensor=" + sensorSize.getWidth() + "x" + sensorSize.getHeight()
+                + " active=" + activeW + "x" + activeH
+                + " displayRotation=" + displayRotation
+                + " spanFOV=" + spanFovDeg + " spanF/F60=" + spanFOverF60);
+        return true;
     }
 
     // Processes raw image
