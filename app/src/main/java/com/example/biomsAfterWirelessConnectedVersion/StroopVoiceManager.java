@@ -97,6 +97,15 @@ public class StroopVoiceManager implements RecognitionListener {
     private StroopTrial currentTrial;
     private long trialStartTimeMs;
     private boolean isListeningActive = false;
+    /**
+     * Last partial hypothesis for the CURRENT trial only, kept so a
+     * rising-tone utterance that never finalizes can still be
+     * judged when its session ends (see tryJudgeLastPartial).
+     * Never judged while the session is live -- that was the
+     * double-count bug. Cleared by nextTrial, so a partial can
+     * never leak into the following trial.
+     */
+    private String lastPartialText = null;
 
     /// Session-state guard + hung-service watchdog. startListening() must
     // never be called while a session is already active: the service
@@ -285,7 +294,7 @@ public class StroopVoiceManager implements RecognitionListener {
 
     public void nextTrial() {
         if (!isListeningActive) return;
-
+        lastPartialText = null;
         int textIndex;
         int colorIndex;
 
@@ -315,12 +324,41 @@ public class StroopVoiceManager implements RecognitionListener {
         }
     }
 
+    /**
+     * Collapse lengthened letters: a rising, held tone stretches a
+     * letter ("REEEED", "BLUUUE"). Runs of 3+ identical letters
+     * collapse to 2; natural doubles (GREEN's EE, YELLOW's LL)
+     * are runs of 2 and survive untouched, so no existing match
+     * changes. Words with a 3+ run previously matched nothing
+     * (their Levenshtein distance exceeded the allowed 1-2), so
+     * this only rescues held utterances, never steals a match.
+     */
+    private static String collapseLengthened(String word) {
+        if (word == null) return null;
+        StringBuilder sb = new StringBuilder(word.length());
+        int run = 0;
+        char prev = 0;
+        for (int i = 0; i < word.length(); i++) {
+            char c = word.charAt(i);
+            if (c == prev) {
+                run++;
+            } else {
+                prev = c;
+                run = 1;
+            }
+            if (run <= 2) {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
     public static String findMatchingColor(String spokenText) {
         if (spokenText == null || spokenText.trim().isEmpty()) {
             return null;
         }
 
-        String upperSpoken = spokenText.toUpperCase(Locale.US);
+        String upperSpoken = collapseLengthened(spokenText.toUpperCase(Locale.US));
 
         for (String color : COLOR_NAMES) {
             if (upperSpoken.contains(color)) {
@@ -406,8 +444,8 @@ public class StroopVoiceManager implements RecognitionListener {
         }
     }
 
-    private void processSpokenMatches(List<String> matches) {
-        if (!isListeningActive || currentTrial == null || matches == null) return;
+    private boolean processSpokenMatches(List<String> matches) {
+        if (!isListeningActive || currentTrial == null || matches == null) return false;
 
         String matchedColor = null;
         for (String candidate : matches) {
@@ -435,10 +473,47 @@ public class StroopVoiceManager implements RecognitionListener {
 
             // go to next trial
             nextTrial();
+            return true;
         }
 
         // keep speech recognizer listening continuously
         startListening();
+        return false;
+    }
+
+    /**
+     * Rising-tone rescue. A word spoken with a rising
+     * (question-like) ending often never produces a final result:
+     * the service's endpointer keeps waiting for the utterance to
+     * complete, so onResults never fires for it and the trial
+     * would sit unjudged until the user repeats the word or the
+     * session times out. The partial hypothesis usually already
+     * contains the correct color -- it is just never judged, by
+     * design (judging partials live caused double-counts). This
+     * judges the last partial ONLY when a session has ended
+     * without a final judgment: onResults with no match, onError
+     * NO_MATCH / SPEECH_TIMEOUT, and onHardError. It uses the
+     * exact same matcher as finals (aliases + fuzzy, plus the
+     * lengthened-vowel normalization), records through the same
+     * path, and advances the trial the same way, so a rescued
+     * word counts exactly once. It never runs while a session is
+     * live, and nextTrial clears the stored partial. When
+     * partials are disabled (intent level 2) there is nothing
+     * stored and this is a no-op. Rescued reaction times run
+     * longer than finals (they include the failed-final wait);
+     * that is the price of judging the word at all.
+     */
+    private boolean tryJudgeLastPartial() {
+        if (!isListeningActive || currentTrial == null || lastPartialText == null) {
+            return false;
+        }
+        if (findMatchingColor(lastPartialText) == null) {
+            return false;
+        }
+        String partial = lastPartialText;
+        lastPartialText = null;
+        processSpokenText(partial);
+        return true;
     }
 
     public VoiceStroopResult stopTest() {
@@ -472,11 +547,20 @@ public class StroopVoiceManager implements RecognitionListener {
         busyRetries = 0;
         softRetryNotified = false;
         ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        boolean settled = false;
         if (matches != null && !matches.isEmpty()) {
-            processSpokenMatches(matches);
-        } else {
-            startListening();
+            settled = processSpokenMatches(matches);
         }
+        // Final produced no match (or no final at all): a
+        // rising-tone utterance may still live in the last
+        // partial -- judge it before restarting, or the word
+        // is lost.
+        if (!settled) {
+            settled = tryJudgeLastPartial();
+        }
+        // Exactly one restart: for the next trial if one was
+        // judged and settled, or the same trial otherwise.
+        startListening();
     }
 
     @Override
@@ -490,6 +574,14 @@ public class StroopVoiceManager implements RecognitionListener {
         // judge and restart. (Reaction times now include the service's
         // end-of-speech latency; that uniform offset is the price of
         // judging each utterance exactly once.)
+        // Stored, not judged: if this session ends without a
+        // final (rising tone), tryJudgeLastPartial rescues it
+        // exactly once.
+        ArrayList<String> partials = partialResults.getStringArrayList(
+                SpeechRecognizer.RESULTS_RECOGNITION);
+        if (partials != null && !partials.isEmpty() && partials.get(0) != null) {
+            lastPartialText = partials.get(0);
+        }
     }
 
     @Override
@@ -509,7 +601,11 @@ public class StroopVoiceManager implements RecognitionListener {
         switch (error) {
             case SpeechRecognizer.ERROR_NO_MATCH:
             case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
-                // Benign: the session ran, nobody (recognizably) spoke.
+                // Benign: the session ran, nobody (recognizably) spoke
+                // -- or somebody spoke rising and no final arrived.
+                // Rescue a matching last partial first; otherwise
+                // restart on the same trial as before.
+                tryJudgeLastPartial();
                 startListening();
                 return;
             case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:
@@ -550,10 +646,14 @@ public class StroopVoiceManager implements RecognitionListener {
      * retries, so this cannot loop forever. Only the first retry of
      * an outage notifies the user; later retries stay silent.
      * (Microphone-permission denial keeps its own terminal path in
-     * onError -- retrying cannot fix a missing permission.)
+     * onError - retrying cannot fix a missing permission.)
      */
     private void onHardError(String name) {
         sessionActive = false;
+        // A wedged service can also strand a rising-tone utterance
+        // whose partial never became a final; rescue it before the
+        // rebuild restarts listening (no-op when nothing matches).
+        tryJudgeLastPartial();
         consecutiveHardErrors++;
         if (intentLevel < 2) {
             intentLevel++;

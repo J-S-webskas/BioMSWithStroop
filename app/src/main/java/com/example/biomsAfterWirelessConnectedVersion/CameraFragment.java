@@ -29,6 +29,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -463,11 +464,24 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         SensorManager.SENSOR_DELAY_NORMAL);
             }
         }
+        // Keep the screen on while the camera screen is visible. A
+        // 33 s trial plus setup easily outlasts the system screen
+        // timeout, and a dark screen pauses the camera mid-test.
+        // Paired with the clearFlags in onPause: the flag lives
+        // exactly as long as this fragment is resumed, nowhere else.
+        if (getActivity() != null) {
+            getActivity().getWindow().addFlags(
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        if (getActivity() != null) {
+            getActivity().getWindow().clearFlags(
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
         }
