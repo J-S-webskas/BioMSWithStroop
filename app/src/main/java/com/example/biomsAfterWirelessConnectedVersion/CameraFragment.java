@@ -1034,30 +1034,58 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     // back / leaving is blocked until the beep has fully finished;
     // then the popup dismisses and the user is back on preview.
     // Dismissing with back before Next leaves the popup owed: it shows
-    // again on the next entry to preview. Tapping outside the dialog
-    // never dismisses it — the user must hear the trial beep first.
+    // again on the next entry to preview.
+    //
+    // Heard before: once the trial beep has been heard in full, that
+    // is remembered in TRIAL_SETUP_PREFS (KEY_SENSORY_TRIAL_BEEP_HEARD,
+    // survives app restarts) and the popup changes — a Skip button
+    // appears next to Next, and tapping outside the dialog dismisses
+    // it too, because the user already knows what the beep sounds
+    // like. Never heard: no Skip button, and outside tap stays
+    // blocked — the user must hear the trial beep first. Back behaves
+    // the same in both cases (owed, re-shows on next entry).
     private void showSensoryAtaxiaPreviewPopup() {
         if (getContext() == null) return;
+        boolean heardBefore = getContext().getSharedPreferences(
+                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE)
+                .getBoolean(PoseLandmarkerHelper.KEY_SENSORY_TRIAL_BEEP_HEARD, false);
         sensoryBeepPlayer = new BeepPlayer();
-        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
                 .setTitle("Sensory Ataxia Test")
                 .setMessage("This test requires you to close your eyes for 30 seconds, and will make a beeping sound once the test ends. Turn on volume to max or a volume that you will hear. Here is a trial of what the beeping will sound like:")
                 .setPositiveButton("Next", null)
-                .setCancelable(true)
-                .create();
-        // Tapping empty space outside the dialog must NOT dismiss it
-        // before the trial beep has been heard: the dialog dismisses
-        // itself once the beep finishes, so it is never cancelable on
-        // outside touch. (Back still dismisses it before Next — the
+                .setCancelable(true);
+        if (heardBefore) {
+            // Heard before: offer Skip next to Next — no need to hear
+            // the trial beep again.
+            builder.setNeutralButton("Skip", null);
+        }
+        AlertDialog dialog = builder.create();
+        // Outside tap: allowed only once the trial beep has been heard
+        // before. Never heard, the dialog dismisses itself once the
+        // beep finishes, so it is never cancelable on outside touch.
+        // (Back still dismisses it before Next in both cases — the
         // popup stays owed and re-shows on the next entry to preview.)
-        dialog.setCanceledOnTouchOutside(false);
+        dialog.setCanceledOnTouchOutside(heardBefore);
         dialog.setOnShowListener(dlg -> {
             Button nextButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             nextButton.setOnClickListener(v -> {
                 nextButton.setEnabled(false);
+                Button skipButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+                if (skipButton != null) skipButton.setEnabled(false);
                 dialog.setCancelable(false);
                 sensoryBeepPlayer.play(() -> {
                     if (!isAdded()) return;
+                    // Trial beep heard in full: remember it, so the
+                    // popup offers Skip (and outside-tap dismissal)
+                    // from the next test on, across app restarts.
+                    requireContext().getSharedPreferences(
+                                    PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
+                                    Context.MODE_PRIVATE)
+                            .edit()
+                            .putBoolean(PoseLandmarkerHelper
+                                    .KEY_SENSORY_TRIAL_BEEP_HEARD, true)
+                            .apply();
                     sensoryAtaxiaPopupShown = true;
                     if (dialog.isShowing()) dialog.dismiss();
                     if (sensoryBeepPlayer != null) {
@@ -1066,6 +1094,20 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                     }
                 });
             });
+            if (heardBefore) {
+                Button skipButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+                skipButton.setOnClickListener(v -> {
+                    // Heard before: skip hearing it again. Counts as
+                    // the popup handled for this fragment — it does
+                    // not re-show on the next entry to preview.
+                    sensoryAtaxiaPopupShown = true;
+                    if (dialog.isShowing()) dialog.dismiss();
+                    if (sensoryBeepPlayer != null) {
+                        sensoryBeepPlayer.release();
+                        sensoryBeepPlayer = null;
+                    }
+                });
+            }
         });
         dialog.show();
     }

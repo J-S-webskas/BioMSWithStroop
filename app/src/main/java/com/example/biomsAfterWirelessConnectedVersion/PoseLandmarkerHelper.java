@@ -152,6 +152,11 @@ public class PoseLandmarkerHelper {
     public static final String TRIAL_SETUP_PREFS = "trial_setup";
     public static final String KEY_MANUAL_DISTANCE_M = "manual_distance_m";
     public static final String KEY_STEP_BACK_SECONDS = "step_back_seconds";
+    /** Set in TRIAL_SETUP_PREFS once the Sensory trial beep has been
+     *  heard in full (2 s); survives app restarts. While set, the
+     *  Sensory preview popup offers Skip and allows outside-tap
+     *  dismissal instead of making the user hear the beep again. */
+    public static final String KEY_SENSORY_TRIAL_BEEP_HEARD = "sensory_trial_beep_heard";
     private static final float ANCHOR_VISIBILITY_THRESHOLD = 0.5f;
     private static final int ANCHOR_MIN_CALIBRATION_FRAMES = 15;
     private static final int ANCHOR_CALIBRATION_MAX = 300;
