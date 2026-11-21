@@ -1034,7 +1034,8 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     // back / leaving is blocked until the beep has fully finished;
     // then the popup dismisses and the user is back on preview.
     // Dismissing with back before Next leaves the popup owed: it shows
-    // again on the next entry to preview.
+    // again on the next entry to preview. Tapping outside the dialog
+    // never dismisses it — the user must hear the trial beep first.
     private void showSensoryAtaxiaPreviewPopup() {
         if (getContext() == null) return;
         sensoryBeepPlayer = new BeepPlayer();
@@ -1044,6 +1045,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 .setPositiveButton("Next", null)
                 .setCancelable(true)
                 .create();
+        // Tapping empty space outside the dialog must NOT dismiss it
+        // before the trial beep has been heard: the dialog dismisses
+        // itself once the beep finishes, so it is never cancelable on
+        // outside touch. (Back still dismisses it before Next — the
+        // popup stays owed and re-shows on the next entry to preview.)
+        dialog.setCanceledOnTouchOutside(false);
         dialog.setOnShowListener(dlg -> {
             Button nextButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             nextButton.setOnClickListener(v -> {
