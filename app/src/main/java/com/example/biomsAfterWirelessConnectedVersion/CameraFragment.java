@@ -6,6 +6,7 @@ import static android.view.View.VISIBLE;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -25,12 +26,14 @@ import android.util.Log;
 import android.util.SizeF;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -39,6 +42,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
@@ -66,6 +70,7 @@ import com.google.mediapipe.framework.MediaPipeException;
 import com.google.mediapipe.tasks.vision.core.RunningMode;
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +84,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private View rootView;
     private static final String TAG = "Pose Landmarker";
     private static final int REQUEST_CODE_CANCEL_TEST = 200;
+    // Get-ready (step-back) countdown, seconds. The user sets it in a
+    // popup right after the distance prompt when Start Test is tapped;
+    // the TEST countdown after Start uses it, so they have time to
+    // step back into position. The auto preview countdown on page
+    // entry always uses the default.
+    private static final int DEFAULT_STEP_BACK_SECONDS = 3;
+    private static final int MIN_STEP_BACK_SECONDS = 1;
+    private static final int MAX_STEP_BACK_SECONDS = 30;
     private FragmentCameraBinding _fragmentCameraBinding;
     // Start-button funnel only: what the get-ready countdown's end
     // action runs right after its start sequence (create the hidden
@@ -98,6 +111,17 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private int cameraFacing = CameraSelector.LENS_FACING_BACK;
     private ExecutorService backgroundExecutor;
     private boolean isCountdownActive = false;
+    // Current get-ready length (seconds), persisted in TRIAL_SETUP_PREFS.
+    private int stepBackSeconds = DEFAULT_STEP_BACK_SECONDS;
+    // Preview-mode views, promoted to fields so a test cancelled for a
+    // missing body part (Part 3) can return to preview mode without
+    // re-creating the fragment.
+    private ImageButton back;
+    private TextView tvInstruction;
+    // Sensory Ataxia intro popup (Part 4): shown once per fragment,
+    // after the trial beep has actually been heard.
+    private boolean sensoryAtaxiaPopupShown = false;
+    private BeepPlayer sensoryBeepPlayer;
     private TextView countdownTextView;
     private View countdownOverlay;
     // Countdown lifecycle token. Every showCountdown()/cancelCountdown()
@@ -255,7 +279,161 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         }
     }
 
-    private void showCountdown() {
+    // startCount is the number the countdown ticks down from. The auto
+    // preview countdown on page entry passes the default; the TEST
+    // countdown after Start Test passes the user's chosen step-back time.
+    /** Get-ready (step-back) countdown length, seconds. Read from
+     *  TRIAL_SETUP_PREFS so the user's choice survives across tests;
+     *  clamped to [MIN_STEP_BACK_SECONDS, MAX_STEP_BACK_SECONDS], with
+     *  the default when nothing is stored yet. */
+    private int getStepBackSeconds() {
+        if (getContext() == null) return DEFAULT_STEP_BACK_SECONDS;
+        int saved = getContext().getSharedPreferences(
+                PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE)
+                .getInt(PoseLandmarkerHelper.KEY_STEP_BACK_SECONDS,
+                        DEFAULT_STEP_BACK_SECONDS);
+        return Math.max(MIN_STEP_BACK_SECONDS,
+                Math.min(MAX_STEP_BACK_SECONDS, saved));
+    }
+
+    private void setStepBackSeconds(int seconds) {
+        stepBackSeconds = Math.max(MIN_STEP_BACK_SECONDS,
+                Math.min(MAX_STEP_BACK_SECONDS, seconds));
+        if (getContext() != null) {
+            getContext().getSharedPreferences(
+                    PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE)
+                    .edit().putInt(PoseLandmarkerHelper.KEY_STEP_BACK_SECONDS,
+                            stepBackSeconds).apply();
+        }
+    }
+
+    // Distance prompt, moved here from the instructions screen
+    // (MarkDistanceAndCamera): the user is asked for the camera distance
+    // on the preview page, when they tap Start Test, instead of in the
+    // instructions. The value is stored in the same place
+    // (TRIAL_SETUP_PREFS / KEY_MANUAL_DISTANCE_M), so the anchor and
+    // the rest of the pipeline are unchanged. "Not Now"/Cancel leaves
+    // the user on the preview page; nothing starts.
+    private float getRecordedDistance() {
+        if (getContext() == null) return 0f;
+        return getContext().getSharedPreferences(
+                PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE)
+                .getFloat(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M, 0f);
+    }
+
+    private void showDistancePromptBeforeStart(Runnable onConfirmed) {
+        float d = getRecordedDistance();
+        if (d <= 0f) {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Camera Distance Required")
+                    .setMessage("No camera distance has been entered yet.\n\n"
+                            + "\u26A0 Camera distance directly influences accuracy.\n\n"
+                            + "Measure the distance from the camera to the spot where "
+                            + "you will stand, then enter it to continue.")
+                    .setPositiveButton("Enter Distance", (dlg, w) ->
+                            showDistanceEditDialog(() -> showDistancePromptBeforeStart(onConfirmed)))
+                    .setNegativeButton("Not Now", null)
+                    .show();
+            return;
+        }
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Camera Distance")
+                .setMessage(String.format(Locale.US,
+                        "Is this camera distance correct for this test?\n\n%.2f meters\n\n"
+                                + "\u26A0 Camera distance directly influences accuracy.", d))
+                .setPositiveButton("Yes", (dlg, w) -> onConfirmed.run())
+                .setNegativeButton("Edit", (dlg, w) ->
+                        showDistanceEditDialog(() -> showDistancePromptBeforeStart(onConfirmed)))
+                .show();
+    }
+
+    private void showDistanceEditDialog(Runnable onSaved) {
+        View dialogView = requireActivity().getLayoutInflater()
+                .inflate(R.layout.dialog_trial_distance, null);
+        EditText distanceInput = dialogView.findViewById(R.id.distanceInput);
+        float current = getRecordedDistance();
+        if (current > 0) {
+            distanceInput.setText(String.format(Locale.US, "%.2f", current));
+        }
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle("Camera Distance")
+                .setMessage("Tape-measured distance from the camera to where you will stand, in meters.")
+                .setView(dialogView)
+                .setPositiveButton("Save", null)
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.setOnShowListener(dlg -> {
+            Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (saveButton == null) {
+                Log.e(TAG, "Distance dialog: Save button missing");
+                return;
+            }
+            saveButton.setOnClickListener(v -> {
+                String s = distanceInput.getText().toString().trim();
+                try {
+                    double val = Double.parseDouble(s);
+                    if (val < 0.5 || val > 10) {
+                        distanceInput.setError("Enter a distance between 0.5 and 10 m");
+                        return;
+                    }
+                    requireContext().getSharedPreferences(
+                                    PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE)
+                            .edit().putFloat(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M,
+                                    (float) val).apply();
+                    dialog.dismiss();
+                    if (onSaved != null) onSaved.run();
+                } catch (NumberFormatException e) {
+                    distanceInput.setError("Invalid number format");
+                }
+            });
+        });
+        dialog.show();
+    }
+
+    // Step-back (get-ready) time popup, asked right after the distance
+    // is set/confirmed when Start Test is tapped. Pre-filled with the
+    // saved value (default 3 s), whole seconds, clamped to 1-30 s, and
+    // saved in the same step_back_seconds key the old stepper wrote.
+    // Cancelling (or backing out) dismisses without starting anything,
+    // so the user is left on the preview page.
+    private void showStepBackPromptBeforeStart(Runnable onConfirmed) {
+        View dialogView = requireActivity().getLayoutInflater()
+                .inflate(R.layout.dialog_step_back_time, null);
+        EditText stepBackInput = dialogView.findViewById(R.id.stepBackInput);
+        stepBackInput.setText(String.valueOf(getStepBackSeconds()));
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle("Get-Ready Time")
+                .setMessage("How long do you need to get from the camera to your marked position? (seconds)")
+                .setView(dialogView)
+                .setPositiveButton("Start", null)
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.setOnShowListener(dlg -> {
+            Button startButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (startButton == null) {
+                Log.e(TAG, "Step-back dialog: Start button missing");
+                return;
+            }
+            startButton.setOnClickListener(v -> {
+                String s = stepBackInput.getText().toString().trim();
+                try {
+                    int val = Integer.parseInt(s);
+                    if (val < MIN_STEP_BACK_SECONDS || val > MAX_STEP_BACK_SECONDS) {
+                        stepBackInput.setError("Enter a whole number of seconds between 1 and 30");
+                        return;
+                    }
+                    setStepBackSeconds(val);
+                    dialog.dismiss();
+                    if (onConfirmed != null) onConfirmed.run();
+                } catch (NumberFormatException e) {
+                    stepBackInput.setError("Enter a whole number of seconds");
+                }
+            });
+        });
+        dialog.show();
+    }
+
+    private void showCountdown(int startCount) {
         if (!isAdded() || getActivity() == null || _fragmentCameraBinding == null) {
             Log.e(TAG, "Cannot show countdown - fragment not ready");
             return;
@@ -295,14 +473,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
 
-        // Start countdown from 3. Capture the views and this countdown's
+        // Start countdown from startCount. Capture the views and this countdown's
         // generation: everything this countdown has pending (handler
         // ticks, the final animation's end action) acts on the captured
         // views and only while its generation is still current.
         final View overlayView = countdownOverlay;
         final TextView textView = countdownTextView;
         final int generation = ++countdownGeneration;
-        startCountdownSequence(3, generation, overlayView, textView);
+        startCountdownSequence(startCount, generation, overlayView, textView);
     }
 
     private void startCountdownSequence(int count, int generation,
@@ -363,6 +541,15 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         if (countdownOverlay == overlayView) countdownOverlay = null;
                         if (countdownTextView == textView) countdownTextView = null;
 
+                        if (!isAdded()) {
+                            // Left the screen while the countdown was
+                            // running: never start a test behind the
+                            // user's back. The countdown UI above is
+                            // already removed; nothing else runs.
+                            Log.e(TAG, "Countdown ended after leaving screen, not starting test");
+                            isCountdownActive = false;
+                            return;
+                        }
                         // Start the actual test
                         isCountdownActive = false;
                         // Freeze the COM anchor from the countdown
@@ -374,6 +561,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         // Tell RecordFragment that test has started
                         RecordFragment.setTestStarted(true);
                         PoseLandmarkerHelper.resetDroppedFrameCount();
+                        // A test is starting: clear any missing-part
+                        // count/latch from preview, so the watch starts
+                        // clean for this trial.
+                        if (poseLandmarkerHelper != null) {
+                            poseLandmarkerHelper.resetMissingPartState();
+                        }
                         lockFocusForTest();
                         if ("DualTask".equals(assessmentType)) {
                             onDualTaskStarted();
@@ -453,6 +646,25 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             }
         });
 
+        // The re-setup above is fire-and-forget: if it fails, or the
+        // clear/setup order slips, the helper stays closed and
+        // detectAsync silently drops every frame, so pose detection
+        // is dead with no recovery and no signal. One bounded
+        // re-check shortly after resume: if the helper is still
+        // closed, set it up again. Only while resumed and no test
+        // is running, so a running test is untouched.
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (isResumed() && isAdded() && poseLandmarkerHelper != null
+                    && poseLandmarkerHelper.isClose()
+                    && recordFragment == null
+                    && backgroundExecutor != null
+                    && !backgroundExecutor.isShutdown()) {
+                Log.e(TAG, "Pose landmarker still closed after resume, setting up again");
+                backgroundExecutor.execute(() ->
+                        poseLandmarkerHelper.setupPoseLandmarker());
+            }
+        }, 1500);
+
         // Register the rotation-vector sensor for the phone-motion audit.
         if (sensorManager == null && getContext() != null) {
             sensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
@@ -473,11 +685,41 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             getActivity().getWindow().addFlags(
                     WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
+
+        // A start abandoned mid-countdown (Home / lock / call) leaves
+        // the fragment in test mode with no test running: onPause
+        // retracted the countdown, but nothing restored preview.
+        // Without this the user comes back to a dead test-mode
+        // screen — no instruction lines, no back button, no auto
+        // get-ready countdown, and the Sensory popup never offered
+        // (maybeShow gates on isPreviewMode). Only restore when no
+        // test is actually running: a running test (a RecordFragment
+        // exists) must keep running across pause/resume. Do NOT use
+        // isTestStarted as the "test running" signal here — the auto
+        // preview countdown's end action sets it on entry — the
+        // RecordFragment is the test.
+        if (!isPreviewMode && recordFragment == null && isAdded()
+                && _fragmentCameraBinding != null) {
+            // The test never started, so the once-per-fragment popup
+            // latch is reset too: the popup is owed again. The
+            // permanent "Don't show again" flag still suppresses it
+            // — maybeShow checks that flag first.
+            sensoryAtaxiaPopupShown = false;
+            enterPreviewMode(true);
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        // Navigating away during the get-ready countdown must retract
+        // it: without this, the countdown's end action fires
+        // afterwards and its pendingStartAction commits a fragment
+        // transaction after onSaveInstanceState (IllegalStateException)
+        // — and starts a test behind the user's back. Cancelling here
+        // covers every pause path (back, home, incoming call, lock).
+        cancelCountdown();
+        pendingStartAction = null;
         if (getActivity() != null) {
             getActivity().getWindow().clearFlags(
                     WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -557,6 +799,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
     @Override
     public void onDestroyView() {
+        // Same retract as onPause: a countdown left pending when the
+        // view is destroyed must never fire its end action afterwards.
+        // (onPause normally runs first and already retracted it; this
+        // is the backstop for any path that reaches here without it.)
+        cancelCountdown();
+        pendingStartAction = null;
         // Preview must never inherit a test's focus lock: whatever path
         // leaves the test screen, the lock ends here.
         releaseFocusLock();
@@ -565,6 +813,10 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         // (stopVoiceStroop at test end), so this is a no-op there.
         if (stroopVoiceManager != null) {
             stroopVoiceManager.stopTest();
+        }
+        if (sensoryBeepPlayer != null) {
+            sensoryBeepPlayer.release();
+            sensoryBeepPlayer = null;
         }
         _fragmentCameraBinding = null;
         super.onDestroyView();
@@ -619,14 +871,15 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor();
 
-        TextView tvInstruction = view.findViewById(R.id.tv_preview_instruction);
+        tvInstruction = view.findViewById(R.id.tv_preview_instruction);
         if (isPreviewMode) {
             tvInstruction.setVisibility(VISIBLE);
         } else {
             tvInstruction.setVisibility(GONE);
         }
 
-        ImageButton back = view.findViewById(R.id.back);
+
+        back = view.findViewById(R.id.back);
         back.setOnClickListener(v -> {
             if (SOURCE_ACTIVITY != null && SOURCE_ACTIVITY.equals("AssessmentFragment")) {
                 previewCalledFromAssessmentFragmentExiting();
@@ -654,7 +907,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 }
         );
 
-        final String finalAssessmentType = assessmentType; // lambda variable seems to change the original value, so need a copy....
         if (!isPreviewMode) {
             // TEST MODE (direct entry) -> WILL NEVER HAPPEN I THINK
             back.setVisibility(GONE);
@@ -663,100 +915,7 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             btnCancel.setTextColor(Color.WHITE);
         } else {
             // PREVIEW MODE
-            if (SOURCE_ACTIVITY != null && SOURCE_ACTIVITY.equals("AssessmentFragment")) {
-                btnCancel.setVisibility(GONE);
-            } else {
-                back.setVisibility(VISIBLE);
-                btnCancel.setText("Start Test");
-                btnCancel.setBackgroundColor(Color.WHITE);
-                btnCancel.setTextColor(Color.GRAY);
-                viewModel.setAssessmentType(finalAssessmentType);
-            }
-
-            btnCancel.setEnabled(false);
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                btnCancel.setEnabled(true);
-                btnCancel.setAlpha(1.0f);
-            }, 3000);
-
-            btnCancel.setOnClickListener(v -> {
-                // Switch to TEST MODE
-                isPreviewMode = false;
-
-                // Update UI
-                back.setVisibility(GONE);
-                btnCancel.setText("Cancel Test");
-                btnCancel.setBackgroundColor(Color.BLACK);
-                btnCancel.setTextColor(Color.WHITE);
-                tvInstruction.setVisibility(GONE);
-
-                // Cancel any existing countdown
-                cancelCountdown();
-
-                // Start a fresh countdown
-                showCountdown();
-            // What the countdown's end action runs immediately
-            // after its start sequence: create the hidden
-            // RecordFragment and start its test timer, so the
-            // trial window is exactly the test duration measured
-            // from the true start.
-            FragmentManager fm = getParentFragmentManager();
-            pendingStartAction = () -> {
-                recordFragment = new RecordFragment();
-                FragmentTransaction transaction = fm.beginTransaction();
-
-                // Add the new fragment but hide it immediately
-                transaction.add(R.id.fragment_container, recordFragment);
-                transaction.hide(recordFragment);  // Hidden but running
-                transaction.addToBackStack(null);
-                transaction.commit();
-                recordFragment.setViewModel(viewModel);
-                recordFragment.setContext(requireContext());
-                recordFragment.setActivity(requireActivity());
-                recordFragment.startTest(assessmentType, requireContext());
-                Log.d("CameraFragment", "Background recording started!");
-            };
-                btnCancel.setEnabled(false);
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    btnCancel.setEnabled(true);
-                    btnCancel.setAlpha(1.0f);
-                }, 3000);
-
-                btnCancel.setOnClickListener(v2 -> {
-                    // Retract the countdown first: without this, a cancel
-                    // during the get-ready countdown leaves its end action
-                    // pending, and it fires afterwards on the stopped
-                    // camera (focus lock fails, test-started state is set,
-                    // Stroop starts) with no test running.
-                    cancelCountdown();
-                    pendingStartAction = null;
-                    RecordFragment.setTestStarted(false);
-                     Fragment fragment = fm.findFragmentById(R.id.fragment_container);
-                     if (fragment instanceof CameraFragment) {
-                         CameraFragment cameraFragment = (CameraFragment) fragment;
-                         cameraFragment.stopCamera();
-                     }
-                     viewModel.setShouldDiscard(true);
-                     viewModel.setCooldownActive(true);
-                     if (recordFragment != null) {
-                         recordFragment.cancelTest();  // Direct method call!
-                     } else {
-                         // No RecordFragment exists yet: cancel landed during
-                         // the get-ready countdown, before its end action
-                         // creates one. Nothing else navigates away, so go to
-                         // CancellingTest directly instead of stranding the
-                         // user on the stopped camera screen. Extras mirror
-                         // the discard path: cancelledMidway is read first
-                         // there, so it shows "Test Cancelled / Results not
-                         // saved" for 1.5 s and then goes to main.
-                         Intent intent = new Intent(requireContext(), CancellingTest.class);
-                         intent.putExtra("finished", true);
-                         intent.putExtra("Saving", false);
-                         intent.putExtra("cancelledMidway", true);
-                         startActivity(intent);
-                     }
-                 });
-            });
+            enterPreviewMode(false);
         }
 
         // Wait for the views to be properly laid out
@@ -765,10 +924,9 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             public void run() {
                 // Set up the camera and its use cases
                 setUpCamera();
-                // Use a small delay to ensure camera is ready
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    showCountdown();
-                }, 500);
+                // Use a small delay to ensure camera is ready, then the
+                // get-ready countdown (anchor calibration).
+                startAutoPreviewCountdown();
             }
         });
 
@@ -789,6 +947,380 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 );
             }
         });
+    }
+
+
+    // (Re-)enter preview mode: the Start Test UI, as on first entry.
+    // Called from onViewCreated and when a test is cancelled back to
+    // preview for a missing body part (Part 3). restartAutoCountdown
+    // is false on first entry (the viewFinder post below schedules the
+    // countdown once the camera is ready) and true on re-entry.
+    private void enterPreviewMode(boolean restartAutoCountdown) {
+        // (Re-)entering preview mode means restoring the preview
+        // state itself, not just the buttons. Starting a test
+        // flipped isPreviewMode off and hid the instruction text
+        // and the back button; without this the restored preview
+        // would look almost right but the system-back handler, the
+        // auto preview countdown and the Sensory popup (all gated
+        // on isPreviewMode) would stay dead, the instructions
+        // would stay hidden, and (from the Assessment flow) the
+        // back button would stay hidden.
+        isPreviewMode = true;
+        tvInstruction.setVisibility(VISIBLE);
+        back.setVisibility(VISIBLE);
+        // PREVIEW MODE
+        if (SOURCE_ACTIVITY != null && SOURCE_ACTIVITY.equals("AssessmentFragment")) {
+            btnCancel.setVisibility(GONE);
+        } else {
+            back.setVisibility(VISIBLE);
+            btnCancel.setText("Start Test");
+            btnCancel.setBackgroundColor(Color.WHITE);
+            btnCancel.setTextColor(Color.GRAY);
+            viewModel.setAssessmentType(assessmentType);
+        }
+
+        btnCancel.setEnabled(false);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            btnCancel.setEnabled(true);
+            btnCancel.setAlpha(1.0f);
+        }, 3000);
+
+        btnCancel.setOnClickListener(v -> {
+            // Distance first, then the step-back time: confirm the
+            // camera distance on the preview page (moved here from
+            // the instructions screen), ask how long the user
+            // needs to walk to their mark, then run the existing
+            // start flow.
+            showDistancePromptBeforeStart(() ->
+                    showStepBackPromptBeforeStart(() -> {
+            // Switch to TEST MODE
+            isPreviewMode = false;
+
+            // Update UI
+            back.setVisibility(GONE);
+            btnCancel.setText("Cancel Test");
+            btnCancel.setBackgroundColor(Color.BLACK);
+            btnCancel.setTextColor(Color.WHITE);
+            tvInstruction.setVisibility(GONE);
+
+            // Cancel any existing countdown
+            cancelCountdown();
+
+            // Start a fresh countdown with the user's step-back time
+            showCountdown(getStepBackSeconds());
+        // What the countdown's end action runs immediately
+        // after its start sequence: create the hidden
+        // RecordFragment and start its test timer, so the
+        // trial window is exactly the test duration measured
+        // from the true start.
+        FragmentManager fm = getParentFragmentManager();
+        pendingStartAction = () -> {
+            // Belt-and-braces: this runs at the end of a delayed
+            // countdown, and the user may have left the screen by
+            // then (onPause retracts the countdown, but a commit
+            // after onSaveInstanceState must never happen). Never
+            // commitAllowingStateLoss here: it would stop the crash
+            // but still start a test behind the user's back. Skip
+            // the start entirely.
+            if (!isAdded() || fm.isStateSaved()) {
+                Log.e(TAG, "Start-test action skipped: fragment not added or state saved");
+                return;
+            }
+            recordFragment = new RecordFragment();
+            FragmentTransaction transaction = fm.beginTransaction();
+
+            // Add the new fragment but hide it immediately
+            transaction.add(R.id.fragment_container, recordFragment);
+            transaction.hide(recordFragment);  // Hidden but running
+            transaction.addToBackStack(null);
+            transaction.commit();
+            recordFragment.setViewModel(viewModel);
+            recordFragment.setContext(requireContext());
+            recordFragment.setActivity(requireActivity());
+            recordFragment.startTest(assessmentType, requireContext());
+            Log.d("CameraFragment", "Background recording started!");
+        };
+            btnCancel.setEnabled(false);
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                btnCancel.setEnabled(true);
+                btnCancel.setAlpha(1.0f);
+            }, 3000);
+
+            btnCancel.setOnClickListener(v2 -> {
+                // Retract the countdown first: without this, a cancel
+                // during the get-ready countdown leaves its end action
+                // pending, and it fires afterwards on the stopped
+                // camera (focus lock fails, test-started state is set,
+                // Stroop starts) with no test running.
+                cancelCountdown();
+                pendingStartAction = null;
+                RecordFragment.setTestStarted(false);
+                 Fragment fragment = fm.findFragmentById(R.id.fragment_container);
+                 if (fragment instanceof CameraFragment) {
+                     CameraFragment cameraFragment = (CameraFragment) fragment;
+                     cameraFragment.stopCamera();
+                 }
+                 viewModel.setShouldDiscard(true);
+                 viewModel.setCooldownActive(true);
+                 if (recordFragment != null) {
+                     recordFragment.cancelTest();  // Direct method call!
+                 } else {
+                     // No RecordFragment exists yet: cancel landed during
+                     // the get-ready countdown, before its end action
+                     // creates one. Nothing else navigates away, so go to
+                     // CancellingTest directly instead of stranding the
+                     // user on the stopped camera screen. Extras mirror
+                     // the discard path: cancelledMidway is read first
+                     // there, so it shows "Test Cancelled / Results not
+                     // saved" for 1.5 s and then goes to main.
+                     Intent intent = new Intent(requireContext(), CancellingTest.class);
+                     intent.putExtra("finished", true);
+                     intent.putExtra("Saving", false);
+                     intent.putExtra("cancelledMidway", true);
+                     startActivity(intent);
+                 }
+             });
+                });
+            );
+        });
+        // Back in preview: re-run the get-ready countdown on re-entry
+        // (anchor recalibration), and show the Sensory Ataxia intro
+        // popup if it is owed.
+        if (restartAutoCountdown) {
+            startAutoPreviewCountdown();
+        }
+        maybeShowSensoryAtaxiaPopup();
+    }
+
+    // The get-ready countdown that also feeds anchor calibration while
+    // the user stands in preview. Runs on countdownHandler, so tapping
+    // Start retracts it with any countdown (cancelCountdown clears
+    // this handler) and it can never fire into a running test.
+    private void startAutoPreviewCountdown() {
+        countdownHandler.postDelayed(() -> {
+            if (_fragmentCameraBinding != null && isPreviewMode) {
+                showCountdown(DEFAULT_STEP_BACK_SECONDS);
+            }
+        }, 500);
+    }
+
+    // Sensory Ataxia intro popup (Part 4, preview mode only): show it
+    // once per fragment, unless the user chose "Don't show again" —
+    // that choice is permanent and the popup never shows again.
+    private void maybeShowSensoryAtaxiaPopup() {
+        if (!isPreviewMode || !"SensoryAtaxia".equals(assessmentType)
+                || sensoryAtaxiaPopupShown) {
+            return;
+        }
+        if (getContext() != null && getContext().getSharedPreferences(
+                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
+                        Context.MODE_PRIVATE)
+                .getBoolean(PoseLandmarkerHelper
+                        .KEY_SENSORY_POPUP_DONT_SHOW_AGAIN, false)) {
+            return;
+        }
+        showSensoryAtaxiaPreviewPopup();
+    }
+
+    // Sensory Ataxia preview popup (Part 4). Wording is Hannah's as
+    // written — including "30 seconds", although trials run 33 s
+    // (flagged in the PR description for her call; not silently
+    // changed). The trial beep plays ONLY when Next is tapped: while
+    // it plays, Next is disabled and the dialog is not cancelable, so
+    // back / leaving is blocked until the beep has fully finished;
+    // then the popup dismisses and the user is back on preview.
+    // Dismissing with back before Next leaves the popup owed: it shows
+    // again on the next entry to preview.
+    //
+    // Heard before: once the trial beep has been heard in full, that
+    // is remembered in TRIAL_SETUP_PREFS (KEY_SENSORY_TRIAL_BEEP_HEARD,
+    // survives app restarts) and the popup changes — a Skip button
+    // appears next to Next, plus a "Don't show again" button, and
+    // tapping outside the dialog dismisses it too, because the user
+    // already knows what the beep sounds like. Skip just skips this
+    // showing (the popup may show again on a later test); "Don't show
+    // again" is permanent (KEY_SENSORY_POPUP_DONT_SHOW_AGAIN) — the
+    // popup never shows again, though the test-end beep still sounds.
+    // Tapping outside behaves like Skip (handled for this fragment).
+    // Never heard: no Skip or "Don't show again" button, and outside
+    // tap stays blocked — the user must hear the trial beep first.
+    // Back behaves the same in both cases (owed, re-shows on next
+    // entry).
+    private void showSensoryAtaxiaPreviewPopup() {
+        if (getContext() == null) return;
+        boolean heardBefore = getContext().getSharedPreferences(
+                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE)
+                .getBoolean(PoseLandmarkerHelper.KEY_SENSORY_TRIAL_BEEP_HEARD, false);
+        sensoryBeepPlayer = new BeepPlayer();
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
+                .setTitle("Sensory Ataxia Test")
+                .setMessage("This test requires you to close your eyes for 30 seconds, and will make a beeping sound once the test ends. Turn on volume to max or a volume that you will hear. Here is a trial of what the beeping will sound like:")
+                .setPositiveButton("Next", null)
+                .setCancelable(true);
+        if (heardBefore) {
+            // Heard before: offer Skip next to Next — no need to hear
+            // the trial beep again — plus a permanent opt-out.
+            // Real builder listeners, NOT getButton() wiring in
+            // onShow: on this device getButton() has returned null
+            // for the neutral button, and with a null builder
+            // listener the tap only dismisses — the handler (and
+            // the flag save) never runs. Builder listeners run on
+            // tap and then the dialog auto-dismisses, which is
+            // exactly what both handlers want (both dismiss).
+            builder.setNeutralButton("Skip", (dlg, which) -> {
+                // Skip hearing it again. Counts as the popup handled
+                // for this fragment — it does not re-show on the next
+                // entry to preview — but only for this showing; it
+                // may show again on a later test. Nothing is
+                // remembered permanently.
+                sensoryAtaxiaPopupShown = true;
+                if (sensoryBeepPlayer != null) {
+                    sensoryBeepPlayer.release();
+                    sensoryBeepPlayer = null;
+                }
+            });
+            builder.setNegativeButton("Don't show again", (dlg, which) -> {
+                // Permanent opt-out. Remember it across app restarts
+                // — the popup never shows again. The test-end beep
+                // is unaffected.
+                requireContext().getSharedPreferences(
+                                PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
+                                Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean(PoseLandmarkerHelper
+                                .KEY_SENSORY_POPUP_DONT_SHOW_AGAIN, true)
+                        .apply();
+                sensoryAtaxiaPopupShown = true;
+                if (sensoryBeepPlayer != null) {
+                    sensoryBeepPlayer.release();
+                    sensoryBeepPlayer = null;
+                }
+            });
+        }
+        AlertDialog dialog = builder.create();
+        // Outside tap: allowed only once the trial beep has been heard
+        // before, and it now behaves like Skip (handled for this
+        // fragment), not like Back — see the cancel listener below.
+        // Never heard, the dialog dismisses itself once the beep
+        // finishes, so it is never cancelable on outside touch.
+        // (Back still dismisses it before Next in both cases — the
+        // popup stays owed and re-shows on the next entry to preview.)
+        dialog.setCanceledOnTouchOutside(heardBefore);
+        // Tell an outside tap apart from Back: both go through
+        // OnCancelListener, but Back must leave the popup owed (it
+        // re-shows on the next entry to preview) while an outside tap
+        // — heard-before only; never-heard has outside touch disabled
+        // — behaves like Skip (handled for this fragment, may show
+        // again on a later test). The key listener only records the
+        // Back press; the dialog still handles it.
+        final boolean[] backPressed = {false};
+        dialog.setOnKeyListener((dlg, keyCode, event) -> {
+            if (keyCode == KeyEvent.KEYCODE_BACK) backPressed[0] = true;
+            return false;
+        });
+        dialog.setOnCancelListener(dlg -> {
+            if (!backPressed[0]) {
+                // Outside tap, heard-before only.
+                sensoryAtaxiaPopupShown = true;
+            }
+            if (sensoryBeepPlayer != null) {
+                sensoryBeepPlayer.release();
+                sensoryBeepPlayer = null;
+            }
+        });
+        dialog.setOnShowListener(dlg -> {
+            Button nextButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (nextButton == null) {
+                Log.e(TAG, "Sensory popup: Next button missing, cannot wire trial beep");
+            } else {
+                nextButton.setOnClickListener(v -> {
+                    nextButton.setEnabled(false);
+                    Button skipButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+                    if (skipButton != null) skipButton.setEnabled(false);
+                    Button dontShowButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+                    if (dontShowButton != null) dontShowButton.setEnabled(false);
+                    dialog.setCancelable(false);
+                    sensoryBeepPlayer.play(() -> {
+                        if (!isAdded()) return;
+                        // Trial beep heard in full: remember it, so the
+                        // popup offers Skip (and outside-tap dismissal)
+                        // from the next test on, across app restarts.
+                        requireContext().getSharedPreferences(
+                                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
+                                        Context.MODE_PRIVATE)
+                                .edit()
+                                .putBoolean(PoseLandmarkerHelper
+                                        .KEY_SENSORY_TRIAL_BEEP_HEARD, true)
+                                .apply();
+                        sensoryAtaxiaPopupShown = true;
+                        if (dialog.isShowing()) dialog.dismiss();
+                        if (sensoryBeepPlayer != null) {
+                            sensoryBeepPlayer.release();
+                            sensoryBeepPlayer = null;
+                        }
+                    });
+                });
+            }
+        });
+        dialog.show();
+    }
+
+    @Override
+    public void onMissingBodyPart(String partNames) {
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(() -> {
+            // Only a running test can be cancelled for this. The helper
+            // also fires while the preview countdown has already marked
+            // the test started, so preview mode and the get-ready
+            // countdown (no RecordFragment yet) are both excluded here.
+            if (!isAdded() || isPreviewMode || recordFragment == null
+                    || !RecordFragment.isTestStarted()) {
+                return;
+            }
+            cancelTestToPreview(partNames);
+        });
+    }
+
+    // Part 3: stop the trial and go back to preview mode. Mirrors the
+    // manual cancel's discard (no save, no export) but stays on this
+    // screen instead of navigating to CancellingTest. The camera stays
+    // on: preview needs the live feed.
+    private void cancelTestToPreview(String partNames) {
+        cancelCountdown();
+        pendingStartAction = null;
+        gyroArmed = false;
+        releaseFocusLock();
+        stopVoiceStroop();
+        if (poseLandmarkerHelper != null) {
+            poseLandmarkerHelper.releaseAnchor();
+        }
+        discardRunningTrial();
+        recordFragment = null;
+        // Back to preview: same UI as on entry, plus a fresh get-ready
+        // countdown (anchor recalibration) and the Sensory popup if owed.
+        enterPreviewMode(true);
+        new AlertDialog.Builder(requireContext())
+                .setTitle(partNames + " not detected")
+                .setMessage("The test was cancelled. " + partNames
+                        + " could not be detected. Stand with feet together, "
+                        + "make sure your head and feet are both in clear view, "
+                        + "and try again.")
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
+    // Retract the running trial's timer and drop its partial data.
+    // When the cancel lands during the get-ready countdown there is no
+    // RecordFragment yet, so the shared test state is cleared directly.
+    private void discardRunningTrial() {
+        if (recordFragment != null) {
+            recordFragment.discardCurrentTestSilently();
+        } else {
+            RecordFragment.setTestStarted(false);
+            RecordFragment.resetPoseFlag();
+            viewModel.setShouldDiscard(false);
+            viewModel.setCooldownActive(false);
+        }
     }
 
     private void cancelTest() {

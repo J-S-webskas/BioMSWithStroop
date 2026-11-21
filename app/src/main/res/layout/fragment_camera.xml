@@ -54,6 +54,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 android:backgroundTint="@color/black"/>
 
+
             <ImageButton
                 android:id="@+id/back"
                 android:layout_width="wrap_content"
@@ -69,9 +70,10 @@
                 android:id="@+id/tv_preview_instruction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="This is preview mode. Hit next to start the test. Make sure you are in full view."
+                android:text="Mark the distance where you are in full view.\nStand with feet together.\nMake sure your head and feet are both in clear view.\nGet into position before the countdown finishes."
                 android:textColor="@android:color/white"
-                android:textSize="14sp"
+                android:textSize="18sp"
+                android:textStyle="bold"
                 android:background="#80000000"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"

@@ -5,7 +5,6 @@ import static android.view.View.VISIBLE;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -16,7 +15,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -29,7 +27,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 
-import java.util.Locale;
 
 public class MarkDistanceAndCamera extends AppCompatActivity {
 
@@ -129,8 +126,10 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
             }
 
             // Before the camera (and its countdown) starts: confirm the
-            // camera distance, then the secure-surface setup.
-            showDistancePrompt(assessmentType, someoneRecord, scrollView, fragmentContainer);
+            // secure-surface setup. (The camera-distance prompt moved to
+            // the preview page: it now appears when Start Test is tapped,
+            // after this screen.)
+            showSecureSurfacePrompt(assessmentType, someoneRecord, scrollView, fragmentContainer);
         });
 
         // Re-enable scrolling when returning from fragment
@@ -147,86 +146,13 @@ public class MarkDistanceAndCamera extends AppCompatActivity {
         });
     }
 
-    // Pre-test prompts (run after Next, before the camera/countdown).
-    private float getRecordedDistance() {
-        SharedPreferences p = getSharedPreferences(
-                PoseLandmarkerHelper.TRIAL_SETUP_PREFS, MODE_PRIVATE);
-        return p.getFloat(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M, 0f);
-    }
-
-    /** Prompt 1: is the camera distance correct for this test? Blocks the
-     *  flow until a distance exists. Yes -> secure-surface prompt;
-     *  Edit -> distance dialog, then back here to confirm the new value. */
-    private void showDistancePrompt(String assessmentType, boolean someoneRecord,
-                                    NestedScrollView scrollView, FrameLayout fragmentContainer) {
-        float d = getRecordedDistance();
-        if (d <= 0f) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Camera Distance Required")
-                    .setMessage("No camera distance has been entered yet.\n\n"
-                            + "\u26A0 Camera distance directly influences accuracy.\n\n"
-                            + "Measure the distance from the camera to the spot where "
-                            + "you will stand, then enter it to continue.")
-                    .setPositiveButton("Enter Distance", (dlg, w) ->
-                            showDistanceEditDialog(() -> showDistancePrompt(
-                                    assessmentType, someoneRecord, scrollView, fragmentContainer)))
-                    .setNegativeButton("Not Now", null)
-                    .show();
-            return;
-        }
-        new AlertDialog.Builder(this)
-                .setTitle("Camera Distance")
-                .setMessage(String.format(Locale.US,
-                        "Is this camera distance correct for this test?\n\n%.2f meters\n\n"
-                                + "\u26A0 Camera distance directly influences accuracy.", d))
-                .setPositiveButton("Yes", (dlg, w) ->
-                        showSecureSurfacePrompt(assessmentType, someoneRecord, scrollView, fragmentContainer))
-                .setNegativeButton("Edit", (dlg, w) ->
-                        showDistanceEditDialog(() -> showDistancePrompt(
-                                assessmentType, someoneRecord, scrollView, fragmentContainer)))
-                .show();
-    }
-
-    private void showDistanceEditDialog(Runnable onSaved) {
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_trial_distance, null);
-        EditText distanceInput = dialogView.findViewById(R.id.distanceInput);
-        float current = getRecordedDistance();
-        if (current > 0) {
-            distanceInput.setText(String.format(Locale.US, "%.2f", current));
-        }
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Camera Distance")
-                .setMessage("Tape-measured distance from the camera to where you will stand, in meters.")
-                .setView(dialogView)
-                .setPositiveButton("Save", null)
-                .setNegativeButton("Cancel", null)
-                .create();
-        dialog.setOnShowListener(dlg -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
-                    String s = distanceInput.getText().toString().trim();
-                    try {
-                        double val = Double.parseDouble(s);
-                        if (val < 0.5 || val > 10) {
-                            distanceInput.setError("Enter a distance between 0.5 and 10 m");
-                            return;
-                        }
-                        getSharedPreferences(PoseLandmarkerHelper.TRIAL_SETUP_PREFS, MODE_PRIVATE)
-                                .edit().putFloat(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M,
-                                        (float) val).apply();
-                        dialog.dismiss();
-                        if (onSaved != null) onSaved.run();
-                    } catch (NumberFormatException e) {
-                        distanceInput.setError("Invalid number format");
-                    }
-                }));
-        dialog.show();
-    }
-
     /** Prompt 2: CRITICAL — the phone must be on a secure surface, not
      *  held. Shown in every mode, including someone-records: the recorder
      *  can prop the phone up against a vertical surface instead of
      *  holding it, so the question applies there too. It sits in its
-     *  usual place, after the camera-distance prompt. Yes -> countdown. */
+     *  usual place, right after Next. (The camera-distance prompt
+     *  moved to the preview page and now runs after this one.)
+     *  Yes -> countdown. */
     private void showSecureSurfacePrompt(String assessmentType, boolean someoneRecord,
                                          NestedScrollView scrollView, FrameLayout fragmentContainer) {
         new AlertDialog.Builder(this)
