@@ -54,6 +54,56 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 android:backgroundTint="@color/black"/>
 
+            <LinearLayout
+                android:id="@+id/stepback_controls"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="#80000000"
+                android:padding="8dp"
+                android:gravity="center_vertical"
+                android:visibility="gone"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/btn_cancel"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Get-ready:"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:paddingEnd="8dp" />
+
+                <Button
+                    android:id="@+id/btn_stepback_minus"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="-"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/tv_stepback_seconds"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3 s"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_stepback_plus"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="+"
+                    android:textSize="20sp" />
+
+            </LinearLayout>
+
             <ImageButton
                 android:id="@+id/back"
                 android:layout_width="wrap_content"
@@ -69,9 +119,10 @@
                 android:id="@+id/tv_preview_instruction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="This is preview mode. Hit next to start the test. Make sure you are in full view."
+                android:text="Stand with feet together.\nMake sure your head and feet are both in clear view.\nGet into position before the countdown finishes."
                 android:textColor="@android:color/white"
-                android:textSize="14sp"
+                android:textSize="18sp"
+                android:textStyle="bold"
                 android:background="#80000000"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"

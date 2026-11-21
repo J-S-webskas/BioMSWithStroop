@@ -111,6 +111,16 @@ public class PoseLandmarkerHelper {
         droppedFrameCount = 0;
     }
 
+    // Missing-body-part watch (Part 3): consecutive frames with a body
+    // part undetected while a test is running. One bad frame must not
+    // cancel a test (a landmark flickers), so the alert fires only
+    // after a short run of missing frames; the count and the fired
+    // latch reset on any clean frame, and when a countdown ends and a
+    // test starts (resetMissingPartState).
+    private static final int MISSING_PART_CONSECUTIVE_FRAMES = 10;
+    private int missingPartFrames = 0;
+    private boolean missingPartAlertFired = false;
+
     // ------------------------------------------------------------------
     // COM anchor calibration.
     //
@@ -141,6 +151,7 @@ public class PoseLandmarkerHelper {
     // ------------------------------------------------------------------
     public static final String TRIAL_SETUP_PREFS = "trial_setup";
     public static final String KEY_MANUAL_DISTANCE_M = "manual_distance_m";
+    public static final String KEY_STEP_BACK_SECONDS = "step_back_seconds";
     private static final float ANCHOR_VISIBILITY_THRESHOLD = 0.5f;
     private static final int ANCHOR_MIN_CALIBRATION_FRAMES = 15;
     private static final int ANCHOR_CALIBRATION_MAX = 300;
@@ -397,6 +408,66 @@ public class PoseLandmarkerHelper {
             }
         }
         return z;
+    }
+
+    // Body parts the missing-part watch checks, top to bottom. Each
+    // part's landmark indices are ones the app already reads: nose (0)
+    // in the landmark comment, shoulders/hips (11, 12, 23, 24) in the
+    // anchor visibility gate, ankles and foot index (27, 28, 31, 32)
+    // in the ankle-angle maths. A part is missing by the gate's own
+    // rule (see partMissing): an index past the end of the list, or a
+    // MediaPipe visibility() present and below the app's threshold.
+    private String missingBodyParts(List<NormalizedLandmark> landmarks) {
+        List<String> names = new ArrayList<>();
+        if (partMissing(landmarks, 0)) names.add("Head");
+        if (partMissing(landmarks, 11, 12)) names.add("shoulders");
+        if (partMissing(landmarks, 23, 24)) names.add("hips");
+        if (partMissing(landmarks, 27, 28, 31, 32)) names.add("feet");
+        if (names.isEmpty()) return null;
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < names.size(); i++) {
+            if (i > 0) out.append(i == names.size() - 1 ? " and " : ", ");
+            out.append(names.get(i));
+        }
+        return out.toString();
+    }
+
+    private boolean partMissing(List<NormalizedLandmark> landmarks, int... idx) {
+        try {
+            for (int i : idx) {
+                if (i >= landmarks.size()) return true;
+                java.util.Optional<Float> v = landmarks.get(i).visibility();
+                if (v != null && v.isPresent() && v.get() < ANCHOR_VISIBILITY_THRESHOLD) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void noteMissingPartsDuringTest(String missingParts) {
+        if (!RecordFragment.isTestStarted()) return;
+        if (missingParts == null) {
+            missingPartFrames = 0;
+            missingPartAlertFired = false;
+            return;
+        }
+        if (missingPartAlertFired) return;
+        if (++missingPartFrames >= MISSING_PART_CONSECUTIVE_FRAMES) {
+            missingPartAlertFired = true;
+            missingPartFrames = 0;
+            if (poseLandmarkerHelperListener != null) {
+                poseLandmarkerHelperListener.onMissingBodyPart(missingParts);
+            }
+        }
+    }
+
+    /** Reset the missing-part watch when a countdown ends and a test starts. */
+    public void resetMissingPartState() {
+        missingPartFrames = 0;
+        missingPartAlertFired = false;
     }
 
     /** Calibration frames must have clearly visible shoulders and hips. */
@@ -823,6 +894,9 @@ public class PoseLandmarkerHelper {
                         if (currentlyStarted) {
                             RecordFragment.setHasValidPose(true);
                         }
+                        // Missing-body-part watch: which parts (if any)
+                        // are undetected on this frame.
+                        noteMissingPartsDuringTest(missingBodyParts(landmarks));
                         // All 10 joint angles, vertex at the middle landmark:
                         // ankle = knee-ankle-foot index, knee = hip-knee-ankle,
                         // hip = shoulder-hip-knee, shoulder = elbow-shoulder-hip,
@@ -862,6 +936,8 @@ public class PoseLandmarkerHelper {
                     if (RecordFragment.isTestStarted()) {
                         droppedFrameCount++;
                         RecordFragment.setHasValidPose(false);
+                        // No pose at all: every watched part is missing.
+                        noteMissingPartsDuringTest("Head, shoulders, hips and feet");
                     }
                     Log.d(TAG, "No valid pose detected, sending clear signal");
                     ResultBundle clearBundle = new ResultBundle(new ArrayList<>(), inferenceTime,
@@ -1293,5 +1369,9 @@ public class PoseLandmarkerHelper {
         void onError(String error, int errorCode);
         void onError(String error); // Overloaded method
         void onResults(ResultBundle resultBundle);  // Implemented inside of CameraFragment
+        // A body part stayed undetected for a run of frames during a
+        // test; partNames names it (e.g. "Feet"). Implemented inside
+        // of CameraFragment.
+        void onMissingBodyPart(String partNames);
     }
 }

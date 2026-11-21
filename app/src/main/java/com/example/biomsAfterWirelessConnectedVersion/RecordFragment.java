@@ -46,6 +46,10 @@ public class RecordFragment extends Fragment {
     private static final int BASELINE_DURATION_MS = 33000;
     private static final int DUAL_TASK_DURATION_MS = 33000;
     private static final int SENSORY_DURATION_MS = 33000;
+    // End-of-test beep for Sensory Ataxia (Part 4): same sound as the
+    // preview trial beep. Fire-and-forget; the player releases itself
+    // after the beep finishes.
+    private final BeepPlayer sensoryEndBeepPlayer = new BeepPlayer();
     private static boolean hasValidPoseDuringTest = false;
     private MainViewModel viewModel;
     private float meterType = 0;
@@ -242,6 +246,24 @@ public class RecordFragment extends Fragment {
         intent.putExtra("cancelledMidway", true);
         startActivity(intent);
         setNavigationVisible(true);
+    }
+
+    // Discard the running trial WITHOUT navigating anywhere (Part 3:
+    // cancel back to preview mode). Mirrors
+    // stopCurrentTestAndDiscardData minus the CancellingTest
+    // navigation: the auto-stop timer is retracted, the trial type is
+    // cleared, all per-trial accumulators are dropped, and the
+    // pose/discard flags are reset, so nothing from this partial trial
+    // can be saved or exported later.
+    public void discardCurrentTestSilently() {
+        if (autoStopHandler != null && autoStopRunnable != null) {
+            autoStopHandler.removeCallbacks(autoStopRunnable);
+        }
+        currentTestType = TestType.NONE;
+        clearAllAccumulators();
+        resetPoseFlag();
+        viewModel.setShouldDiscard(false);
+        viewModel.setCooldownActive(false);
     }
 
     @Override
@@ -464,6 +486,12 @@ public class RecordFragment extends Fragment {
             @Override
             public void run() {
                 if (currentTestType == TestType.SENSORY_ATAXIA) {
+                    // The test has run its full length: sound the end
+                    // beep at once, so the eyes-closed user knows it is
+                    // over. Same beep as the preview trial (BeepPlayer);
+                    // it keeps playing across the move to the test-end
+                    // screen. Sensory Ataxia only.
+                    sensoryEndBeepPlayer.play(null);
                     try {
                         setNavigationVisible(true);
                         // Check if test was canceled before saving
