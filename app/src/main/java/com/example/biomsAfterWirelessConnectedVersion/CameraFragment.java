@@ -26,6 +26,7 @@ import android.util.Log;
 import android.util.SizeF;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -1017,10 +1018,18 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     }
 
     // Sensory Ataxia intro popup (Part 4, preview mode only): show it
-    // once, unless the trial beep has already been heard.
+    // once per fragment, unless the user chose "Don't show again" —
+    // that choice is permanent and the popup never shows again.
     private void maybeShowSensoryAtaxiaPopup() {
         if (!isPreviewMode || !"SensoryAtaxia".equals(assessmentType)
                 || sensoryAtaxiaPopupShown) {
+            return;
+        }
+        if (getContext() != null && getContext().getSharedPreferences(
+                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
+                        Context.MODE_PRIVATE)
+                .getBoolean(PoseLandmarkerHelper
+                        .KEY_SENSORY_POPUP_DONT_SHOW_AGAIN, false)) {
             return;
         }
         showSensoryAtaxiaPreviewPopup();
@@ -1039,11 +1048,17 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     // Heard before: once the trial beep has been heard in full, that
     // is remembered in TRIAL_SETUP_PREFS (KEY_SENSORY_TRIAL_BEEP_HEARD,
     // survives app restarts) and the popup changes — a Skip button
-    // appears next to Next, and tapping outside the dialog dismisses
-    // it too, because the user already knows what the beep sounds
-    // like. Never heard: no Skip button, and outside tap stays
-    // blocked — the user must hear the trial beep first. Back behaves
-    // the same in both cases (owed, re-shows on next entry).
+    // appears next to Next, plus a "Don't show again" button, and
+    // tapping outside the dialog dismisses it too, because the user
+    // already knows what the beep sounds like. Skip just skips this
+    // showing (the popup may show again on a later test); "Don't show
+    // again" is permanent (KEY_SENSORY_POPUP_DONT_SHOW_AGAIN) — the
+    // popup never shows again, though the test-end beep still sounds.
+    // Tapping outside behaves like Skip (handled for this fragment).
+    // Never heard: no Skip or "Don't show again" button, and outside
+    // tap stays blocked — the user must hear the trial beep first.
+    // Back behaves the same in both cases (owed, re-shows on next
+    // entry).
     private void showSensoryAtaxiaPreviewPopup() {
         if (getContext() == null) return;
         boolean heardBefore = getContext().getSharedPreferences(
@@ -1057,22 +1072,49 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 .setCancelable(true);
         if (heardBefore) {
             // Heard before: offer Skip next to Next — no need to hear
-            // the trial beep again.
+            // the trial beep again — plus a permanent opt-out.
             builder.setNeutralButton("Skip", null);
+            builder.setNegativeButton("Don't show again", null);
         }
         AlertDialog dialog = builder.create();
         // Outside tap: allowed only once the trial beep has been heard
-        // before. Never heard, the dialog dismisses itself once the
-        // beep finishes, so it is never cancelable on outside touch.
+        // before, and it now behaves like Skip (handled for this
+        // fragment), not like Back — see the cancel listener below.
+        // Never heard, the dialog dismisses itself once the beep
+        // finishes, so it is never cancelable on outside touch.
         // (Back still dismisses it before Next in both cases — the
         // popup stays owed and re-shows on the next entry to preview.)
         dialog.setCanceledOnTouchOutside(heardBefore);
+        // Tell an outside tap apart from Back: both go through
+        // OnCancelListener, but Back must leave the popup owed (it
+        // re-shows on the next entry to preview) while an outside tap
+        // — heard-before only; never-heard has outside touch disabled
+        // — behaves like Skip (handled for this fragment, may show
+        // again on a later test). The key listener only records the
+        // Back press; the dialog still handles it.
+        final boolean[] backPressed = {false};
+        dialog.setOnKeyListener((dlg, keyCode, event) -> {
+            if (keyCode == KeyEvent.KEYCODE_BACK) backPressed[0] = true;
+            return false;
+        });
+        dialog.setOnCancelListener(dlg -> {
+            if (!backPressed[0]) {
+                // Outside tap, heard-before only.
+                sensoryAtaxiaPopupShown = true;
+            }
+            if (sensoryBeepPlayer != null) {
+                sensoryBeepPlayer.release();
+                sensoryBeepPlayer = null;
+            }
+        });
         dialog.setOnShowListener(dlg -> {
             Button nextButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             nextButton.setOnClickListener(v -> {
                 nextButton.setEnabled(false);
                 Button skipButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
                 if (skipButton != null) skipButton.setEnabled(false);
+                Button dontShowButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+                if (dontShowButton != null) dontShowButton.setEnabled(false);
                 dialog.setCancelable(false);
                 sensoryBeepPlayer.play(() -> {
                     if (!isAdded()) return;
@@ -1099,7 +1141,28 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 skipButton.setOnClickListener(v -> {
                     // Heard before: skip hearing it again. Counts as
                     // the popup handled for this fragment — it does
-                    // not re-show on the next entry to preview.
+                    // not re-show on the next entry to preview — but
+                    // only for this showing; it may show again on a
+                    // later test. Nothing is remembered permanently.
+                    sensoryAtaxiaPopupShown = true;
+                    if (dialog.isShowing()) dialog.dismiss();
+                    if (sensoryBeepPlayer != null) {
+                        sensoryBeepPlayer.release();
+                        sensoryBeepPlayer = null;
+                    }
+                });
+                Button dontShowButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+                dontShowButton.setOnClickListener(v -> {
+                    // Heard before: permanent opt-out. Remember it
+                    // across app restarts — the popup never shows
+                    // again. The test-end beep is unaffected.
+                    requireContext().getSharedPreferences(
+                                    PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
+                                    Context.MODE_PRIVATE)
+                            .edit()
+                            .putBoolean(PoseLandmarkerHelper
+                                    .KEY_SENSORY_POPUP_DONT_SHOW_AGAIN, true)
+                            .apply();
                     sensoryAtaxiaPopupShown = true;
                     if (dialog.isShowing()) dialog.dismiss();
                     if (sensoryBeepPlayer != null) {

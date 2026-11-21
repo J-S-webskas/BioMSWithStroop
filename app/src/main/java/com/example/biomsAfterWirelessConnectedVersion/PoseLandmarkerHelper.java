@@ -157,6 +157,12 @@ public class PoseLandmarkerHelper {
      *  Sensory preview popup offers Skip and allows outside-tap
      *  dismissal instead of making the user hear the beep again. */
     public static final String KEY_SENSORY_TRIAL_BEEP_HEARD = "sensory_trial_beep_heard";
+    /** Set in TRIAL_SETUP_PREFS when the user taps "Don't show again"
+     *  on the Sensory preview popup; survives app restarts. While set,
+     *  the Sensory preview popup never shows again. Permanent — there
+     *  is no settings screen to undo it. The test-end beep is
+     *  unaffected. */
+    public static final String KEY_SENSORY_POPUP_DONT_SHOW_AGAIN = "sensory_popup_dont_show_again";
     private static final float ANCHOR_VISIBILITY_THRESHOLD = 0.5f;
     private static final int ANCHOR_MIN_CALIBRATION_FRAMES = 15;
     private static final int ANCHOR_CALIBRATION_MAX = 300;
