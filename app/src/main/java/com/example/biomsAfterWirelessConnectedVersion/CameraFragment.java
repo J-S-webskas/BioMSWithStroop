@@ -646,6 +646,25 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             }
         });
 
+        // The re-setup above is fire-and-forget: if it fails, or the
+        // clear/setup order slips, the helper stays closed and
+        // detectAsync silently drops every frame, so pose detection
+        // is dead with no recovery and no signal. One bounded
+        // re-check shortly after resume: if the helper is still
+        // closed, set it up again. Only while resumed and no test
+        // is running, so a running test is untouched.
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (isResumed() && isAdded() && poseLandmarkerHelper != null
+                    && poseLandmarkerHelper.isClose()
+                    && recordFragment == null
+                    && backgroundExecutor != null
+                    && !backgroundExecutor.isShutdown()) {
+                Log.e(TAG, "Pose landmarker still closed after resume, setting up again");
+                backgroundExecutor.execute(() ->
+                        poseLandmarkerHelper.setupPoseLandmarker());
+            }
+        }, 1500);
+
         // Register the rotation-vector sensor for the phone-motion audit.
         if (sensorManager == null && getContext() != null) {
             sensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
@@ -665,6 +684,28 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         if (getActivity() != null) {
             getActivity().getWindow().addFlags(
                     WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+
+        // A start abandoned mid-countdown (Home / lock / call) leaves
+        // the fragment in test mode with no test running: onPause
+        // retracted the countdown, but nothing restored preview.
+        // Without this the user comes back to a dead test-mode
+        // screen — no instruction lines, no back button, no auto
+        // get-ready countdown, and the Sensory popup never offered
+        // (maybeShow gates on isPreviewMode). Only restore when no
+        // test is actually running: a running test (a RecordFragment
+        // exists) must keep running across pause/resume. Do NOT use
+        // isTestStarted as the "test running" signal here — the auto
+        // preview countdown's end action sets it on entry — the
+        // RecordFragment is the test.
+        if (!isPreviewMode && recordFragment == null && isAdded()
+                && _fragmentCameraBinding != null) {
+            // The test never started, so the once-per-fragment popup
+            // latch is reset too: the popup is owed again. The
+            // permanent "Don't show again" flag still suppresses it
+            // — maybeShow checks that flag first.
+            sensoryAtaxiaPopupShown = false;
+            enterPreviewMode(true);
         }
     }
 
@@ -1119,8 +1160,42 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         if (heardBefore) {
             // Heard before: offer Skip next to Next — no need to hear
             // the trial beep again — plus a permanent opt-out.
-            builder.setNeutralButton("Skip", null);
-            builder.setNegativeButton("Don't show again", null);
+            // Real builder listeners, NOT getButton() wiring in
+            // onShow: on this device getButton() has returned null
+            // for the neutral button, and with a null builder
+            // listener the tap only dismisses — the handler (and
+            // the flag save) never runs. Builder listeners run on
+            // tap and then the dialog auto-dismisses, which is
+            // exactly what both handlers want (both dismiss).
+            builder.setNeutralButton("Skip", (dlg, which) -> {
+                // Skip hearing it again. Counts as the popup handled
+                // for this fragment — it does not re-show on the next
+                // entry to preview — but only for this showing; it
+                // may show again on a later test. Nothing is
+                // remembered permanently.
+                sensoryAtaxiaPopupShown = true;
+                if (sensoryBeepPlayer != null) {
+                    sensoryBeepPlayer.release();
+                    sensoryBeepPlayer = null;
+                }
+            });
+            builder.setNegativeButton("Don't show again", (dlg, which) -> {
+                // Permanent opt-out. Remember it across app restarts
+                // — the popup never shows again. The test-end beep
+                // is unaffected.
+                requireContext().getSharedPreferences(
+                                PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
+                                Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean(PoseLandmarkerHelper
+                                .KEY_SENSORY_POPUP_DONT_SHOW_AGAIN, true)
+                        .apply();
+                sensoryAtaxiaPopupShown = true;
+                if (sensoryBeepPlayer != null) {
+                    sensoryBeepPlayer.release();
+                    sensoryBeepPlayer = null;
+                }
+            });
         }
         AlertDialog dialog = builder.create();
         // Outside tap: allowed only once the trial beep has been heard
@@ -1185,49 +1260,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         }
                     });
                 });
-            }
-            if (heardBefore) {
-                Button skipButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
-                if (skipButton == null) {
-                    Log.e(TAG, "Sensory popup: Skip button missing");
-                } else {
-                    skipButton.setOnClickListener(v -> {
-                        // Heard before: skip hearing it again. Counts as
-                        // the popup handled for this fragment — it does
-                        // not re-show on the next entry to preview — but
-                        // only for this showing; it may show again on a
-                        // later test. Nothing is remembered permanently.
-                        sensoryAtaxiaPopupShown = true;
-                        if (dialog.isShowing()) dialog.dismiss();
-                        if (sensoryBeepPlayer != null) {
-                            sensoryBeepPlayer.release();
-                            sensoryBeepPlayer = null;
-                        }
-                    });
-                }
-                Button dontShowButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-                if (dontShowButton == null) {
-                    Log.e(TAG, "Sensory popup: Don't show again button missing");
-                } else {
-                    dontShowButton.setOnClickListener(v -> {
-                        // Heard before: permanent opt-out. Remember it
-                        // across app restarts — the popup never shows
-                        // again. The test-end beep is unaffected.
-                        requireContext().getSharedPreferences(
-                                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
-                                        Context.MODE_PRIVATE)
-                                .edit()
-                                .putBoolean(PoseLandmarkerHelper
-                                        .KEY_SENSORY_POPUP_DONT_SHOW_AGAIN, true)
-                                .apply();
-                        sensoryAtaxiaPopupShown = true;
-                        if (dialog.isShowing()) dialog.dismiss();
-                        if (sensoryBeepPlayer != null) {
-                            sensoryBeepPlayer.release();
-                            sensoryBeepPlayer = null;
-                        }
-                    });
-                }
             }
         });
         dialog.show();
