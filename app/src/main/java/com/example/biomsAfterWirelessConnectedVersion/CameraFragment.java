@@ -83,11 +83,11 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     private View rootView;
     private static final String TAG = "Pose Landmarker";
     private static final int REQUEST_CODE_CANCEL_TEST = 200;
-    // Get-ready (step-back) countdown, seconds. The user sets it on
-    // the preview page (stepper above Start Test); the TEST countdown
-    // after Start uses it, so they have time to step back into
-    // position. The auto preview countdown on page entry always
-    // uses the default.
+    // Get-ready (step-back) countdown, seconds. The user sets it in a
+    // popup right after the distance prompt when Start Test is tapped;
+    // the TEST countdown after Start uses it, so they have time to
+    // step back into position. The auto preview countdown on page
+    // entry always uses the default.
     private static final int DEFAULT_STEP_BACK_SECONDS = 3;
     private static final int MIN_STEP_BACK_SECONDS = 1;
     private static final int MAX_STEP_BACK_SECONDS = 30;
@@ -121,8 +121,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     // after the trial beep has actually been heard.
     private boolean sensoryAtaxiaPopupShown = false;
     private BeepPlayer sensoryBeepPlayer;
-    private LinearLayout stepBackControls;
-    private TextView tvStepBackSeconds;
     private TextView countdownTextView;
     private View countdownOverlay;
     // Countdown lifecycle token. Every showCountdown()/cancelCountdown()
@@ -306,13 +304,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                     .edit().putInt(PoseLandmarkerHelper.KEY_STEP_BACK_SECONDS,
                             stepBackSeconds).apply();
         }
-        updateStepBackLabel();
-    }
-
-    private void updateStepBackLabel() {
-        if (tvStepBackSeconds != null) {
-            tvStepBackSeconds.setText(stepBackSeconds + " s");
-        }
     }
 
     // Distance prompt, moved here from the instructions screen
@@ -387,6 +378,43 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         if (onSaved != null) onSaved.run();
                     } catch (NumberFormatException e) {
                         distanceInput.setError("Invalid number format");
+                    }
+                }));
+        dialog.show();
+    }
+
+    // Step-back (get-ready) time popup, asked right after the distance
+    // is set/confirmed when Start Test is tapped. Pre-filled with the
+    // saved value (default 3 s), whole seconds, clamped to 1-30 s, and
+    // saved in the same step_back_seconds key the old stepper wrote.
+    // Cancelling (or backing out) dismisses without starting anything,
+    // so the user is left on the preview page.
+    private void showStepBackPromptBeforeStart(Runnable onConfirmed) {
+        View dialogView = requireActivity().getLayoutInflater()
+                .inflate(R.layout.dialog_step_back_time, null);
+        EditText stepBackInput = dialogView.findViewById(R.id.stepBackInput);
+        stepBackInput.setText(String.valueOf(getStepBackSeconds()));
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle("Get-Ready Time")
+                .setMessage("How long do you need to get from the camera to your marked position? (seconds)")
+                .setView(dialogView)
+                .setPositiveButton("Start", null)
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.setOnShowListener(dlg -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String s = stepBackInput.getText().toString().trim();
+                    try {
+                        int val = Integer.parseInt(s);
+                        if (val < MIN_STEP_BACK_SECONDS || val > MAX_STEP_BACK_SECONDS) {
+                            stepBackInput.setError("Enter a whole number of seconds between 1 and 30");
+                            return;
+                        }
+                        setStepBackSeconds(val);
+                        dialog.dismiss();
+                        if (onConfirmed != null) onConfirmed.run();
+                    } catch (NumberFormatException e) {
+                        stepBackInput.setError("Enter a whole number of seconds");
                     }
                 }));
         dialog.show();
@@ -773,17 +801,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             tvInstruction.setVisibility(GONE);
         }
 
-        // Get-ready (step-back) time stepper: preview only, above Start.
-        // Wired here (views always exist); shown only where the Start
-        // Test button is shown, and hidden again when the test starts.
-        stepBackControls = view.findViewById(R.id.stepback_controls);
-        tvStepBackSeconds = view.findViewById(R.id.tv_stepback_seconds);
-        stepBackSeconds = getStepBackSeconds();
-        updateStepBackLabel();
-        Button btnStepBackMinus = view.findViewById(R.id.btn_stepback_minus);
-        Button btnStepBackPlus = view.findViewById(R.id.btn_stepback_plus);
-        btnStepBackMinus.setOnClickListener(v -> setStepBackSeconds(stepBackSeconds - 1));
-        btnStepBackPlus.setOnClickListener(v -> setStepBackSeconds(stepBackSeconds + 1));
 
         back = view.findViewById(R.id.back);
         back.setOnClickListener(v -> {
@@ -862,6 +879,18 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     // is false on first entry (the viewFinder post below schedules the
     // countdown once the camera is ready) and true on re-entry.
     private void enterPreviewMode(boolean restartAutoCountdown) {
+        // (Re-)entering preview mode means restoring the preview
+        // state itself, not just the buttons. Starting a test
+        // flipped isPreviewMode off and hid the instruction text
+        // and the back button; without this the restored preview
+        // would look almost right but the system-back handler, the
+        // auto preview countdown and the Sensory popup (all gated
+        // on isPreviewMode) would stay dead, the instructions
+        // would stay hidden, and (from the Assessment flow) the
+        // back button would stay hidden.
+        isPreviewMode = true;
+        tvInstruction.setVisibility(VISIBLE);
+        back.setVisibility(VISIBLE);
         // PREVIEW MODE
         if (SOURCE_ACTIVITY != null && SOURCE_ACTIVITY.equals("AssessmentFragment")) {
             btnCancel.setVisibility(GONE);
@@ -871,7 +900,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             btnCancel.setBackgroundColor(Color.WHITE);
             btnCancel.setTextColor(Color.GRAY);
             viewModel.setAssessmentType(assessmentType);
-            stepBackControls.setVisibility(VISIBLE);
         }
 
         btnCancel.setEnabled(false);
@@ -881,10 +909,13 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         }, 3000);
 
         btnCancel.setOnClickListener(v -> {
-            // Distance first: confirm the camera distance on the
-            // preview page (moved here from the instructions
-            // screen), then run the existing start flow.
-            showDistancePromptBeforeStart(() -> {
+            // Distance first, then the step-back time: confirm the
+            // camera distance on the preview page (moved here from
+            // the instructions screen), ask how long the user
+            // needs to walk to their mark, then run the existing
+            // start flow.
+            showDistancePromptBeforeStart(() ->
+                    showStepBackPromptBeforeStart(() -> {
             // Switch to TEST MODE
             isPreviewMode = false;
 
@@ -894,7 +925,6 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
             btnCancel.setBackgroundColor(Color.BLACK);
             btnCancel.setTextColor(Color.WHITE);
             tvInstruction.setVisibility(GONE);
-            stepBackControls.setVisibility(GONE);
 
             // Cancel any existing countdown
             cancelCountdown();
@@ -962,7 +992,8 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                      startActivity(intent);
                  }
              });
-            });
+                });
+            );
         });
         // Back in preview: re-run the get-ready countdown on re-entry
         // (anchor recalibration), and show the Sensory Ataxia intro

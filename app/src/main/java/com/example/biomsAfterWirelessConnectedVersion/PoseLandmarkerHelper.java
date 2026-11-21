@@ -413,7 +413,8 @@ public class PoseLandmarkerHelper {
     // Body parts the missing-part watch checks, top to bottom. Each
     // part's landmark indices are ones the app already reads: nose (0)
     // in the landmark comment, shoulders/hips (11, 12, 23, 24) in the
-    // anchor visibility gate, ankles and foot index (27, 28, 31, 32)
+    // anchor visibility gate, elbows (13, 14) and knees (25, 26) in the
+    // per-frame angle maths, ankles and foot index (27, 28, 31, 32)
     // in the ankle-angle maths. A part is missing by the gate's own
     // rule (see partMissing): an index past the end of the list, or a
     // MediaPipe visibility() present and below the app's threshold.
@@ -421,7 +422,9 @@ public class PoseLandmarkerHelper {
         List<String> names = new ArrayList<>();
         if (partMissing(landmarks, 0)) names.add("Head");
         if (partMissing(landmarks, 11, 12)) names.add("shoulders");
+        if (partMissing(landmarks, 13, 14)) names.add("elbows");
         if (partMissing(landmarks, 23, 24)) names.add("hips");
+        if (partMissing(landmarks, 25, 26)) names.add("knees");
         if (partMissing(landmarks, 27, 28, 31, 32)) names.add("feet");
         if (names.isEmpty()) return null;
         StringBuilder out = new StringBuilder();
@@ -937,7 +940,7 @@ public class PoseLandmarkerHelper {
                         droppedFrameCount++;
                         RecordFragment.setHasValidPose(false);
                         // No pose at all: every watched part is missing.
-                        noteMissingPartsDuringTest("Head, shoulders, hips and feet");
+                        noteMissingPartsDuringTest("Head, shoulders, elbows, hips, knees and feet");
                     }
                     Log.d(TAG, "No valid pose detected, sending clear signal");
                     ResultBundle clearBundle = new ResultBundle(new ArrayList<>(), inferenceTime,
