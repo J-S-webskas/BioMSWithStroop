@@ -362,25 +362,31 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 .setPositiveButton("Save", null)
                 .setNegativeButton("Cancel", null)
                 .create();
-        dialog.setOnShowListener(dlg -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
-                    String s = distanceInput.getText().toString().trim();
-                    try {
-                        double val = Double.parseDouble(s);
-                        if (val < 0.5 || val > 10) {
-                            distanceInput.setError("Enter a distance between 0.5 and 10 m");
-                            return;
-                        }
-                        requireContext().getSharedPreferences(
-                                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE)
-                                .edit().putFloat(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M,
-                                        (float) val).apply();
-                        dialog.dismiss();
-                        if (onSaved != null) onSaved.run();
-                    } catch (NumberFormatException e) {
-                        distanceInput.setError("Invalid number format");
+        dialog.setOnShowListener(dlg -> {
+            Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (saveButton == null) {
+                Log.e(TAG, "Distance dialog: Save button missing");
+                return;
+            }
+            saveButton.setOnClickListener(v -> {
+                String s = distanceInput.getText().toString().trim();
+                try {
+                    double val = Double.parseDouble(s);
+                    if (val < 0.5 || val > 10) {
+                        distanceInput.setError("Enter a distance between 0.5 and 10 m");
+                        return;
                     }
-                }));
+                    requireContext().getSharedPreferences(
+                                    PoseLandmarkerHelper.TRIAL_SETUP_PREFS, Context.MODE_PRIVATE)
+                            .edit().putFloat(PoseLandmarkerHelper.KEY_MANUAL_DISTANCE_M,
+                                    (float) val).apply();
+                    dialog.dismiss();
+                    if (onSaved != null) onSaved.run();
+                } catch (NumberFormatException e) {
+                    distanceInput.setError("Invalid number format");
+                }
+            });
+        });
         dialog.show();
     }
 
@@ -402,22 +408,28 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                 .setPositiveButton("Start", null)
                 .setNegativeButton("Cancel", null)
                 .create();
-        dialog.setOnShowListener(dlg -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
-                    String s = stepBackInput.getText().toString().trim();
-                    try {
-                        int val = Integer.parseInt(s);
-                        if (val < MIN_STEP_BACK_SECONDS || val > MAX_STEP_BACK_SECONDS) {
-                            stepBackInput.setError("Enter a whole number of seconds between 1 and 30");
-                            return;
-                        }
-                        setStepBackSeconds(val);
-                        dialog.dismiss();
-                        if (onConfirmed != null) onConfirmed.run();
-                    } catch (NumberFormatException e) {
-                        stepBackInput.setError("Enter a whole number of seconds");
+        dialog.setOnShowListener(dlg -> {
+            Button startButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (startButton == null) {
+                Log.e(TAG, "Step-back dialog: Start button missing");
+                return;
+            }
+            startButton.setOnClickListener(v -> {
+                String s = stepBackInput.getText().toString().trim();
+                try {
+                    int val = Integer.parseInt(s);
+                    if (val < MIN_STEP_BACK_SECONDS || val > MAX_STEP_BACK_SECONDS) {
+                        stepBackInput.setError("Enter a whole number of seconds between 1 and 30");
+                        return;
                     }
-                }));
+                    setStepBackSeconds(val);
+                    dialog.dismiss();
+                    if (onConfirmed != null) onConfirmed.run();
+                } catch (NumberFormatException e) {
+                    stepBackInput.setError("Enter a whole number of seconds");
+                }
+            });
+        });
         dialog.show();
     }
 
@@ -1109,67 +1121,79 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         });
         dialog.setOnShowListener(dlg -> {
             Button nextButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            nextButton.setOnClickListener(v -> {
-                nextButton.setEnabled(false);
-                Button skipButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
-                if (skipButton != null) skipButton.setEnabled(false);
-                Button dontShowButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-                if (dontShowButton != null) dontShowButton.setEnabled(false);
-                dialog.setCancelable(false);
-                sensoryBeepPlayer.play(() -> {
-                    if (!isAdded()) return;
-                    // Trial beep heard in full: remember it, so the
-                    // popup offers Skip (and outside-tap dismissal)
-                    // from the next test on, across app restarts.
-                    requireContext().getSharedPreferences(
-                                    PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
-                                    Context.MODE_PRIVATE)
-                            .edit()
-                            .putBoolean(PoseLandmarkerHelper
-                                    .KEY_SENSORY_TRIAL_BEEP_HEARD, true)
-                            .apply();
-                    sensoryAtaxiaPopupShown = true;
-                    if (dialog.isShowing()) dialog.dismiss();
-                    if (sensoryBeepPlayer != null) {
-                        sensoryBeepPlayer.release();
-                        sensoryBeepPlayer = null;
-                    }
+            if (nextButton == null) {
+                Log.e(TAG, "Sensory popup: Next button missing, cannot wire trial beep");
+            } else {
+                nextButton.setOnClickListener(v -> {
+                    nextButton.setEnabled(false);
+                    Button skipButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+                    if (skipButton != null) skipButton.setEnabled(false);
+                    Button dontShowButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+                    if (dontShowButton != null) dontShowButton.setEnabled(false);
+                    dialog.setCancelable(false);
+                    sensoryBeepPlayer.play(() -> {
+                        if (!isAdded()) return;
+                        // Trial beep heard in full: remember it, so the
+                        // popup offers Skip (and outside-tap dismissal)
+                        // from the next test on, across app restarts.
+                        requireContext().getSharedPreferences(
+                                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
+                                        Context.MODE_PRIVATE)
+                                .edit()
+                                .putBoolean(PoseLandmarkerHelper
+                                        .KEY_SENSORY_TRIAL_BEEP_HEARD, true)
+                                .apply();
+                        sensoryAtaxiaPopupShown = true;
+                        if (dialog.isShowing()) dialog.dismiss();
+                        if (sensoryBeepPlayer != null) {
+                            sensoryBeepPlayer.release();
+                            sensoryBeepPlayer = null;
+                        }
+                    });
                 });
-            });
+            }
             if (heardBefore) {
                 Button skipButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
-                skipButton.setOnClickListener(v -> {
-                    // Heard before: skip hearing it again. Counts as
-                    // the popup handled for this fragment — it does
-                    // not re-show on the next entry to preview — but
-                    // only for this showing; it may show again on a
-                    // later test. Nothing is remembered permanently.
-                    sensoryAtaxiaPopupShown = true;
-                    if (dialog.isShowing()) dialog.dismiss();
-                    if (sensoryBeepPlayer != null) {
-                        sensoryBeepPlayer.release();
-                        sensoryBeepPlayer = null;
-                    }
-                });
+                if (skipButton == null) {
+                    Log.e(TAG, "Sensory popup: Skip button missing");
+                } else {
+                    skipButton.setOnClickListener(v -> {
+                        // Heard before: skip hearing it again. Counts as
+                        // the popup handled for this fragment — it does
+                        // not re-show on the next entry to preview — but
+                        // only for this showing; it may show again on a
+                        // later test. Nothing is remembered permanently.
+                        sensoryAtaxiaPopupShown = true;
+                        if (dialog.isShowing()) dialog.dismiss();
+                        if (sensoryBeepPlayer != null) {
+                            sensoryBeepPlayer.release();
+                            sensoryBeepPlayer = null;
+                        }
+                    });
+                }
                 Button dontShowButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-                dontShowButton.setOnClickListener(v -> {
-                    // Heard before: permanent opt-out. Remember it
-                    // across app restarts — the popup never shows
-                    // again. The test-end beep is unaffected.
-                    requireContext().getSharedPreferences(
-                                    PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
-                                    Context.MODE_PRIVATE)
-                            .edit()
-                            .putBoolean(PoseLandmarkerHelper
-                                    .KEY_SENSORY_POPUP_DONT_SHOW_AGAIN, true)
-                            .apply();
-                    sensoryAtaxiaPopupShown = true;
-                    if (dialog.isShowing()) dialog.dismiss();
-                    if (sensoryBeepPlayer != null) {
-                        sensoryBeepPlayer.release();
-                        sensoryBeepPlayer = null;
-                    }
-                });
+                if (dontShowButton == null) {
+                    Log.e(TAG, "Sensory popup: Don't show again button missing");
+                } else {
+                    dontShowButton.setOnClickListener(v -> {
+                        // Heard before: permanent opt-out. Remember it
+                        // across app restarts — the popup never shows
+                        // again. The test-end beep is unaffected.
+                        requireContext().getSharedPreferences(
+                                        PoseLandmarkerHelper.TRIAL_SETUP_PREFS,
+                                        Context.MODE_PRIVATE)
+                                .edit()
+                                .putBoolean(PoseLandmarkerHelper
+                                        .KEY_SENSORY_POPUP_DONT_SHOW_AGAIN, true)
+                                .apply();
+                        sensoryAtaxiaPopupShown = true;
+                        if (dialog.isShowing()) dialog.dismiss();
+                        if (sensoryBeepPlayer != null) {
+                            sensoryBeepPlayer.release();
+                            sensoryBeepPlayer = null;
+                        }
+                    });
+                }
             }
         });
         dialog.show();
