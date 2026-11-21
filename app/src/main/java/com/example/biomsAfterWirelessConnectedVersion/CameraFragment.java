@@ -541,6 +541,15 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
                         if (countdownOverlay == overlayView) countdownOverlay = null;
                         if (countdownTextView == textView) countdownTextView = null;
 
+                        if (!isAdded()) {
+                            // Left the screen while the countdown was
+                            // running: never start a test behind the
+                            // user's back. The countdown UI above is
+                            // already removed; nothing else runs.
+                            Log.e(TAG, "Countdown ended after leaving screen, not starting test");
+                            isCountdownActive = false;
+                            return;
+                        }
                         // Start the actual test
                         isCountdownActive = false;
                         // Freeze the COM anchor from the countdown
@@ -662,6 +671,14 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
     @Override
     public void onPause() {
         super.onPause();
+        // Navigating away during the get-ready countdown must retract
+        // it: without this, the countdown's end action fires
+        // afterwards and its pendingStartAction commits a fragment
+        // transaction after onSaveInstanceState (IllegalStateException)
+        // — and starts a test behind the user's back. Cancelling here
+        // covers every pause path (back, home, incoming call, lock).
+        cancelCountdown();
+        pendingStartAction = null;
         if (getActivity() != null) {
             getActivity().getWindow().clearFlags(
                     WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -741,6 +758,12 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
 
     @Override
     public void onDestroyView() {
+        // Same retract as onPause: a countdown left pending when the
+        // view is destroyed must never fire its end action afterwards.
+        // (onPause normally runs first and already retracted it; this
+        // is the backstop for any path that reaches here without it.)
+        cancelCountdown();
+        pendingStartAction = null;
         // Preview must never inherit a test's focus lock: whatever path
         // leaves the test screen, the lock ends here.
         releaseFocusLock();
@@ -951,6 +974,17 @@ public class CameraFragment extends Fragment implements PoseLandmarkerHelper.Lan
         // from the true start.
         FragmentManager fm = getParentFragmentManager();
         pendingStartAction = () -> {
+            // Belt-and-braces: this runs at the end of a delayed
+            // countdown, and the user may have left the screen by
+            // then (onPause retracts the countdown, but a commit
+            // after onSaveInstanceState must never happen). Never
+            // commitAllowingStateLoss here: it would stop the crash
+            // but still start a test behind the user's back. Skip
+            // the start entirely.
+            if (!isAdded() || fm.isStateSaved()) {
+                Log.e(TAG, "Start-test action skipped: fragment not added or state saved");
+                return;
+            }
             recordFragment = new RecordFragment();
             FragmentTransaction transaction = fm.beginTransaction();
 
