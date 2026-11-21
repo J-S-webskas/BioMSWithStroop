@@ -432,7 +432,13 @@ public class PoseLandmarkerHelper {
             if (i > 0) out.append(i == names.size() - 1 ? " and " : ", ");
             out.append(names.get(i));
         }
-        return out.toString();
+        // Sentence case: only the first part name is capitalised, so
+        // the alert reads "Knees not detected" / "The test was
+        // cancelled. Elbows and knees could not be detected. ..."
+        // ("Head" is already capitalised, so this is a no-op when it
+        // leads.) names is non-empty here, so substring(0, 1) is safe.
+        String joined = out.toString();
+        return joined.substring(0, 1).toUpperCase() + joined.substring(1);
     }
 
     private boolean partMissing(List<NormalizedLandmark> landmarks, int... idx) {
